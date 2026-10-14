@@ -1,0 +1,10296 @@
+[
+ {
+  "granularity": "sentence",
+  "text": "We test it. It works well.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "We test it. "
+   },
+   {
+    "index": 12,
+    "segment": "It works well."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "As shown by Smith et al. Results in Fig. 2 hold, cf. J. Doe.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "As shown by Smith et al. "
+   },
+   {
+    "index": 25,
+    "segment": "Results in Fig. 2 hold, cf. "
+   },
+   {
+    "index": 53,
+    "segment": "J. "
+   },
+   {
+    "index": 56,
+    "segment": "Doe."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Das gilt z. B. für den 3. Mai. Danach nicht.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Das gilt z. "
+   },
+   {
+    "index": 12,
+    "segment": "B. für den 3. "
+   },
+   {
+    "index": 26,
+    "segment": "Mai. "
+   },
+   {
+    "index": 31,
+    "segment": "Danach nicht."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Das Modell ist sehr groß. The authors did not release the code for this. Das ist schade.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Das Modell ist sehr groß. "
+   },
+   {
+    "index": 26,
+    "segment": "The authors did not release the code for this. "
+   },
+   {
+    "index": 73,
+    "segment": "Das ist schade."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Die Autoren schreiben: The proposed method is simple and it does not need data. Ein Satz lautet: „Der Mensch spielt gern.“",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die Autoren schreiben: The proposed method is simple and it does not need data. "
+   },
+   {
+    "index": 80,
+    "segment": "Ein Satz lautet: „Der Mensch spielt gern.“"
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Er schrieb: Es geht. „Das ist der erste Satz. Und der zweite.“ Danach folgt Text.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Er schrieb: Es geht. "
+   },
+   {
+    "index": 21,
+    "segment": "„Das ist der erste Satz. "
+   },
+   {
+    "index": 46,
+    "segment": "Und der zweite.“ "
+   },
+   {
+    "index": 63,
+    "segment": "Danach folgt Text."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "This was shown before [3, 14] and later [7].",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "This was shown before [3, 14] and later [7]."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "This was shown before          and later    .",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "This was shown before          and later    ."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Vorlesen wissenschaftlicher Texte",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Vorlesen wissenschaftlicher Texte"
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Dieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. Das gilt z. B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Dieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. "
+   },
+   {
+    "index": 81,
+    "segment": "Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. "
+   },
+   {
+    "index": 149,
+    "segment": "Das gilt z. "
+   },
+   {
+    "index": 161,
+    "segment": "B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Die Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. Diese Aussage wird im nächsten Abschnitt genauer untersucht.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. "
+   },
+   {
+    "index": 122,
+    "segment": "Diese Aussage wird im nächsten Abschnitt genauer untersucht."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Ein bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Ein bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ "
+   },
+   {
+    "index": 78,
+    "segment": "Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Die linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. "
+   },
+   {
+    "index": 101,
+    "segment": "Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Die rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. This paragraph ends with an English sentence that the English voice should read. Damit endet das Dokument.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. "
+   },
+   {
+    "index": 84,
+    "segment": "This paragraph ends with an English sentence that the English voice should read. "
+   },
+   {
+    "index": 165,
+    "segment": "Damit endet das Dokument."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Accuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. See Sec. 3.2 and Eq. (4).",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Accuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. "
+   },
+   {
+    "index": 66,
+    "segment": "See Sec. "
+   },
+   {
+    "index": 75,
+    "segment": "3.2 and Eq. "
+   },
+   {
+    "index": 87,
+    "segment": "(4)."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "The U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "The U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Wie geht's? Gut! Wirklich?! Ja... vielleicht. Na ja…",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Wie geht's? "
+   },
+   {
+    "index": 12,
+    "segment": "Gut! "
+   },
+   {
+    "index": 17,
+    "segment": "Wirklich?! "
+   },
+   {
+    "index": 28,
+    "segment": "Ja... vielleicht. "
+   },
+   {
+    "index": 46,
+    "segment": "Na ja…"
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "He said \"stop.\" Then he left. (This is a note.) Next sentence.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "He said \"stop.\" "
+   },
+   {
+    "index": 16,
+    "segment": "Then he left. "
+   },
+   {
+    "index": 30,
+    "segment": "(This is a note.) "
+   },
+   {
+    "index": 48,
+    "segment": "Next sentence."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Prices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Prices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Visit https://example.org/a_b-c?x=1&y=2 or mail info@example.org today.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Visit https://example.org/a_b-c?"
+   },
+   {
+    "index": 32,
+    "segment": "x=1&y=2 or mail info@example.org today."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Benchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. Abb. 4 und Tab. 2.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Benchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. "
+   },
+   {
+    "index": 65,
+    "segment": "Abb. 4 und Tab. "
+   },
+   {
+    "index": 81,
+    "segment": "2."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Das Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Das Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Emoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Emoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Straße, Mädchen, Œuvre, naïve café, coöperate, Ångström.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Straße, Mädchen, Œuvre, naïve café, coöperate, Ångström."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Section 2.1 Related Work. 1. Introduction. II. Method.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Section 2.1 Related Work. "
+   },
+   {
+    "index": 26,
+    "segment": "1. "
+   },
+   {
+    "index": 29,
+    "segment": "Introduction. "
+   },
+   {
+    "index": 43,
+    "segment": "II. "
+   },
+   {
+    "index": 47,
+    "segment": "Method."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "The end.Next one starts without a space.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "The end.Next one starts without a space."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "Tabs\tand  double  spaces.  And a new line",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Tabs\tand  double  spaces.  "
+   },
+   {
+    "index": 27,
+    "segment": "And a new line"
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "here.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "here."
+   }
+  ]
+ },
+ {
+  "granularity": "sentence",
+  "text": "We test it. It works well.\nAs shown by Smith et al. Results in Fig. 2 hold, cf. J. Doe.\nDas gilt z. B. für den 3. Mai. Danach nicht.\nDas Modell ist sehr groß. The authors did not release the code for this. Das ist schade.\nDie Autoren schreiben: The proposed method is simple and it does not need data. Ein Satz lautet: „Der Mensch spielt gern.“\nEr schrieb: Es geht. „Das ist der erste Satz. Und der zweite.“ Danach folgt Text.\nThis was shown before [3, 14] and later [7].\nThis was shown before          and later    .\nVorlesen wissenschaftlicher Texte\nDieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. Das gilt z. B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter.\nDie Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. Diese Aussage wird im nächsten Abschnitt genauer untersucht.\nEin bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll.\nDie linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden.\nDie rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. This paragraph ends with an English sentence that the English voice should read. Damit endet das Dokument.\nAccuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. See Sec. 3.2 and Eq. (4).\nThe U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models.\nWie geht's? Gut! Wirklich?! Ja... vielleicht. Na ja…\nHe said \"stop.\" Then he left. (This is a note.) Next sentence.\nPrices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock.\nVisit https://example.org/a_b-c?x=1&y=2 or mail info@example.org today.\nBenchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. Abb. 4 und Tab. 2.\nDas Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen.\nEmoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text.\nStraße, Mädchen, Œuvre, naïve café, coöperate, Ångström.\nSection 2.1 Related Work. 1. Introduction. II. Method.\nThe end.Next one starts without a space.\nTabs\tand  double  spaces.  And a new line\nhere.\n",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "We test it. "
+   },
+   {
+    "index": 12,
+    "segment": "It works well.\n"
+   },
+   {
+    "index": 27,
+    "segment": "As shown by Smith et al. "
+   },
+   {
+    "index": 52,
+    "segment": "Results in Fig. 2 hold, cf. "
+   },
+   {
+    "index": 80,
+    "segment": "J. "
+   },
+   {
+    "index": 83,
+    "segment": "Doe.\n"
+   },
+   {
+    "index": 88,
+    "segment": "Das gilt z. "
+   },
+   {
+    "index": 100,
+    "segment": "B. für den 3. "
+   },
+   {
+    "index": 114,
+    "segment": "Mai. "
+   },
+   {
+    "index": 119,
+    "segment": "Danach nicht.\n"
+   },
+   {
+    "index": 133,
+    "segment": "Das Modell ist sehr groß. "
+   },
+   {
+    "index": 159,
+    "segment": "The authors did not release the code for this. "
+   },
+   {
+    "index": 206,
+    "segment": "Das ist schade.\n"
+   },
+   {
+    "index": 222,
+    "segment": "Die Autoren schreiben: The proposed method is simple and it does not need data. "
+   },
+   {
+    "index": 302,
+    "segment": "Ein Satz lautet: „Der Mensch spielt gern.“\n"
+   },
+   {
+    "index": 345,
+    "segment": "Er schrieb: Es geht. "
+   },
+   {
+    "index": 366,
+    "segment": "„Das ist der erste Satz. "
+   },
+   {
+    "index": 391,
+    "segment": "Und der zweite.“ "
+   },
+   {
+    "index": 408,
+    "segment": "Danach folgt Text.\n"
+   },
+   {
+    "index": 427,
+    "segment": "This was shown before [3, 14] and later [7].\n"
+   },
+   {
+    "index": 472,
+    "segment": "This was shown before          and later    .\n"
+   },
+   {
+    "index": 518,
+    "segment": "Vorlesen wissenschaftlicher Texte\n"
+   },
+   {
+    "index": 552,
+    "segment": "Dieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. "
+   },
+   {
+    "index": 633,
+    "segment": "Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. "
+   },
+   {
+    "index": 701,
+    "segment": "Das gilt z. "
+   },
+   {
+    "index": 713,
+    "segment": "B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter.\n"
+   },
+   {
+    "index": 785,
+    "segment": "Die Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. "
+   },
+   {
+    "index": 907,
+    "segment": "Diese Aussage wird im nächsten Abschnitt genauer untersucht.\n"
+   },
+   {
+    "index": 968,
+    "segment": "Ein bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ "
+   },
+   {
+    "index": 1046,
+    "segment": "Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll.\n"
+   },
+   {
+    "index": 1130,
+    "segment": "Die linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. "
+   },
+   {
+    "index": 1231,
+    "segment": "Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden.\n"
+   },
+   {
+    "index": 1382,
+    "segment": "Die rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. "
+   },
+   {
+    "index": 1466,
+    "segment": "This paragraph ends with an English sentence that the English voice should read. "
+   },
+   {
+    "index": 1547,
+    "segment": "Damit endet das Dokument.\n"
+   },
+   {
+    "index": 1573,
+    "segment": "Accuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. "
+   },
+   {
+    "index": 1639,
+    "segment": "See Sec. "
+   },
+   {
+    "index": 1648,
+    "segment": "3.2 and Eq. "
+   },
+   {
+    "index": 1660,
+    "segment": "(4).\n"
+   },
+   {
+    "index": 1665,
+    "segment": "The U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models.\n"
+   },
+   {
+    "index": 1749,
+    "segment": "Wie geht's? "
+   },
+   {
+    "index": 1761,
+    "segment": "Gut! "
+   },
+   {
+    "index": 1766,
+    "segment": "Wirklich?! "
+   },
+   {
+    "index": 1777,
+    "segment": "Ja... vielleicht. "
+   },
+   {
+    "index": 1795,
+    "segment": "Na ja…\n"
+   },
+   {
+    "index": 1802,
+    "segment": "He said \"stop.\" "
+   },
+   {
+    "index": 1818,
+    "segment": "Then he left. "
+   },
+   {
+    "index": 1832,
+    "segment": "(This is a note.) "
+   },
+   {
+    "index": 1850,
+    "segment": "Next sentence.\n"
+   },
+   {
+    "index": 1865,
+    "segment": "Prices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock.\n"
+   },
+   {
+    "index": 1945,
+    "segment": "Visit https://example.org/a_b-c?"
+   },
+   {
+    "index": 1977,
+    "segment": "x=1&y=2 or mail info@example.org today.\n"
+   },
+   {
+    "index": 2017,
+    "segment": "Benchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. "
+   },
+   {
+    "index": 2082,
+    "segment": "Abb. 4 und Tab. "
+   },
+   {
+    "index": 2098,
+    "segment": "2.\n"
+   },
+   {
+    "index": 2101,
+    "segment": "Das Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen.\n"
+   },
+   {
+    "index": 2166,
+    "segment": "Emoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text.\n"
+   },
+   {
+    "index": 2225,
+    "segment": "Straße, Mädchen, Œuvre, naïve café, coöperate, Ångström.\n"
+   },
+   {
+    "index": 2282,
+    "segment": "Section 2.1 Related Work. "
+   },
+   {
+    "index": 2308,
+    "segment": "1. "
+   },
+   {
+    "index": 2311,
+    "segment": "Introduction. "
+   },
+   {
+    "index": 2325,
+    "segment": "II. "
+   },
+   {
+    "index": 2329,
+    "segment": "Method.\n"
+   },
+   {
+    "index": 2337,
+    "segment": "The end.Next one starts without a space.\n"
+   },
+   {
+    "index": 2378,
+    "segment": "Tabs\tand  double  spaces.  "
+   },
+   {
+    "index": 2405,
+    "segment": "And a new line\n"
+   },
+   {
+    "index": 2420,
+    "segment": "here.\n"
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "We test it. It works well.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "We",
+    "isWordLike": true
+   },
+   {
+    "index": 2,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 3,
+    "segment": "test",
+    "isWordLike": true
+   },
+   {
+    "index": 7,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": "it",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "It",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "works",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "well",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "As shown by Smith et al. Results in Fig. 2 hold, cf. J. Doe.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "As",
+    "isWordLike": true
+   },
+   {
+    "index": 2,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 3,
+    "segment": "shown",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "by",
+    "isWordLike": true
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "Smith",
+    "isWordLike": true
+   },
+   {
+    "index": 17,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 18,
+    "segment": "et",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "al",
+    "isWordLike": true
+   },
+   {
+    "index": 23,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 24,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "Results",
+    "isWordLike": true
+   },
+   {
+    "index": 32,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": "in",
+    "isWordLike": true
+   },
+   {
+    "index": 35,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 36,
+    "segment": "Fig",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 40,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 41,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "hold",
+    "isWordLike": true
+   },
+   {
+    "index": 47,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 48,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 49,
+    "segment": "cf",
+    "isWordLike": true
+   },
+   {
+    "index": 51,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 52,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 53,
+    "segment": "J",
+    "isWordLike": true
+   },
+   {
+    "index": 54,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 55,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 56,
+    "segment": "Doe",
+    "isWordLike": true
+   },
+   {
+    "index": 59,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Das gilt z. B. für den 3. Mai. Danach nicht.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "gilt",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "z",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "B",
+    "isWordLike": true
+   },
+   {
+    "index": 13,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "für",
+    "isWordLike": true
+   },
+   {
+    "index": 18,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 19,
+    "segment": "den",
+    "isWordLike": true
+   },
+   {
+    "index": 22,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 23,
+    "segment": "3",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "Mai",
+    "isWordLike": true
+   },
+   {
+    "index": 29,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "Danach",
+    "isWordLike": true
+   },
+   {
+    "index": 37,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 38,
+    "segment": "nicht",
+    "isWordLike": true
+   },
+   {
+    "index": 43,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Das Modell ist sehr groß. The authors did not release the code for this. Das ist schade.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "Modell",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "sehr",
+    "isWordLike": true
+   },
+   {
+    "index": 19,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 20,
+    "segment": "groß",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "authors",
+    "isWordLike": true
+   },
+   {
+    "index": 37,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 38,
+    "segment": "did",
+    "isWordLike": true
+   },
+   {
+    "index": 41,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 42,
+    "segment": "not",
+    "isWordLike": true
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "release",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 54,
+    "segment": "the",
+    "isWordLike": true
+   },
+   {
+    "index": 57,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 58,
+    "segment": "code",
+    "isWordLike": true
+   },
+   {
+    "index": 62,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 63,
+    "segment": "for",
+    "isWordLike": true
+   },
+   {
+    "index": 66,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 67,
+    "segment": "this",
+    "isWordLike": true
+   },
+   {
+    "index": 71,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 72,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 73,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 76,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 77,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 80,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 81,
+    "segment": "schade",
+    "isWordLike": true
+   },
+   {
+    "index": 87,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Die Autoren schreiben: The proposed method is simple and it does not need data. Ein Satz lautet: „Der Mensch spielt gern.“",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "Autoren",
+    "isWordLike": true
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "schreiben",
+    "isWordLike": true
+   },
+   {
+    "index": 21,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 22,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 23,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 26,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 27,
+    "segment": "proposed",
+    "isWordLike": true
+   },
+   {
+    "index": 35,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 36,
+    "segment": "method",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "is",
+    "isWordLike": true
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "simple",
+    "isWordLike": true
+   },
+   {
+    "index": 52,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 53,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 56,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 57,
+    "segment": "it",
+    "isWordLike": true
+   },
+   {
+    "index": 59,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 60,
+    "segment": "does",
+    "isWordLike": true
+   },
+   {
+    "index": 64,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "not",
+    "isWordLike": true
+   },
+   {
+    "index": 68,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 69,
+    "segment": "need",
+    "isWordLike": true
+   },
+   {
+    "index": 73,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 74,
+    "segment": "data",
+    "isWordLike": true
+   },
+   {
+    "index": 78,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 79,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 80,
+    "segment": "Ein",
+    "isWordLike": true
+   },
+   {
+    "index": 83,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 84,
+    "segment": "Satz",
+    "isWordLike": true
+   },
+   {
+    "index": 88,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 89,
+    "segment": "lautet",
+    "isWordLike": true
+   },
+   {
+    "index": 95,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 96,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 97,
+    "segment": "„",
+    "isWordLike": false
+   },
+   {
+    "index": 98,
+    "segment": "Der",
+    "isWordLike": true
+   },
+   {
+    "index": 101,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 102,
+    "segment": "Mensch",
+    "isWordLike": true
+   },
+   {
+    "index": 108,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 109,
+    "segment": "spielt",
+    "isWordLike": true
+   },
+   {
+    "index": 115,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 116,
+    "segment": "gern",
+    "isWordLike": true
+   },
+   {
+    "index": 120,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 121,
+    "segment": "“",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Er schrieb: Es geht. „Das ist der erste Satz. Und der zweite.“ Danach folgt Text.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Er",
+    "isWordLike": true
+   },
+   {
+    "index": 2,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 3,
+    "segment": "schrieb",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "Es",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "geht",
+    "isWordLike": true
+   },
+   {
+    "index": 19,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "„",
+    "isWordLike": false
+   },
+   {
+    "index": 22,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "erste",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 40,
+    "segment": "Satz",
+    "isWordLike": true
+   },
+   {
+    "index": 44,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "Und",
+    "isWordLike": true
+   },
+   {
+    "index": 49,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 50,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 54,
+    "segment": "zweite",
+    "isWordLike": true
+   },
+   {
+    "index": 60,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 61,
+    "segment": "“",
+    "isWordLike": false
+   },
+   {
+    "index": 62,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 63,
+    "segment": "Danach",
+    "isWordLike": true
+   },
+   {
+    "index": 69,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 70,
+    "segment": "folgt",
+    "isWordLike": true
+   },
+   {
+    "index": 75,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 76,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 80,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "This was shown before [3, 14] and later [7].",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 4,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 5,
+    "segment": "was",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "shown",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "before",
+    "isWordLike": true
+   },
+   {
+    "index": 21,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 22,
+    "segment": "[",
+    "isWordLike": false
+   },
+   {
+    "index": 23,
+    "segment": "3",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "14",
+    "isWordLike": true
+   },
+   {
+    "index": 28,
+    "segment": "]",
+    "isWordLike": false
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "later",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 40,
+    "segment": "[",
+    "isWordLike": false
+   },
+   {
+    "index": 41,
+    "segment": "7",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": "]",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "This was shown before          and later    .",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 4,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 5,
+    "segment": "was",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "shown",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "before",
+    "isWordLike": true
+   },
+   {
+    "index": 21,
+    "segment": "          ",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 34,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 35,
+    "segment": "later",
+    "isWordLike": true
+   },
+   {
+    "index": 40,
+    "segment": "    ",
+    "isWordLike": false
+   },
+   {
+    "index": 44,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Vorlesen wissenschaftlicher Texte",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Vorlesen",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "wissenschaftlicher",
+    "isWordLike": true
+   },
+   {
+    "index": 27,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 28,
+    "segment": "Texte",
+    "isWordLike": true
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Dieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. Das gilt z. B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Dieser",
+    "isWordLike": true
+   },
+   {
+    "index": 6,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 7,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "prüft",
+    "isWordLike": true
+   },
+   {
+    "index": 17,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 18,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 19,
+    "segment": "ob",
+    "isWordLike": true
+   },
+   {
+    "index": 21,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 22,
+    "segment": "das",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "Programm",
+    "isWordLike": true
+   },
+   {
+    "index": 34,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 35,
+    "segment": "deutsche",
+    "isWordLike": true
+   },
+   {
+    "index": 43,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 44,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 47,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 48,
+    "segment": "englische",
+    "isWordLike": true
+   },
+   {
+    "index": 57,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 58,
+    "segment": "Sätze",
+    "isWordLike": true
+   },
+   {
+    "index": 63,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 64,
+    "segment": "richtig",
+    "isWordLike": true
+   },
+   {
+    "index": 71,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 72,
+    "segment": "erkennt",
+    "isWordLike": true
+   },
+   {
+    "index": 79,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 80,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 81,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 84,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 85,
+    "segment": "Verarbeitung",
+    "isWordLike": true
+   },
+   {
+    "index": 97,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 98,
+    "segment": "erfolgt",
+    "isWordLike": true
+   },
+   {
+    "index": 105,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 106,
+    "segment": "vollständig",
+    "isWordLike": true
+   },
+   {
+    "index": 117,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 118,
+    "segment": "lokal",
+    "isWordLike": true
+   },
+   {
+    "index": 123,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 124,
+    "segment": "auf",
+    "isWordLike": true
+   },
+   {
+    "index": 127,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 128,
+    "segment": "dem",
+    "isWordLike": true
+   },
+   {
+    "index": 131,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 132,
+    "segment": "eigenen",
+    "isWordLike": true
+   },
+   {
+    "index": 139,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 140,
+    "segment": "Rechner",
+    "isWordLike": true
+   },
+   {
+    "index": 147,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 148,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 149,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 152,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 153,
+    "segment": "gilt",
+    "isWordLike": true
+   },
+   {
+    "index": 157,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 158,
+    "segment": "z",
+    "isWordLike": true
+   },
+   {
+    "index": 159,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 160,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 161,
+    "segment": "B",
+    "isWordLike": true
+   },
+   {
+    "index": 162,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 163,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 164,
+    "segment": "für",
+    "isWordLike": true
+   },
+   {
+    "index": 167,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 168,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 171,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 172,
+    "segment": "Sprachsynthese",
+    "isWordLike": true
+   },
+   {
+    "index": 186,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 187,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 190,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 191,
+    "segment": "für",
+    "isWordLike": true
+   },
+   {
+    "index": 194,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 195,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 198,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 199,
+    "segment": "Ausrichtung",
+    "isWordLike": true
+   },
+   {
+    "index": 210,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 211,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 214,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 215,
+    "segment": "einzelnen",
+    "isWordLike": true
+   },
+   {
+    "index": 224,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 225,
+    "segment": "Wörter",
+    "isWordLike": true
+   },
+   {
+    "index": 231,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Die Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. Diese Aussage wird im nächsten Abschnitt genauer untersucht.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "Autoren",
+    "isWordLike": true
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "fassen",
+    "isWordLike": true
+   },
+   {
+    "index": 18,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 19,
+    "segment": "ihr",
+    "isWordLike": true
+   },
+   {
+    "index": 22,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 23,
+    "segment": "Ergebnis",
+    "isWordLike": true
+   },
+   {
+    "index": 31,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 32,
+    "segment": "so",
+    "isWordLike": true
+   },
+   {
+    "index": 34,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 35,
+    "segment": "zusammen",
+    "isWordLike": true
+   },
+   {
+    "index": 43,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 44,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 48,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 49,
+    "segment": "proposed",
+    "isWordLike": true
+   },
+   {
+    "index": 57,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 58,
+    "segment": "method",
+    "isWordLike": true
+   },
+   {
+    "index": 64,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "is",
+    "isWordLike": true
+   },
+   {
+    "index": 67,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 68,
+    "segment": "simple",
+    "isWordLike": true
+   },
+   {
+    "index": 74,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 75,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 78,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 79,
+    "segment": "it",
+    "isWordLike": true
+   },
+   {
+    "index": 81,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 82,
+    "segment": "does",
+    "isWordLike": true
+   },
+   {
+    "index": 86,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 87,
+    "segment": "not",
+    "isWordLike": true
+   },
+   {
+    "index": 90,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 91,
+    "segment": "need",
+    "isWordLike": true
+   },
+   {
+    "index": 95,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 96,
+    "segment": "any",
+    "isWordLike": true
+   },
+   {
+    "index": 99,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 100,
+    "segment": "training",
+    "isWordLike": true
+   },
+   {
+    "index": 108,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 109,
+    "segment": "data",
+    "isWordLike": true
+   },
+   {
+    "index": 113,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 114,
+    "segment": "at",
+    "isWordLike": true
+   },
+   {
+    "index": 116,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 117,
+    "segment": "all",
+    "isWordLike": true
+   },
+   {
+    "index": 120,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 121,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 122,
+    "segment": "Diese",
+    "isWordLike": true
+   },
+   {
+    "index": 127,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 128,
+    "segment": "Aussage",
+    "isWordLike": true
+   },
+   {
+    "index": 135,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 136,
+    "segment": "wird",
+    "isWordLike": true
+   },
+   {
+    "index": 140,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 141,
+    "segment": "im",
+    "isWordLike": true
+   },
+   {
+    "index": 143,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 144,
+    "segment": "nächsten",
+    "isWordLike": true
+   },
+   {
+    "index": 152,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 153,
+    "segment": "Abschnitt",
+    "isWordLike": true
+   },
+   {
+    "index": 162,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 163,
+    "segment": "genauer",
+    "isWordLike": true
+   },
+   {
+    "index": 170,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 171,
+    "segment": "untersucht",
+    "isWordLike": true
+   },
+   {
+    "index": 181,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Ein bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Ein",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "bekannter",
+    "isWordLike": true
+   },
+   {
+    "index": 13,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 14,
+    "segment": "Satz",
+    "isWordLike": true
+   },
+   {
+    "index": 18,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 19,
+    "segment": "lautet",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 27,
+    "segment": "„",
+    "isWordLike": false
+   },
+   {
+    "index": 28,
+    "segment": "Der",
+    "isWordLike": true
+   },
+   {
+    "index": 31,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 32,
+    "segment": "Mensch",
+    "isWordLike": true
+   },
+   {
+    "index": 38,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 39,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "nur",
+    "isWordLike": true
+   },
+   {
+    "index": 46,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 47,
+    "segment": "da",
+    "isWordLike": true
+   },
+   {
+    "index": 49,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 50,
+    "segment": "ganz",
+    "isWordLike": true
+   },
+   {
+    "index": 54,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 55,
+    "segment": "Mensch",
+    "isWordLike": true
+   },
+   {
+    "index": 61,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 62,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 63,
+    "segment": "wo",
+    "isWordLike": true
+   },
+   {
+    "index": 65,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 66,
+    "segment": "er",
+    "isWordLike": true
+   },
+   {
+    "index": 68,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 69,
+    "segment": "spielt",
+    "isWordLike": true
+   },
+   {
+    "index": 75,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 76,
+    "segment": "“",
+    "isWordLike": false
+   },
+   {
+    "index": 77,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 78,
+    "segment": "Danach",
+    "isWordLike": true
+   },
+   {
+    "index": 84,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 85,
+    "segment": "folgt",
+    "isWordLike": true
+   },
+   {
+    "index": 90,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 91,
+    "segment": "wieder",
+    "isWordLike": true
+   },
+   {
+    "index": 97,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 98,
+    "segment": "gewöhnlicher",
+    "isWordLike": true
+   },
+   {
+    "index": 110,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 111,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 115,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 116,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 117,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 120,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 121,
+    "segment": "mit",
+    "isWordLike": true
+   },
+   {
+    "index": 124,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 125,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 128,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 129,
+    "segment": "Hauptstimme",
+    "isWordLike": true
+   },
+   {
+    "index": 140,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 141,
+    "segment": "gelesen",
+    "isWordLike": true
+   },
+   {
+    "index": 148,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 149,
+    "segment": "werden",
+    "isWordLike": true
+   },
+   {
+    "index": 155,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 156,
+    "segment": "soll",
+    "isWordLike": true
+   },
+   {
+    "index": 160,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Die linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "linke",
+    "isWordLike": true
+   },
+   {
+    "index": 9,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 10,
+    "segment": "Spalte",
+    "isWordLike": true
+   },
+   {
+    "index": 16,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 17,
+    "segment": "enthält",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "mehrere",
+    "isWordLike": true
+   },
+   {
+    "index": 32,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": "Zeilen",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 40,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 44,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "damit",
+    "isWordLike": true
+   },
+   {
+    "index": 51,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 52,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 55,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 56,
+    "segment": "Reihenfolge",
+    "isWordLike": true
+   },
+   {
+    "index": 67,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 68,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 71,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 72,
+    "segment": "Spalten",
+    "isWordLike": true
+   },
+   {
+    "index": 79,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 80,
+    "segment": "geprüft",
+    "isWordLike": true
+   },
+   {
+    "index": 87,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 88,
+    "segment": "werden",
+    "isWordLike": true
+   },
+   {
+    "index": 94,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 95,
+    "segment": "kann",
+    "isWordLike": true
+   },
+   {
+    "index": 99,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 100,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 101,
+    "segment": "Wissenschaftliche",
+    "isWordLike": true
+   },
+   {
+    "index": 118,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 119,
+    "segment": "Veröffentlichungen",
+    "isWordLike": true
+   },
+   {
+    "index": 137,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 138,
+    "segment": "verwenden",
+    "isWordLike": true
+   },
+   {
+    "index": 147,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 148,
+    "segment": "diese",
+    "isWordLike": true
+   },
+   {
+    "index": 153,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 154,
+    "segment": "Anordnung",
+    "isWordLike": true
+   },
+   {
+    "index": 163,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 164,
+    "segment": "sehr",
+    "isWordLike": true
+   },
+   {
+    "index": 168,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 169,
+    "segment": "häufig",
+    "isWordLike": true
+   },
+   {
+    "index": 175,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 176,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 177,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 180,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 181,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 184,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 185,
+    "segment": "Silbentrennung",
+    "isWordLike": true
+   },
+   {
+    "index": 199,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 200,
+    "segment": "am",
+    "isWordLike": true
+   },
+   {
+    "index": 202,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 203,
+    "segment": "Zeilenende",
+    "isWordLike": true
+   },
+   {
+    "index": 213,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 214,
+    "segment": "muss",
+    "isWordLike": true
+   },
+   {
+    "index": 218,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 219,
+    "segment": "dabei",
+    "isWordLike": true
+   },
+   {
+    "index": 224,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 225,
+    "segment": "rückgängig",
+    "isWordLike": true
+   },
+   {
+    "index": 235,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 236,
+    "segment": "gemacht",
+    "isWordLike": true
+   },
+   {
+    "index": 243,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 244,
+    "segment": "werden",
+    "isWordLike": true
+   },
+   {
+    "index": 250,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Die rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. This paragraph ends with an English sentence that the English voice should read. Damit endet das Dokument.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "rechte",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": "Spalte",
+    "isWordLike": true
+   },
+   {
+    "index": 17,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 18,
+    "segment": "beginnt",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "weiter",
+    "isWordLike": true
+   },
+   {
+    "index": 32,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": "oben",
+    "isWordLike": true
+   },
+   {
+    "index": 37,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 38,
+    "segment": "auf",
+    "isWordLike": true
+   },
+   {
+    "index": 41,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 42,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "Seite",
+    "isWordLike": true
+   },
+   {
+    "index": 51,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 52,
+    "segment": "als",
+    "isWordLike": true
+   },
+   {
+    "index": 55,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 56,
+    "segment": "das",
+    "isWordLike": true
+   },
+   {
+    "index": 59,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 60,
+    "segment": "Ende",
+    "isWordLike": true
+   },
+   {
+    "index": 64,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 68,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 69,
+    "segment": "linken",
+    "isWordLike": true
+   },
+   {
+    "index": 75,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 76,
+    "segment": "Spalte",
+    "isWordLike": true
+   },
+   {
+    "index": 82,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 83,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 84,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 88,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 89,
+    "segment": "paragraph",
+    "isWordLike": true
+   },
+   {
+    "index": 98,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 99,
+    "segment": "ends",
+    "isWordLike": true
+   },
+   {
+    "index": 103,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 104,
+    "segment": "with",
+    "isWordLike": true
+   },
+   {
+    "index": 108,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 109,
+    "segment": "an",
+    "isWordLike": true
+   },
+   {
+    "index": 111,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 112,
+    "segment": "English",
+    "isWordLike": true
+   },
+   {
+    "index": 119,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 120,
+    "segment": "sentence",
+    "isWordLike": true
+   },
+   {
+    "index": 128,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 129,
+    "segment": "that",
+    "isWordLike": true
+   },
+   {
+    "index": 133,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 134,
+    "segment": "the",
+    "isWordLike": true
+   },
+   {
+    "index": 137,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 138,
+    "segment": "English",
+    "isWordLike": true
+   },
+   {
+    "index": 145,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 146,
+    "segment": "voice",
+    "isWordLike": true
+   },
+   {
+    "index": 151,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 152,
+    "segment": "should",
+    "isWordLike": true
+   },
+   {
+    "index": 158,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 159,
+    "segment": "read",
+    "isWordLike": true
+   },
+   {
+    "index": 163,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 164,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 165,
+    "segment": "Damit",
+    "isWordLike": true
+   },
+   {
+    "index": 170,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 171,
+    "segment": "endet",
+    "isWordLike": true
+   },
+   {
+    "index": 176,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 177,
+    "segment": "das",
+    "isWordLike": true
+   },
+   {
+    "index": 180,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 181,
+    "segment": "Dokument",
+    "isWordLike": true
+   },
+   {
+    "index": 189,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Accuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. See Sec. 3.2 and Eq. (4).",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Accuracy",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "rose",
+    "isWordLike": true
+   },
+   {
+    "index": 13,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 14,
+    "segment": "from",
+    "isWordLike": true
+   },
+   {
+    "index": 18,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 19,
+    "segment": "91.5",
+    "isWordLike": true
+   },
+   {
+    "index": 23,
+    "segment": "%",
+    "isWordLike": false
+   },
+   {
+    "index": 24,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "to",
+    "isWordLike": true
+   },
+   {
+    "index": 27,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 28,
+    "segment": "94.2",
+    "isWordLike": true
+   },
+   {
+    "index": 32,
+    "segment": "%",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "(",
+    "isWordLike": false
+   },
+   {
+    "index": 35,
+    "segment": "p",
+    "isWordLike": true
+   },
+   {
+    "index": 36,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 37,
+    "segment": "<",
+    "isWordLike": false
+   },
+   {
+    "index": 38,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 39,
+    "segment": "0.01",
+    "isWordLike": true
+   },
+   {
+    "index": 43,
+    "segment": ")",
+    "isWordLike": false
+   },
+   {
+    "index": 44,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "i.e",
+    "isWordLike": true
+   },
+   {
+    "index": 49,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 50,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 51,
+    "segment": "by",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 54,
+    "segment": "2.7",
+    "isWordLike": true
+   },
+   {
+    "index": 57,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 58,
+    "segment": "points",
+    "isWordLike": true
+   },
+   {
+    "index": 64,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 66,
+    "segment": "See",
+    "isWordLike": true
+   },
+   {
+    "index": 69,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 70,
+    "segment": "Sec",
+    "isWordLike": true
+   },
+   {
+    "index": 73,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 74,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 75,
+    "segment": "3.2",
+    "isWordLike": true
+   },
+   {
+    "index": 78,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 79,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 82,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 83,
+    "segment": "Eq",
+    "isWordLike": true
+   },
+   {
+    "index": 85,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 86,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 87,
+    "segment": "(",
+    "isWordLike": false
+   },
+   {
+    "index": 88,
+    "segment": "4",
+    "isWordLike": true
+   },
+   {
+    "index": 89,
+    "segment": ")",
+    "isWordLike": false
+   },
+   {
+    "index": 90,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "The U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "U.S",
+    "isWordLike": true
+   },
+   {
+    "index": 7,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "team",
+    "isWordLike": true
+   },
+   {
+    "index": 13,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 14,
+    "segment": "didn't",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "use",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "GPT",
+    "isWordLike": true
+   },
+   {
+    "index": 28,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 29,
+    "segment": "4",
+    "isWordLike": true
+   },
+   {
+    "index": 30,
+    "segment": "'",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "s",
+    "isWordLike": true
+   },
+   {
+    "index": 32,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": "API",
+    "isWordLike": true
+   },
+   {
+    "index": 36,
+    "segment": ";",
+    "isWordLike": false
+   },
+   {
+    "index": 37,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 38,
+    "segment": "they",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "used",
+    "isWordLike": true
+   },
+   {
+    "index": 47,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 48,
+    "segment": "e",
+    "isWordLike": true
+   },
+   {
+    "index": 49,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 50,
+    "segment": "mail",
+    "isWordLike": true
+   },
+   {
+    "index": 54,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 55,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 58,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 59,
+    "segment": "state",
+    "isWordLike": true
+   },
+   {
+    "index": 64,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "of",
+    "isWordLike": true
+   },
+   {
+    "index": 67,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 68,
+    "segment": "the",
+    "isWordLike": true
+   },
+   {
+    "index": 71,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 72,
+    "segment": "art",
+    "isWordLike": true
+   },
+   {
+    "index": 75,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 76,
+    "segment": "models",
+    "isWordLike": true
+   },
+   {
+    "index": 82,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Wie geht's? Gut! Wirklich?! Ja... vielleicht. Na ja…",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Wie",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "geht's",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": "?",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "Gut",
+    "isWordLike": true
+   },
+   {
+    "index": 15,
+    "segment": "!",
+    "isWordLike": false
+   },
+   {
+    "index": 16,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 17,
+    "segment": "Wirklich",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": "?",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "!",
+    "isWordLike": false
+   },
+   {
+    "index": 27,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 28,
+    "segment": "Ja",
+    "isWordLike": true
+   },
+   {
+    "index": 30,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 32,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "vielleicht",
+    "isWordLike": true
+   },
+   {
+    "index": 44,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": "Na",
+    "isWordLike": true
+   },
+   {
+    "index": 48,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 49,
+    "segment": "ja",
+    "isWordLike": true
+   },
+   {
+    "index": 51,
+    "segment": "…",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "He said \"stop.\" Then he left. (This is a note.) Next sentence.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "He",
+    "isWordLike": true
+   },
+   {
+    "index": 2,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 3,
+    "segment": "said",
+    "isWordLike": true
+   },
+   {
+    "index": 7,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": "\"",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "stop",
+    "isWordLike": true
+   },
+   {
+    "index": 13,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 14,
+    "segment": "\"",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 16,
+    "segment": "Then",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "he",
+    "isWordLike": true
+   },
+   {
+    "index": 23,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 24,
+    "segment": "left",
+    "isWordLike": true
+   },
+   {
+    "index": 28,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "(",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 35,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 36,
+    "segment": "is",
+    "isWordLike": true
+   },
+   {
+    "index": 38,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 39,
+    "segment": "a",
+    "isWordLike": true
+   },
+   {
+    "index": 40,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 41,
+    "segment": "note",
+    "isWordLike": true
+   },
+   {
+    "index": 45,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": ")",
+    "isWordLike": false
+   },
+   {
+    "index": 47,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 48,
+    "segment": "Next",
+    "isWordLike": true
+   },
+   {
+    "index": 52,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 53,
+    "segment": "sentence",
+    "isWordLike": true
+   },
+   {
+    "index": 61,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Prices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Prices",
+    "isWordLike": true
+   },
+   {
+    "index": 6,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 7,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": "$",
+    "isWordLike": false
+   },
+   {
+    "index": 9,
+    "segment": "1,000.50",
+    "isWordLike": true
+   },
+   {
+    "index": 17,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 18,
+    "segment": "or",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "€",
+    "isWordLike": false
+   },
+   {
+    "index": 22,
+    "segment": "2.000,75",
+    "isWordLike": true
+   },
+   {
+    "index": 30,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "—",
+    "isWordLike": false
+   },
+   {
+    "index": 32,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": "about",
+    "isWordLike": true
+   },
+   {
+    "index": 38,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 39,
+    "segment": "3",
+    "isWordLike": true
+   },
+   {
+    "index": 40,
+    "segment": "×",
+    "isWordLike": false
+   },
+   {
+    "index": 41,
+    "segment": "10",
+    "isWordLike": true
+   },
+   {
+    "index": 43,
+    "segment": "⁶",
+    "isWordLike": false
+   },
+   {
+    "index": 44,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": "units",
+    "isWordLike": true
+   },
+   {
+    "index": 50,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 51,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 52,
+    "segment": "1",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 54,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 55,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 56,
+    "segment": "of",
+    "isWordLike": true
+   },
+   {
+    "index": 58,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 59,
+    "segment": "them",
+    "isWordLike": true
+   },
+   {
+    "index": 63,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 64,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "12",
+    "isWordLike": true
+   },
+   {
+    "index": 67,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 68,
+    "segment": "30",
+    "isWordLike": true
+   },
+   {
+    "index": 70,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 71,
+    "segment": "o'clock",
+    "isWordLike": true
+   },
+   {
+    "index": 78,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Visit https://example.org/a_b-c?x=1&y=2 or mail info@example.org today.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Visit",
+    "isWordLike": true
+   },
+   {
+    "index": 5,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 6,
+    "segment": "https",
+    "isWordLike": true
+   },
+   {
+    "index": 11,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 13,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 14,
+    "segment": "example.org",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "a_b",
+    "isWordLike": true
+   },
+   {
+    "index": 29,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "c",
+    "isWordLike": true
+   },
+   {
+    "index": 31,
+    "segment": "?",
+    "isWordLike": false
+   },
+   {
+    "index": 32,
+    "segment": "x",
+    "isWordLike": true
+   },
+   {
+    "index": 33,
+    "segment": "=",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "1",
+    "isWordLike": true
+   },
+   {
+    "index": 35,
+    "segment": "&",
+    "isWordLike": false
+   },
+   {
+    "index": 36,
+    "segment": "y",
+    "isWordLike": true
+   },
+   {
+    "index": 37,
+    "segment": "=",
+    "isWordLike": false
+   },
+   {
+    "index": 38,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 40,
+    "segment": "or",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "mail",
+    "isWordLike": true
+   },
+   {
+    "index": 47,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 48,
+    "segment": "info",
+    "isWordLike": true
+   },
+   {
+    "index": 52,
+    "segment": "@",
+    "isWordLike": false
+   },
+   {
+    "index": 53,
+    "segment": "example.org",
+    "isWordLike": true
+   },
+   {
+    "index": 64,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "today",
+    "isWordLike": true
+   },
+   {
+    "index": 70,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Benchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. Abb. 4 und Tab. 2.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Benchmark",
+    "isWordLike": true
+   },
+   {
+    "index": 9,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 10,
+    "segment": "Datensätze",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "Vor",
+    "isWordLike": true
+   },
+   {
+    "index": 28,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "Nachteile",
+    "isWordLike": true
+   },
+   {
+    "index": 43,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 44,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": "z.B",
+    "isWordLike": true
+   },
+   {
+    "index": 48,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 49,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 50,
+    "segment": "bzw",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 54,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 55,
+    "segment": "u.a",
+    "isWordLike": true
+   },
+   {
+    "index": 58,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 59,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 60,
+    "segment": "vgl",
+    "isWordLike": true
+   },
+   {
+    "index": 63,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 64,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 65,
+    "segment": "Abb",
+    "isWordLike": true
+   },
+   {
+    "index": 68,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 69,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 70,
+    "segment": "4",
+    "isWordLike": true
+   },
+   {
+    "index": 71,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 72,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 75,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 76,
+    "segment": "Tab",
+    "isWordLike": true
+   },
+   {
+    "index": 79,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 80,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 81,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 82,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Das Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "Ergebnis",
+    "isWordLike": true
+   },
+   {
+    "index": 12,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 13,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 16,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 17,
+    "segment": "½",
+    "isWordLike": false
+   },
+   {
+    "index": 18,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 19,
+    "segment": "so",
+    "isWordLike": true
+   },
+   {
+    "index": 21,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 22,
+    "segment": "groß",
+    "isWordLike": true
+   },
+   {
+    "index": 26,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 27,
+    "segment": "wie",
+    "isWordLike": true
+   },
+   {
+    "index": 30,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "erwartet",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": ";",
+    "isWordLike": false
+   },
+   {
+    "index": 40,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 41,
+    "segment": "ﬁ",
+    "isWordLike": true
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 46,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 47,
+    "segment": "ﬂ",
+    "isWordLike": true
+   },
+   {
+    "index": 48,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 49,
+    "segment": "sind",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 54,
+    "segment": "Ligaturen",
+    "isWordLike": true
+   },
+   {
+    "index": 63,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Emoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Emoji",
+    "isWordLike": true
+   },
+   {
+    "index": 5,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 6,
+    "segment": "👍🏽",
+    "isWordLike": false
+   },
+   {
+    "index": 10,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "flags",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "🇩🇪",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "🇬🇧",
+    "isWordLike": false
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "family",
+    "isWordLike": true
+   },
+   {
+    "index": 40,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 41,
+    "segment": "👨‍👩‍👧",
+    "isWordLike": false
+   },
+   {
+    "index": 49,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 50,
+    "segment": "in",
+    "isWordLike": true
+   },
+   {
+    "index": 52,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 53,
+    "segment": "text",
+    "isWordLike": true
+   },
+   {
+    "index": 57,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Straße, Mädchen, Œuvre, naïve café, coöperate, Ångström.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Straße",
+    "isWordLike": true
+   },
+   {
+    "index": 6,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 7,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": "Mädchen",
+    "isWordLike": true
+   },
+   {
+    "index": 15,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 16,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 17,
+    "segment": "Œuvre",
+    "isWordLike": true
+   },
+   {
+    "index": 22,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 23,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 24,
+    "segment": "naïve",
+    "isWordLike": true
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "café",
+    "isWordLike": true
+   },
+   {
+    "index": 34,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 35,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 36,
+    "segment": "coöperate",
+    "isWordLike": true
+   },
+   {
+    "index": 45,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 47,
+    "segment": "Ångström",
+    "isWordLike": true
+   },
+   {
+    "index": 55,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Section 2.1 Related Work. 1. Introduction. II. Method.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Section",
+    "isWordLike": true
+   },
+   {
+    "index": 7,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": "2.1",
+    "isWordLike": true
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "Related",
+    "isWordLike": true
+   },
+   {
+    "index": 19,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 20,
+    "segment": "Work",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "1",
+    "isWordLike": true
+   },
+   {
+    "index": 27,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 28,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 29,
+    "segment": "Introduction",
+    "isWordLike": true
+   },
+   {
+    "index": 41,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 42,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 43,
+    "segment": "II",
+    "isWordLike": true
+   },
+   {
+    "index": 45,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 46,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 47,
+    "segment": "Method",
+    "isWordLike": true
+   },
+   {
+    "index": 53,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "The end.Next one starts without a space.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 3,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 4,
+    "segment": "end.Next",
+    "isWordLike": true
+   },
+   {
+    "index": 12,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 13,
+    "segment": "one",
+    "isWordLike": true
+   },
+   {
+    "index": 16,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 17,
+    "segment": "starts",
+    "isWordLike": true
+   },
+   {
+    "index": 23,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 24,
+    "segment": "without",
+    "isWordLike": true
+   },
+   {
+    "index": 31,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 32,
+    "segment": "a",
+    "isWordLike": true
+   },
+   {
+    "index": 33,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 34,
+    "segment": "space",
+    "isWordLike": true
+   },
+   {
+    "index": 39,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "Tabs\tand  double  spaces.  And a new line",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "Tabs",
+    "isWordLike": true
+   },
+   {
+    "index": 4,
+    "segment": "\t",
+    "isWordLike": false
+   },
+   {
+    "index": 5,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 8,
+    "segment": "  ",
+    "isWordLike": false
+   },
+   {
+    "index": 10,
+    "segment": "double",
+    "isWordLike": true
+   },
+   {
+    "index": 16,
+    "segment": "  ",
+    "isWordLike": false
+   },
+   {
+    "index": 18,
+    "segment": "spaces",
+    "isWordLike": true
+   },
+   {
+    "index": 24,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 25,
+    "segment": "  ",
+    "isWordLike": false
+   },
+   {
+    "index": 27,
+    "segment": "And",
+    "isWordLike": true
+   },
+   {
+    "index": 30,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 31,
+    "segment": "a",
+    "isWordLike": true
+   },
+   {
+    "index": 32,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 33,
+    "segment": "new",
+    "isWordLike": true
+   },
+   {
+    "index": 36,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 37,
+    "segment": "line",
+    "isWordLike": true
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "here.",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "here",
+    "isWordLike": true
+   },
+   {
+    "index": 4,
+    "segment": ".",
+    "isWordLike": false
+   }
+  ]
+ },
+ {
+  "granularity": "word",
+  "text": "We test it. It works well.\nAs shown by Smith et al. Results in Fig. 2 hold, cf. J. Doe.\nDas gilt z. B. für den 3. Mai. Danach nicht.\nDas Modell ist sehr groß. The authors did not release the code for this. Das ist schade.\nDie Autoren schreiben: The proposed method is simple and it does not need data. Ein Satz lautet: „Der Mensch spielt gern.“\nEr schrieb: Es geht. „Das ist der erste Satz. Und der zweite.“ Danach folgt Text.\nThis was shown before [3, 14] and later [7].\nThis was shown before          and later    .\nVorlesen wissenschaftlicher Texte\nDieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. Das gilt z. B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter.\nDie Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. Diese Aussage wird im nächsten Abschnitt genauer untersucht.\nEin bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll.\nDie linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden.\nDie rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. This paragraph ends with an English sentence that the English voice should read. Damit endet das Dokument.\nAccuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. See Sec. 3.2 and Eq. (4).\nThe U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models.\nWie geht's? Gut! Wirklich?! Ja... vielleicht. Na ja…\nHe said \"stop.\" Then he left. (This is a note.) Next sentence.\nPrices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock.\nVisit https://example.org/a_b-c?x=1&y=2 or mail info@example.org today.\nBenchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. Abb. 4 und Tab. 2.\nDas Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen.\nEmoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text.\nStraße, Mädchen, Œuvre, naïve café, coöperate, Ångström.\nSection 2.1 Related Work. 1. Introduction. II. Method.\nThe end.Next one starts without a space.\nTabs\tand  double  spaces.  And a new line\nhere.\n",
+  "segments": [
+   {
+    "index": 0,
+    "segment": "We",
+    "isWordLike": true
+   },
+   {
+    "index": 2,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 3,
+    "segment": "test",
+    "isWordLike": true
+   },
+   {
+    "index": 7,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 8,
+    "segment": "it",
+    "isWordLike": true
+   },
+   {
+    "index": 10,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 11,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 12,
+    "segment": "It",
+    "isWordLike": true
+   },
+   {
+    "index": 14,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 15,
+    "segment": "works",
+    "isWordLike": true
+   },
+   {
+    "index": 20,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 21,
+    "segment": "well",
+    "isWordLike": true
+   },
+   {
+    "index": 25,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 26,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 27,
+    "segment": "As",
+    "isWordLike": true
+   },
+   {
+    "index": 29,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 30,
+    "segment": "shown",
+    "isWordLike": true
+   },
+   {
+    "index": 35,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 36,
+    "segment": "by",
+    "isWordLike": true
+   },
+   {
+    "index": 38,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 39,
+    "segment": "Smith",
+    "isWordLike": true
+   },
+   {
+    "index": 44,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 45,
+    "segment": "et",
+    "isWordLike": true
+   },
+   {
+    "index": 47,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 48,
+    "segment": "al",
+    "isWordLike": true
+   },
+   {
+    "index": 50,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 51,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 52,
+    "segment": "Results",
+    "isWordLike": true
+   },
+   {
+    "index": 59,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 60,
+    "segment": "in",
+    "isWordLike": true
+   },
+   {
+    "index": 62,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 63,
+    "segment": "Fig",
+    "isWordLike": true
+   },
+   {
+    "index": 66,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 67,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 68,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 69,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 70,
+    "segment": "hold",
+    "isWordLike": true
+   },
+   {
+    "index": 74,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 75,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 76,
+    "segment": "cf",
+    "isWordLike": true
+   },
+   {
+    "index": 78,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 79,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 80,
+    "segment": "J",
+    "isWordLike": true
+   },
+   {
+    "index": 81,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 82,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 83,
+    "segment": "Doe",
+    "isWordLike": true
+   },
+   {
+    "index": 86,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 87,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 88,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 91,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 92,
+    "segment": "gilt",
+    "isWordLike": true
+   },
+   {
+    "index": 96,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 97,
+    "segment": "z",
+    "isWordLike": true
+   },
+   {
+    "index": 98,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 99,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 100,
+    "segment": "B",
+    "isWordLike": true
+   },
+   {
+    "index": 101,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 102,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 103,
+    "segment": "für",
+    "isWordLike": true
+   },
+   {
+    "index": 106,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 107,
+    "segment": "den",
+    "isWordLike": true
+   },
+   {
+    "index": 110,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 111,
+    "segment": "3",
+    "isWordLike": true
+   },
+   {
+    "index": 112,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 113,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 114,
+    "segment": "Mai",
+    "isWordLike": true
+   },
+   {
+    "index": 117,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 118,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 119,
+    "segment": "Danach",
+    "isWordLike": true
+   },
+   {
+    "index": 125,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 126,
+    "segment": "nicht",
+    "isWordLike": true
+   },
+   {
+    "index": 131,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 132,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 133,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 136,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 137,
+    "segment": "Modell",
+    "isWordLike": true
+   },
+   {
+    "index": 143,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 144,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 147,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 148,
+    "segment": "sehr",
+    "isWordLike": true
+   },
+   {
+    "index": 152,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 153,
+    "segment": "groß",
+    "isWordLike": true
+   },
+   {
+    "index": 157,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 158,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 159,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 162,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 163,
+    "segment": "authors",
+    "isWordLike": true
+   },
+   {
+    "index": 170,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 171,
+    "segment": "did",
+    "isWordLike": true
+   },
+   {
+    "index": 174,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 175,
+    "segment": "not",
+    "isWordLike": true
+   },
+   {
+    "index": 178,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 179,
+    "segment": "release",
+    "isWordLike": true
+   },
+   {
+    "index": 186,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 187,
+    "segment": "the",
+    "isWordLike": true
+   },
+   {
+    "index": 190,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 191,
+    "segment": "code",
+    "isWordLike": true
+   },
+   {
+    "index": 195,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 196,
+    "segment": "for",
+    "isWordLike": true
+   },
+   {
+    "index": 199,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 200,
+    "segment": "this",
+    "isWordLike": true
+   },
+   {
+    "index": 204,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 205,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 206,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 209,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 210,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 213,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 214,
+    "segment": "schade",
+    "isWordLike": true
+   },
+   {
+    "index": 220,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 221,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 222,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 225,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 226,
+    "segment": "Autoren",
+    "isWordLike": true
+   },
+   {
+    "index": 233,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 234,
+    "segment": "schreiben",
+    "isWordLike": true
+   },
+   {
+    "index": 243,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 244,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 245,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 248,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 249,
+    "segment": "proposed",
+    "isWordLike": true
+   },
+   {
+    "index": 257,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 258,
+    "segment": "method",
+    "isWordLike": true
+   },
+   {
+    "index": 264,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 265,
+    "segment": "is",
+    "isWordLike": true
+   },
+   {
+    "index": 267,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 268,
+    "segment": "simple",
+    "isWordLike": true
+   },
+   {
+    "index": 274,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 275,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 278,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 279,
+    "segment": "it",
+    "isWordLike": true
+   },
+   {
+    "index": 281,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 282,
+    "segment": "does",
+    "isWordLike": true
+   },
+   {
+    "index": 286,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 287,
+    "segment": "not",
+    "isWordLike": true
+   },
+   {
+    "index": 290,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 291,
+    "segment": "need",
+    "isWordLike": true
+   },
+   {
+    "index": 295,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 296,
+    "segment": "data",
+    "isWordLike": true
+   },
+   {
+    "index": 300,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 301,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 302,
+    "segment": "Ein",
+    "isWordLike": true
+   },
+   {
+    "index": 305,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 306,
+    "segment": "Satz",
+    "isWordLike": true
+   },
+   {
+    "index": 310,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 311,
+    "segment": "lautet",
+    "isWordLike": true
+   },
+   {
+    "index": 317,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 318,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 319,
+    "segment": "„",
+    "isWordLike": false
+   },
+   {
+    "index": 320,
+    "segment": "Der",
+    "isWordLike": true
+   },
+   {
+    "index": 323,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 324,
+    "segment": "Mensch",
+    "isWordLike": true
+   },
+   {
+    "index": 330,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 331,
+    "segment": "spielt",
+    "isWordLike": true
+   },
+   {
+    "index": 337,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 338,
+    "segment": "gern",
+    "isWordLike": true
+   },
+   {
+    "index": 342,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 343,
+    "segment": "“",
+    "isWordLike": false
+   },
+   {
+    "index": 344,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 345,
+    "segment": "Er",
+    "isWordLike": true
+   },
+   {
+    "index": 347,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 348,
+    "segment": "schrieb",
+    "isWordLike": true
+   },
+   {
+    "index": 355,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 356,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 357,
+    "segment": "Es",
+    "isWordLike": true
+   },
+   {
+    "index": 359,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 360,
+    "segment": "geht",
+    "isWordLike": true
+   },
+   {
+    "index": 364,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 365,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 366,
+    "segment": "„",
+    "isWordLike": false
+   },
+   {
+    "index": 367,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 370,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 371,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 374,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 375,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 378,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 379,
+    "segment": "erste",
+    "isWordLike": true
+   },
+   {
+    "index": 384,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 385,
+    "segment": "Satz",
+    "isWordLike": true
+   },
+   {
+    "index": 389,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 390,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 391,
+    "segment": "Und",
+    "isWordLike": true
+   },
+   {
+    "index": 394,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 395,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 398,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 399,
+    "segment": "zweite",
+    "isWordLike": true
+   },
+   {
+    "index": 405,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 406,
+    "segment": "“",
+    "isWordLike": false
+   },
+   {
+    "index": 407,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 408,
+    "segment": "Danach",
+    "isWordLike": true
+   },
+   {
+    "index": 414,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 415,
+    "segment": "folgt",
+    "isWordLike": true
+   },
+   {
+    "index": 420,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 421,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 425,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 426,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 427,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 431,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 432,
+    "segment": "was",
+    "isWordLike": true
+   },
+   {
+    "index": 435,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 436,
+    "segment": "shown",
+    "isWordLike": true
+   },
+   {
+    "index": 441,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 442,
+    "segment": "before",
+    "isWordLike": true
+   },
+   {
+    "index": 448,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 449,
+    "segment": "[",
+    "isWordLike": false
+   },
+   {
+    "index": 450,
+    "segment": "3",
+    "isWordLike": true
+   },
+   {
+    "index": 451,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 452,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 453,
+    "segment": "14",
+    "isWordLike": true
+   },
+   {
+    "index": 455,
+    "segment": "]",
+    "isWordLike": false
+   },
+   {
+    "index": 456,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 457,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 460,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 461,
+    "segment": "later",
+    "isWordLike": true
+   },
+   {
+    "index": 466,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 467,
+    "segment": "[",
+    "isWordLike": false
+   },
+   {
+    "index": 468,
+    "segment": "7",
+    "isWordLike": true
+   },
+   {
+    "index": 469,
+    "segment": "]",
+    "isWordLike": false
+   },
+   {
+    "index": 470,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 471,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 472,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 476,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 477,
+    "segment": "was",
+    "isWordLike": true
+   },
+   {
+    "index": 480,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 481,
+    "segment": "shown",
+    "isWordLike": true
+   },
+   {
+    "index": 486,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 487,
+    "segment": "before",
+    "isWordLike": true
+   },
+   {
+    "index": 493,
+    "segment": "          ",
+    "isWordLike": false
+   },
+   {
+    "index": 503,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 506,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 507,
+    "segment": "later",
+    "isWordLike": true
+   },
+   {
+    "index": 512,
+    "segment": "    ",
+    "isWordLike": false
+   },
+   {
+    "index": 516,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 517,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 518,
+    "segment": "Vorlesen",
+    "isWordLike": true
+   },
+   {
+    "index": 526,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 527,
+    "segment": "wissenschaftlicher",
+    "isWordLike": true
+   },
+   {
+    "index": 545,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 546,
+    "segment": "Texte",
+    "isWordLike": true
+   },
+   {
+    "index": 551,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 552,
+    "segment": "Dieser",
+    "isWordLike": true
+   },
+   {
+    "index": 558,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 559,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 563,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 564,
+    "segment": "prüft",
+    "isWordLike": true
+   },
+   {
+    "index": 569,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 570,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 571,
+    "segment": "ob",
+    "isWordLike": true
+   },
+   {
+    "index": 573,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 574,
+    "segment": "das",
+    "isWordLike": true
+   },
+   {
+    "index": 577,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 578,
+    "segment": "Programm",
+    "isWordLike": true
+   },
+   {
+    "index": 586,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 587,
+    "segment": "deutsche",
+    "isWordLike": true
+   },
+   {
+    "index": 595,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 596,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 599,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 600,
+    "segment": "englische",
+    "isWordLike": true
+   },
+   {
+    "index": 609,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 610,
+    "segment": "Sätze",
+    "isWordLike": true
+   },
+   {
+    "index": 615,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 616,
+    "segment": "richtig",
+    "isWordLike": true
+   },
+   {
+    "index": 623,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 624,
+    "segment": "erkennt",
+    "isWordLike": true
+   },
+   {
+    "index": 631,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 632,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 633,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 636,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 637,
+    "segment": "Verarbeitung",
+    "isWordLike": true
+   },
+   {
+    "index": 649,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 650,
+    "segment": "erfolgt",
+    "isWordLike": true
+   },
+   {
+    "index": 657,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 658,
+    "segment": "vollständig",
+    "isWordLike": true
+   },
+   {
+    "index": 669,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 670,
+    "segment": "lokal",
+    "isWordLike": true
+   },
+   {
+    "index": 675,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 676,
+    "segment": "auf",
+    "isWordLike": true
+   },
+   {
+    "index": 679,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 680,
+    "segment": "dem",
+    "isWordLike": true
+   },
+   {
+    "index": 683,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 684,
+    "segment": "eigenen",
+    "isWordLike": true
+   },
+   {
+    "index": 691,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 692,
+    "segment": "Rechner",
+    "isWordLike": true
+   },
+   {
+    "index": 699,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 700,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 701,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 704,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 705,
+    "segment": "gilt",
+    "isWordLike": true
+   },
+   {
+    "index": 709,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 710,
+    "segment": "z",
+    "isWordLike": true
+   },
+   {
+    "index": 711,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 712,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 713,
+    "segment": "B",
+    "isWordLike": true
+   },
+   {
+    "index": 714,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 715,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 716,
+    "segment": "für",
+    "isWordLike": true
+   },
+   {
+    "index": 719,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 720,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 723,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 724,
+    "segment": "Sprachsynthese",
+    "isWordLike": true
+   },
+   {
+    "index": 738,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 739,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 742,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 743,
+    "segment": "für",
+    "isWordLike": true
+   },
+   {
+    "index": 746,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 747,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 750,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 751,
+    "segment": "Ausrichtung",
+    "isWordLike": true
+   },
+   {
+    "index": 762,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 763,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 766,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 767,
+    "segment": "einzelnen",
+    "isWordLike": true
+   },
+   {
+    "index": 776,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 777,
+    "segment": "Wörter",
+    "isWordLike": true
+   },
+   {
+    "index": 783,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 784,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 785,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 788,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 789,
+    "segment": "Autoren",
+    "isWordLike": true
+   },
+   {
+    "index": 796,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 797,
+    "segment": "fassen",
+    "isWordLike": true
+   },
+   {
+    "index": 803,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 804,
+    "segment": "ihr",
+    "isWordLike": true
+   },
+   {
+    "index": 807,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 808,
+    "segment": "Ergebnis",
+    "isWordLike": true
+   },
+   {
+    "index": 816,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 817,
+    "segment": "so",
+    "isWordLike": true
+   },
+   {
+    "index": 819,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 820,
+    "segment": "zusammen",
+    "isWordLike": true
+   },
+   {
+    "index": 828,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 829,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 830,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 833,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 834,
+    "segment": "proposed",
+    "isWordLike": true
+   },
+   {
+    "index": 842,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 843,
+    "segment": "method",
+    "isWordLike": true
+   },
+   {
+    "index": 849,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 850,
+    "segment": "is",
+    "isWordLike": true
+   },
+   {
+    "index": 852,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 853,
+    "segment": "simple",
+    "isWordLike": true
+   },
+   {
+    "index": 859,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 860,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 863,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 864,
+    "segment": "it",
+    "isWordLike": true
+   },
+   {
+    "index": 866,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 867,
+    "segment": "does",
+    "isWordLike": true
+   },
+   {
+    "index": 871,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 872,
+    "segment": "not",
+    "isWordLike": true
+   },
+   {
+    "index": 875,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 876,
+    "segment": "need",
+    "isWordLike": true
+   },
+   {
+    "index": 880,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 881,
+    "segment": "any",
+    "isWordLike": true
+   },
+   {
+    "index": 884,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 885,
+    "segment": "training",
+    "isWordLike": true
+   },
+   {
+    "index": 893,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 894,
+    "segment": "data",
+    "isWordLike": true
+   },
+   {
+    "index": 898,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 899,
+    "segment": "at",
+    "isWordLike": true
+   },
+   {
+    "index": 901,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 902,
+    "segment": "all",
+    "isWordLike": true
+   },
+   {
+    "index": 905,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 906,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 907,
+    "segment": "Diese",
+    "isWordLike": true
+   },
+   {
+    "index": 912,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 913,
+    "segment": "Aussage",
+    "isWordLike": true
+   },
+   {
+    "index": 920,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 921,
+    "segment": "wird",
+    "isWordLike": true
+   },
+   {
+    "index": 925,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 926,
+    "segment": "im",
+    "isWordLike": true
+   },
+   {
+    "index": 928,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 929,
+    "segment": "nächsten",
+    "isWordLike": true
+   },
+   {
+    "index": 937,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 938,
+    "segment": "Abschnitt",
+    "isWordLike": true
+   },
+   {
+    "index": 947,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 948,
+    "segment": "genauer",
+    "isWordLike": true
+   },
+   {
+    "index": 955,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 956,
+    "segment": "untersucht",
+    "isWordLike": true
+   },
+   {
+    "index": 966,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 967,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 968,
+    "segment": "Ein",
+    "isWordLike": true
+   },
+   {
+    "index": 971,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 972,
+    "segment": "bekannter",
+    "isWordLike": true
+   },
+   {
+    "index": 981,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 982,
+    "segment": "Satz",
+    "isWordLike": true
+   },
+   {
+    "index": 986,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 987,
+    "segment": "lautet",
+    "isWordLike": true
+   },
+   {
+    "index": 993,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 994,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 995,
+    "segment": "„",
+    "isWordLike": false
+   },
+   {
+    "index": 996,
+    "segment": "Der",
+    "isWordLike": true
+   },
+   {
+    "index": 999,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1000,
+    "segment": "Mensch",
+    "isWordLike": true
+   },
+   {
+    "index": 1006,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1007,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 1010,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1011,
+    "segment": "nur",
+    "isWordLike": true
+   },
+   {
+    "index": 1014,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1015,
+    "segment": "da",
+    "isWordLike": true
+   },
+   {
+    "index": 1017,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1018,
+    "segment": "ganz",
+    "isWordLike": true
+   },
+   {
+    "index": 1022,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1023,
+    "segment": "Mensch",
+    "isWordLike": true
+   },
+   {
+    "index": 1029,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1030,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1031,
+    "segment": "wo",
+    "isWordLike": true
+   },
+   {
+    "index": 1033,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1034,
+    "segment": "er",
+    "isWordLike": true
+   },
+   {
+    "index": 1036,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1037,
+    "segment": "spielt",
+    "isWordLike": true
+   },
+   {
+    "index": 1043,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1044,
+    "segment": "“",
+    "isWordLike": false
+   },
+   {
+    "index": 1045,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1046,
+    "segment": "Danach",
+    "isWordLike": true
+   },
+   {
+    "index": 1052,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1053,
+    "segment": "folgt",
+    "isWordLike": true
+   },
+   {
+    "index": 1058,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1059,
+    "segment": "wieder",
+    "isWordLike": true
+   },
+   {
+    "index": 1065,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1066,
+    "segment": "gewöhnlicher",
+    "isWordLike": true
+   },
+   {
+    "index": 1078,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1079,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 1083,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1084,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1085,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 1088,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1089,
+    "segment": "mit",
+    "isWordLike": true
+   },
+   {
+    "index": 1092,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1093,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 1096,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1097,
+    "segment": "Hauptstimme",
+    "isWordLike": true
+   },
+   {
+    "index": 1108,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1109,
+    "segment": "gelesen",
+    "isWordLike": true
+   },
+   {
+    "index": 1116,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1117,
+    "segment": "werden",
+    "isWordLike": true
+   },
+   {
+    "index": 1123,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1124,
+    "segment": "soll",
+    "isWordLike": true
+   },
+   {
+    "index": 1128,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1129,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1130,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 1133,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1134,
+    "segment": "linke",
+    "isWordLike": true
+   },
+   {
+    "index": 1139,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1140,
+    "segment": "Spalte",
+    "isWordLike": true
+   },
+   {
+    "index": 1146,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1147,
+    "segment": "enthält",
+    "isWordLike": true
+   },
+   {
+    "index": 1154,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1155,
+    "segment": "mehrere",
+    "isWordLike": true
+   },
+   {
+    "index": 1162,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1163,
+    "segment": "Zeilen",
+    "isWordLike": true
+   },
+   {
+    "index": 1169,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1170,
+    "segment": "Text",
+    "isWordLike": true
+   },
+   {
+    "index": 1174,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1175,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1176,
+    "segment": "damit",
+    "isWordLike": true
+   },
+   {
+    "index": 1181,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1182,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 1185,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1186,
+    "segment": "Reihenfolge",
+    "isWordLike": true
+   },
+   {
+    "index": 1197,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1198,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 1201,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1202,
+    "segment": "Spalten",
+    "isWordLike": true
+   },
+   {
+    "index": 1209,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1210,
+    "segment": "geprüft",
+    "isWordLike": true
+   },
+   {
+    "index": 1217,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1218,
+    "segment": "werden",
+    "isWordLike": true
+   },
+   {
+    "index": 1224,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1225,
+    "segment": "kann",
+    "isWordLike": true
+   },
+   {
+    "index": 1229,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1230,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1231,
+    "segment": "Wissenschaftliche",
+    "isWordLike": true
+   },
+   {
+    "index": 1248,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1249,
+    "segment": "Veröffentlichungen",
+    "isWordLike": true
+   },
+   {
+    "index": 1267,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1268,
+    "segment": "verwenden",
+    "isWordLike": true
+   },
+   {
+    "index": 1277,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1278,
+    "segment": "diese",
+    "isWordLike": true
+   },
+   {
+    "index": 1283,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1284,
+    "segment": "Anordnung",
+    "isWordLike": true
+   },
+   {
+    "index": 1293,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1294,
+    "segment": "sehr",
+    "isWordLike": true
+   },
+   {
+    "index": 1298,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1299,
+    "segment": "häufig",
+    "isWordLike": true
+   },
+   {
+    "index": 1305,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1306,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1307,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 1310,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1311,
+    "segment": "die",
+    "isWordLike": true
+   },
+   {
+    "index": 1314,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1315,
+    "segment": "Silbentrennung",
+    "isWordLike": true
+   },
+   {
+    "index": 1329,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1330,
+    "segment": "am",
+    "isWordLike": true
+   },
+   {
+    "index": 1332,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1333,
+    "segment": "Zeilenende",
+    "isWordLike": true
+   },
+   {
+    "index": 1343,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1344,
+    "segment": "muss",
+    "isWordLike": true
+   },
+   {
+    "index": 1348,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1349,
+    "segment": "dabei",
+    "isWordLike": true
+   },
+   {
+    "index": 1354,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1355,
+    "segment": "rückgängig",
+    "isWordLike": true
+   },
+   {
+    "index": 1365,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1366,
+    "segment": "gemacht",
+    "isWordLike": true
+   },
+   {
+    "index": 1373,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1374,
+    "segment": "werden",
+    "isWordLike": true
+   },
+   {
+    "index": 1380,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1381,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1382,
+    "segment": "Die",
+    "isWordLike": true
+   },
+   {
+    "index": 1385,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1386,
+    "segment": "rechte",
+    "isWordLike": true
+   },
+   {
+    "index": 1392,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1393,
+    "segment": "Spalte",
+    "isWordLike": true
+   },
+   {
+    "index": 1399,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1400,
+    "segment": "beginnt",
+    "isWordLike": true
+   },
+   {
+    "index": 1407,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1408,
+    "segment": "weiter",
+    "isWordLike": true
+   },
+   {
+    "index": 1414,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1415,
+    "segment": "oben",
+    "isWordLike": true
+   },
+   {
+    "index": 1419,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1420,
+    "segment": "auf",
+    "isWordLike": true
+   },
+   {
+    "index": 1423,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1424,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 1427,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1428,
+    "segment": "Seite",
+    "isWordLike": true
+   },
+   {
+    "index": 1433,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1434,
+    "segment": "als",
+    "isWordLike": true
+   },
+   {
+    "index": 1437,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1438,
+    "segment": "das",
+    "isWordLike": true
+   },
+   {
+    "index": 1441,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1442,
+    "segment": "Ende",
+    "isWordLike": true
+   },
+   {
+    "index": 1446,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1447,
+    "segment": "der",
+    "isWordLike": true
+   },
+   {
+    "index": 1450,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1451,
+    "segment": "linken",
+    "isWordLike": true
+   },
+   {
+    "index": 1457,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1458,
+    "segment": "Spalte",
+    "isWordLike": true
+   },
+   {
+    "index": 1464,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1465,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1466,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 1470,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1471,
+    "segment": "paragraph",
+    "isWordLike": true
+   },
+   {
+    "index": 1480,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1481,
+    "segment": "ends",
+    "isWordLike": true
+   },
+   {
+    "index": 1485,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1486,
+    "segment": "with",
+    "isWordLike": true
+   },
+   {
+    "index": 1490,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1491,
+    "segment": "an",
+    "isWordLike": true
+   },
+   {
+    "index": 1493,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1494,
+    "segment": "English",
+    "isWordLike": true
+   },
+   {
+    "index": 1501,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1502,
+    "segment": "sentence",
+    "isWordLike": true
+   },
+   {
+    "index": 1510,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1511,
+    "segment": "that",
+    "isWordLike": true
+   },
+   {
+    "index": 1515,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1516,
+    "segment": "the",
+    "isWordLike": true
+   },
+   {
+    "index": 1519,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1520,
+    "segment": "English",
+    "isWordLike": true
+   },
+   {
+    "index": 1527,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1528,
+    "segment": "voice",
+    "isWordLike": true
+   },
+   {
+    "index": 1533,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1534,
+    "segment": "should",
+    "isWordLike": true
+   },
+   {
+    "index": 1540,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1541,
+    "segment": "read",
+    "isWordLike": true
+   },
+   {
+    "index": 1545,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1546,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1547,
+    "segment": "Damit",
+    "isWordLike": true
+   },
+   {
+    "index": 1552,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1553,
+    "segment": "endet",
+    "isWordLike": true
+   },
+   {
+    "index": 1558,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1559,
+    "segment": "das",
+    "isWordLike": true
+   },
+   {
+    "index": 1562,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1563,
+    "segment": "Dokument",
+    "isWordLike": true
+   },
+   {
+    "index": 1571,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1572,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1573,
+    "segment": "Accuracy",
+    "isWordLike": true
+   },
+   {
+    "index": 1581,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1582,
+    "segment": "rose",
+    "isWordLike": true
+   },
+   {
+    "index": 1586,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1587,
+    "segment": "from",
+    "isWordLike": true
+   },
+   {
+    "index": 1591,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1592,
+    "segment": "91.5",
+    "isWordLike": true
+   },
+   {
+    "index": 1596,
+    "segment": "%",
+    "isWordLike": false
+   },
+   {
+    "index": 1597,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1598,
+    "segment": "to",
+    "isWordLike": true
+   },
+   {
+    "index": 1600,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1601,
+    "segment": "94.2",
+    "isWordLike": true
+   },
+   {
+    "index": 1605,
+    "segment": "%",
+    "isWordLike": false
+   },
+   {
+    "index": 1606,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1607,
+    "segment": "(",
+    "isWordLike": false
+   },
+   {
+    "index": 1608,
+    "segment": "p",
+    "isWordLike": true
+   },
+   {
+    "index": 1609,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1610,
+    "segment": "<",
+    "isWordLike": false
+   },
+   {
+    "index": 1611,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1612,
+    "segment": "0.01",
+    "isWordLike": true
+   },
+   {
+    "index": 1616,
+    "segment": ")",
+    "isWordLike": false
+   },
+   {
+    "index": 1617,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1618,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1619,
+    "segment": "i.e",
+    "isWordLike": true
+   },
+   {
+    "index": 1622,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1623,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1624,
+    "segment": "by",
+    "isWordLike": true
+   },
+   {
+    "index": 1626,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1627,
+    "segment": "2.7",
+    "isWordLike": true
+   },
+   {
+    "index": 1630,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1631,
+    "segment": "points",
+    "isWordLike": true
+   },
+   {
+    "index": 1637,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1638,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1639,
+    "segment": "See",
+    "isWordLike": true
+   },
+   {
+    "index": 1642,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1643,
+    "segment": "Sec",
+    "isWordLike": true
+   },
+   {
+    "index": 1646,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1647,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1648,
+    "segment": "3.2",
+    "isWordLike": true
+   },
+   {
+    "index": 1651,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1652,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 1655,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1656,
+    "segment": "Eq",
+    "isWordLike": true
+   },
+   {
+    "index": 1658,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1659,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1660,
+    "segment": "(",
+    "isWordLike": false
+   },
+   {
+    "index": 1661,
+    "segment": "4",
+    "isWordLike": true
+   },
+   {
+    "index": 1662,
+    "segment": ")",
+    "isWordLike": false
+   },
+   {
+    "index": 1663,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1664,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1665,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 1668,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1669,
+    "segment": "U.S",
+    "isWordLike": true
+   },
+   {
+    "index": 1672,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1673,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1674,
+    "segment": "team",
+    "isWordLike": true
+   },
+   {
+    "index": 1678,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1679,
+    "segment": "didn't",
+    "isWordLike": true
+   },
+   {
+    "index": 1685,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1686,
+    "segment": "use",
+    "isWordLike": true
+   },
+   {
+    "index": 1689,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1690,
+    "segment": "GPT",
+    "isWordLike": true
+   },
+   {
+    "index": 1693,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 1694,
+    "segment": "4",
+    "isWordLike": true
+   },
+   {
+    "index": 1695,
+    "segment": "'",
+    "isWordLike": false
+   },
+   {
+    "index": 1696,
+    "segment": "s",
+    "isWordLike": true
+   },
+   {
+    "index": 1697,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1698,
+    "segment": "API",
+    "isWordLike": true
+   },
+   {
+    "index": 1701,
+    "segment": ";",
+    "isWordLike": false
+   },
+   {
+    "index": 1702,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1703,
+    "segment": "they",
+    "isWordLike": true
+   },
+   {
+    "index": 1707,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1708,
+    "segment": "used",
+    "isWordLike": true
+   },
+   {
+    "index": 1712,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1713,
+    "segment": "e",
+    "isWordLike": true
+   },
+   {
+    "index": 1714,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 1715,
+    "segment": "mail",
+    "isWordLike": true
+   },
+   {
+    "index": 1719,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1720,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 1723,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1724,
+    "segment": "state",
+    "isWordLike": true
+   },
+   {
+    "index": 1729,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 1730,
+    "segment": "of",
+    "isWordLike": true
+   },
+   {
+    "index": 1732,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 1733,
+    "segment": "the",
+    "isWordLike": true
+   },
+   {
+    "index": 1736,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 1737,
+    "segment": "art",
+    "isWordLike": true
+   },
+   {
+    "index": 1740,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1741,
+    "segment": "models",
+    "isWordLike": true
+   },
+   {
+    "index": 1747,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1748,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1749,
+    "segment": "Wie",
+    "isWordLike": true
+   },
+   {
+    "index": 1752,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1753,
+    "segment": "geht's",
+    "isWordLike": true
+   },
+   {
+    "index": 1759,
+    "segment": "?",
+    "isWordLike": false
+   },
+   {
+    "index": 1760,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1761,
+    "segment": "Gut",
+    "isWordLike": true
+   },
+   {
+    "index": 1764,
+    "segment": "!",
+    "isWordLike": false
+   },
+   {
+    "index": 1765,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1766,
+    "segment": "Wirklich",
+    "isWordLike": true
+   },
+   {
+    "index": 1774,
+    "segment": "?",
+    "isWordLike": false
+   },
+   {
+    "index": 1775,
+    "segment": "!",
+    "isWordLike": false
+   },
+   {
+    "index": 1776,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1777,
+    "segment": "Ja",
+    "isWordLike": true
+   },
+   {
+    "index": 1779,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1780,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1781,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1782,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1783,
+    "segment": "vielleicht",
+    "isWordLike": true
+   },
+   {
+    "index": 1793,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1794,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1795,
+    "segment": "Na",
+    "isWordLike": true
+   },
+   {
+    "index": 1797,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1798,
+    "segment": "ja",
+    "isWordLike": true
+   },
+   {
+    "index": 1800,
+    "segment": "…",
+    "isWordLike": false
+   },
+   {
+    "index": 1801,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1802,
+    "segment": "He",
+    "isWordLike": true
+   },
+   {
+    "index": 1804,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1805,
+    "segment": "said",
+    "isWordLike": true
+   },
+   {
+    "index": 1809,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1810,
+    "segment": "\"",
+    "isWordLike": false
+   },
+   {
+    "index": 1811,
+    "segment": "stop",
+    "isWordLike": true
+   },
+   {
+    "index": 1815,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1816,
+    "segment": "\"",
+    "isWordLike": false
+   },
+   {
+    "index": 1817,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1818,
+    "segment": "Then",
+    "isWordLike": true
+   },
+   {
+    "index": 1822,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1823,
+    "segment": "he",
+    "isWordLike": true
+   },
+   {
+    "index": 1825,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1826,
+    "segment": "left",
+    "isWordLike": true
+   },
+   {
+    "index": 1830,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1831,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1832,
+    "segment": "(",
+    "isWordLike": false
+   },
+   {
+    "index": 1833,
+    "segment": "This",
+    "isWordLike": true
+   },
+   {
+    "index": 1837,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1838,
+    "segment": "is",
+    "isWordLike": true
+   },
+   {
+    "index": 1840,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1841,
+    "segment": "a",
+    "isWordLike": true
+   },
+   {
+    "index": 1842,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1843,
+    "segment": "note",
+    "isWordLike": true
+   },
+   {
+    "index": 1847,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1848,
+    "segment": ")",
+    "isWordLike": false
+   },
+   {
+    "index": 1849,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1850,
+    "segment": "Next",
+    "isWordLike": true
+   },
+   {
+    "index": 1854,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1855,
+    "segment": "sentence",
+    "isWordLike": true
+   },
+   {
+    "index": 1863,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1864,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1865,
+    "segment": "Prices",
+    "isWordLike": true
+   },
+   {
+    "index": 1871,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 1872,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1873,
+    "segment": "$",
+    "isWordLike": false
+   },
+   {
+    "index": 1874,
+    "segment": "1,000.50",
+    "isWordLike": true
+   },
+   {
+    "index": 1882,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1883,
+    "segment": "or",
+    "isWordLike": true
+   },
+   {
+    "index": 1885,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1886,
+    "segment": "€",
+    "isWordLike": false
+   },
+   {
+    "index": 1887,
+    "segment": "2.000,75",
+    "isWordLike": true
+   },
+   {
+    "index": 1895,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1896,
+    "segment": "—",
+    "isWordLike": false
+   },
+   {
+    "index": 1897,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1898,
+    "segment": "about",
+    "isWordLike": true
+   },
+   {
+    "index": 1903,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1904,
+    "segment": "3",
+    "isWordLike": true
+   },
+   {
+    "index": 1905,
+    "segment": "×",
+    "isWordLike": false
+   },
+   {
+    "index": 1906,
+    "segment": "10",
+    "isWordLike": true
+   },
+   {
+    "index": 1908,
+    "segment": "⁶",
+    "isWordLike": false
+   },
+   {
+    "index": 1909,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1910,
+    "segment": "units",
+    "isWordLike": true
+   },
+   {
+    "index": 1915,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1916,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1917,
+    "segment": "1",
+    "isWordLike": true
+   },
+   {
+    "index": 1918,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 1919,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 1920,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1921,
+    "segment": "of",
+    "isWordLike": true
+   },
+   {
+    "index": 1923,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1924,
+    "segment": "them",
+    "isWordLike": true
+   },
+   {
+    "index": 1928,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 1929,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1930,
+    "segment": "12",
+    "isWordLike": true
+   },
+   {
+    "index": 1932,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 1933,
+    "segment": "30",
+    "isWordLike": true
+   },
+   {
+    "index": 1935,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1936,
+    "segment": "o'clock",
+    "isWordLike": true
+   },
+   {
+    "index": 1943,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 1944,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 1945,
+    "segment": "Visit",
+    "isWordLike": true
+   },
+   {
+    "index": 1950,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1951,
+    "segment": "https",
+    "isWordLike": true
+   },
+   {
+    "index": 1956,
+    "segment": ":",
+    "isWordLike": false
+   },
+   {
+    "index": 1957,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 1958,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 1959,
+    "segment": "example.org",
+    "isWordLike": true
+   },
+   {
+    "index": 1970,
+    "segment": "/",
+    "isWordLike": false
+   },
+   {
+    "index": 1971,
+    "segment": "a_b",
+    "isWordLike": true
+   },
+   {
+    "index": 1974,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 1975,
+    "segment": "c",
+    "isWordLike": true
+   },
+   {
+    "index": 1976,
+    "segment": "?",
+    "isWordLike": false
+   },
+   {
+    "index": 1977,
+    "segment": "x",
+    "isWordLike": true
+   },
+   {
+    "index": 1978,
+    "segment": "=",
+    "isWordLike": false
+   },
+   {
+    "index": 1979,
+    "segment": "1",
+    "isWordLike": true
+   },
+   {
+    "index": 1980,
+    "segment": "&",
+    "isWordLike": false
+   },
+   {
+    "index": 1981,
+    "segment": "y",
+    "isWordLike": true
+   },
+   {
+    "index": 1982,
+    "segment": "=",
+    "isWordLike": false
+   },
+   {
+    "index": 1983,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 1984,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1985,
+    "segment": "or",
+    "isWordLike": true
+   },
+   {
+    "index": 1987,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1988,
+    "segment": "mail",
+    "isWordLike": true
+   },
+   {
+    "index": 1992,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 1993,
+    "segment": "info",
+    "isWordLike": true
+   },
+   {
+    "index": 1997,
+    "segment": "@",
+    "isWordLike": false
+   },
+   {
+    "index": 1998,
+    "segment": "example.org",
+    "isWordLike": true
+   },
+   {
+    "index": 2009,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2010,
+    "segment": "today",
+    "isWordLike": true
+   },
+   {
+    "index": 2015,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2016,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2017,
+    "segment": "Benchmark",
+    "isWordLike": true
+   },
+   {
+    "index": 2026,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 2027,
+    "segment": "Datensätze",
+    "isWordLike": true
+   },
+   {
+    "index": 2037,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2038,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 2041,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2042,
+    "segment": "Vor",
+    "isWordLike": true
+   },
+   {
+    "index": 2045,
+    "segment": "-",
+    "isWordLike": false
+   },
+   {
+    "index": 2046,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2047,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 2050,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2051,
+    "segment": "Nachteile",
+    "isWordLike": true
+   },
+   {
+    "index": 2060,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 2061,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2062,
+    "segment": "z.B",
+    "isWordLike": true
+   },
+   {
+    "index": 2065,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2066,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2067,
+    "segment": "bzw",
+    "isWordLike": true
+   },
+   {
+    "index": 2070,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2071,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2072,
+    "segment": "u.a",
+    "isWordLike": true
+   },
+   {
+    "index": 2075,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2076,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2077,
+    "segment": "vgl",
+    "isWordLike": true
+   },
+   {
+    "index": 2080,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2081,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2082,
+    "segment": "Abb",
+    "isWordLike": true
+   },
+   {
+    "index": 2085,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2086,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2087,
+    "segment": "4",
+    "isWordLike": true
+   },
+   {
+    "index": 2088,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2089,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 2092,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2093,
+    "segment": "Tab",
+    "isWordLike": true
+   },
+   {
+    "index": 2096,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2097,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2098,
+    "segment": "2",
+    "isWordLike": true
+   },
+   {
+    "index": 2099,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2100,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2101,
+    "segment": "Das",
+    "isWordLike": true
+   },
+   {
+    "index": 2104,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2105,
+    "segment": "Ergebnis",
+    "isWordLike": true
+   },
+   {
+    "index": 2113,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2114,
+    "segment": "ist",
+    "isWordLike": true
+   },
+   {
+    "index": 2117,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2118,
+    "segment": "½",
+    "isWordLike": false
+   },
+   {
+    "index": 2119,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2120,
+    "segment": "so",
+    "isWordLike": true
+   },
+   {
+    "index": 2122,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2123,
+    "segment": "groß",
+    "isWordLike": true
+   },
+   {
+    "index": 2127,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2128,
+    "segment": "wie",
+    "isWordLike": true
+   },
+   {
+    "index": 2131,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2132,
+    "segment": "erwartet",
+    "isWordLike": true
+   },
+   {
+    "index": 2140,
+    "segment": ";",
+    "isWordLike": false
+   },
+   {
+    "index": 2141,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2142,
+    "segment": "ﬁ",
+    "isWordLike": true
+   },
+   {
+    "index": 2143,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2144,
+    "segment": "und",
+    "isWordLike": true
+   },
+   {
+    "index": 2147,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2148,
+    "segment": "ﬂ",
+    "isWordLike": true
+   },
+   {
+    "index": 2149,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2150,
+    "segment": "sind",
+    "isWordLike": true
+   },
+   {
+    "index": 2154,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2155,
+    "segment": "Ligaturen",
+    "isWordLike": true
+   },
+   {
+    "index": 2164,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2165,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2166,
+    "segment": "Emoji",
+    "isWordLike": true
+   },
+   {
+    "index": 2171,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2172,
+    "segment": "👍🏽",
+    "isWordLike": false
+   },
+   {
+    "index": 2176,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2177,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 2180,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2181,
+    "segment": "flags",
+    "isWordLike": true
+   },
+   {
+    "index": 2186,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2187,
+    "segment": "🇩🇪",
+    "isWordLike": false
+   },
+   {
+    "index": 2191,
+    "segment": "🇬🇧",
+    "isWordLike": false
+   },
+   {
+    "index": 2195,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2196,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 2199,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2200,
+    "segment": "family",
+    "isWordLike": true
+   },
+   {
+    "index": 2206,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2207,
+    "segment": "👨‍👩‍👧",
+    "isWordLike": false
+   },
+   {
+    "index": 2215,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2216,
+    "segment": "in",
+    "isWordLike": true
+   },
+   {
+    "index": 2218,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2219,
+    "segment": "text",
+    "isWordLike": true
+   },
+   {
+    "index": 2223,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2224,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2225,
+    "segment": "Straße",
+    "isWordLike": true
+   },
+   {
+    "index": 2231,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 2232,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2233,
+    "segment": "Mädchen",
+    "isWordLike": true
+   },
+   {
+    "index": 2240,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 2241,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2242,
+    "segment": "Œuvre",
+    "isWordLike": true
+   },
+   {
+    "index": 2247,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 2248,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2249,
+    "segment": "naïve",
+    "isWordLike": true
+   },
+   {
+    "index": 2254,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2255,
+    "segment": "café",
+    "isWordLike": true
+   },
+   {
+    "index": 2259,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 2260,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2261,
+    "segment": "coöperate",
+    "isWordLike": true
+   },
+   {
+    "index": 2270,
+    "segment": ",",
+    "isWordLike": false
+   },
+   {
+    "index": 2271,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2272,
+    "segment": "Ångström",
+    "isWordLike": true
+   },
+   {
+    "index": 2280,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2281,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2282,
+    "segment": "Section",
+    "isWordLike": true
+   },
+   {
+    "index": 2289,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2290,
+    "segment": "2.1",
+    "isWordLike": true
+   },
+   {
+    "index": 2293,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2294,
+    "segment": "Related",
+    "isWordLike": true
+   },
+   {
+    "index": 2301,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2302,
+    "segment": "Work",
+    "isWordLike": true
+   },
+   {
+    "index": 2306,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2307,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2308,
+    "segment": "1",
+    "isWordLike": true
+   },
+   {
+    "index": 2309,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2310,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2311,
+    "segment": "Introduction",
+    "isWordLike": true
+   },
+   {
+    "index": 2323,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2324,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2325,
+    "segment": "II",
+    "isWordLike": true
+   },
+   {
+    "index": 2327,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2328,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2329,
+    "segment": "Method",
+    "isWordLike": true
+   },
+   {
+    "index": 2335,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2336,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2337,
+    "segment": "The",
+    "isWordLike": true
+   },
+   {
+    "index": 2340,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2341,
+    "segment": "end.Next",
+    "isWordLike": true
+   },
+   {
+    "index": 2349,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2350,
+    "segment": "one",
+    "isWordLike": true
+   },
+   {
+    "index": 2353,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2354,
+    "segment": "starts",
+    "isWordLike": true
+   },
+   {
+    "index": 2360,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2361,
+    "segment": "without",
+    "isWordLike": true
+   },
+   {
+    "index": 2368,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2369,
+    "segment": "a",
+    "isWordLike": true
+   },
+   {
+    "index": 2370,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2371,
+    "segment": "space",
+    "isWordLike": true
+   },
+   {
+    "index": 2376,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2377,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2378,
+    "segment": "Tabs",
+    "isWordLike": true
+   },
+   {
+    "index": 2382,
+    "segment": "\t",
+    "isWordLike": false
+   },
+   {
+    "index": 2383,
+    "segment": "and",
+    "isWordLike": true
+   },
+   {
+    "index": 2386,
+    "segment": "  ",
+    "isWordLike": false
+   },
+   {
+    "index": 2388,
+    "segment": "double",
+    "isWordLike": true
+   },
+   {
+    "index": 2394,
+    "segment": "  ",
+    "isWordLike": false
+   },
+   {
+    "index": 2396,
+    "segment": "spaces",
+    "isWordLike": true
+   },
+   {
+    "index": 2402,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2403,
+    "segment": "  ",
+    "isWordLike": false
+   },
+   {
+    "index": 2405,
+    "segment": "And",
+    "isWordLike": true
+   },
+   {
+    "index": 2408,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2409,
+    "segment": "a",
+    "isWordLike": true
+   },
+   {
+    "index": 2410,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2411,
+    "segment": "new",
+    "isWordLike": true
+   },
+   {
+    "index": 2414,
+    "segment": " ",
+    "isWordLike": false
+   },
+   {
+    "index": 2415,
+    "segment": "line",
+    "isWordLike": true
+   },
+   {
+    "index": 2419,
+    "segment": "\n",
+    "isWordLike": false
+   },
+   {
+    "index": 2420,
+    "segment": "here",
+    "isWordLike": true
+   },
+   {
+    "index": 2424,
+    "segment": ".",
+    "isWordLike": false
+   },
+   {
+    "index": 2425,
+    "segment": "\n",
+    "isWordLike": false
+   }
+  ]
+ }
+]

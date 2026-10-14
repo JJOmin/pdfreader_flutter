@@ -1,0 +1,28 @@
+We test it. It works well.
+As shown by Smith et al. Results in Fig. 2 hold, cf. J. Doe.
+Das gilt z. B. für den 3. Mai. Danach nicht.
+Das Modell ist sehr groß. The authors did not release the code for this. Das ist schade.
+Die Autoren schreiben: The proposed method is simple and it does not need data. Ein Satz lautet: „Der Mensch spielt gern.“
+Er schrieb: Es geht. „Das ist der erste Satz. Und der zweite.“ Danach folgt Text.
+This was shown before [3, 14] and later [7].
+This was shown before          and later    .
+Vorlesen wissenschaftlicher Texte
+Dieser Text prüft, ob das Programm deutsche und englische Sätze richtig erkennt. Die Verarbeitung erfolgt vollständig lokal auf dem eigenen Rechner. Das gilt z. B. für die Sprachsynthese und für die Ausrichtung der einzelnen Wörter.
+Die Autoren fassen ihr Ergebnis so zusammen: The proposed method is simple and it does not need any training data at all. Diese Aussage wird im nächsten Abschnitt genauer untersucht.
+Ein bekannter Satz lautet: „Der Mensch ist nur da ganz Mensch, wo er spielt.“ Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll.
+Die linke Spalte enthält mehrere Zeilen Text, damit die Reihenfolge der Spalten geprüft werden kann. Wissenschaftliche Veröffentlichungen verwenden diese Anordnung sehr häufig, und die Silbentrennung am Zeilenende muss dabei rückgängig gemacht werden.
+Die rechte Spalte beginnt weiter oben auf der Seite als das Ende der linken Spalte. This paragraph ends with an English sentence that the English voice should read. Damit endet das Dokument.
+Accuracy rose from 91.5% to 94.2% (p < 0.01), i.e. by 2.7 points. See Sec. 3.2 and Eq. (4).
+The U.S. team didn't use GPT-4's API; they used e-mail and state-of-the-art models.
+Wie geht's? Gut! Wirklich?! Ja... vielleicht. Na ja…
+He said "stop." Then he left. (This is a note.) Next sentence.
+Prices: $1,000.50 or €2.000,75 — about 3×10⁶ units, 1/2 of them, 12:30 o'clock.
+Visit https://example.org/a_b-c?x=1&y=2 or mail info@example.org today.
+Benchmark-Datensätze und Vor- und Nachteile, z.B. bzw. u.a. vgl. Abb. 4 und Tab. 2.
+Das Ergebnis ist ½ so groß wie erwartet; ﬁ und ﬂ sind Ligaturen.
+Emoji 👍🏽 and flags 🇩🇪🇬🇧 and family 👨‍👩‍👧 in text.
+Straße, Mädchen, Œuvre, naïve café, coöperate, Ångström.
+Section 2.1 Related Work. 1. Introduction. II. Method.
+The end.Next one starts without a space.
+Tabs	and  double  spaces.  And a new line
+here.

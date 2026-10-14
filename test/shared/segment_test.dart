@@ -34,8 +34,8 @@ List<int> boundariesOf(List<Segment> segments, String text) => [
   if (text.isNotEmpty) text.length,
 ];
 
-/// Lines of Unicode's tests where ICU, and so the desktop, splits differently. Each was checked
-/// against Node's Intl.Segmenter, and the golden test below holds the segmenter to ICU.
+/// Lines of Unicode's tests to skip because ICU, and so the desktop, splits them differently.
+/// None with Unicode 17 and ICU 78. An entry needs Node's Intl.Segmenter output beside it.
 const icuDifferences = <String>{};
 
 void main() {
@@ -49,7 +49,7 @@ void main() {
       for (final c in cases) {
         if (icuDifferences.contains(c.line)) continue;
         final got = boundariesOf(split(c.text), c.text);
-        if (!listEquals(got, c.boundaries)) failed.add('${c.line}\n    got $got');
+        if (got.join(',') != c.boundaries.join(',')) failed.add('${c.line}\n    got $got');
       }
       expect(failed, isEmpty, reason: '${failed.length} of ${cases.length} cases fail');
     });
@@ -65,10 +65,7 @@ void main() {
         final expected = (entry['segments']! as List<Object?>).cast<Map<String, Object?>>();
         expect(
           [for (final s in got) '${s.index}:${s.segment}${granularity == 'word' && s.isWordLike ? '*' : ''}'],
-          [
-            for (final s in expected)
-              '${s['index']}:${s['segment']}${s['isWordLike'] == true ? '*' : ''}',
-          ],
+          [for (final s in expected) '${s['index']}:${s['segment']}${s['isWordLike'] == true ? '*' : ''}'],
         );
       });
     }

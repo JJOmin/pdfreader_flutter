@@ -85,8 +85,19 @@ is the ported code and does not know which engine made the string.
   missed headings: read `FPDFText_GetFontSize` and `GetFontInfo` through `pdfium_dart`, which
   pdfrx already depends on. PDFium must then only be called from pdfrx's worker isolate, which
   pdfrx does not export, so this means an upstream change or a careful fork. Not decided now.
+
+  *Measured in step 1.6, 2026-10-15.* On the desktop's `sample.pdf` the phone's dump is identical
+  to the desktop's. On a real seven-page IEEE paper (`centric_2026_1_10_30003.pdf`), 33 of 369
+  desktop lines differ. The phone finds eight Roman-numeral section headings ("II. TUTORIAL QUALITY")
+  that the desktop splits into "II." plus body text. It misses what the desktop finds through a
+  font change: four italic subsection headings ("A. Experimental Design"), "REFERENCES" and two
+  "APPENDIX" labels, which it joins to the paragraph after them. So the font upgrade is needed
+  for parity; the owner decides when (PLAN step 1.14 report).
 - **Glyph boxes, not font boxes.** `FPDFText_GetCharBox` is the tight box of the ink, so an "x" is
-  shorter than an "H". The run height above is therefore a cap height, about 0.7 of the font size.
+  shorter than an "H". *As built:* a run's size is the median height of its x-height letters
+  divided by 0.5; a line without them (digits only) uses its capitals and digits, converted with
+  the ratio of x-height to capital height measured on the page's own lines. The largest box, as
+  first planned, split paragraphs wherever a line held a parenthesis. The run height above is therefore a cap height, about 0.7 of the font size.
   The layout rules compare sizes by ratio, which survives a constant factor; the absolute
   threshold `<= 0.7` between line sizes may need scaling. Measured in step 1.6.
 - **Notes files do not carry over by offset.** A mark's `start` and `end` written by the desktop
@@ -206,12 +217,26 @@ later) on top of the system document picker. M1 needs only "pick a PDF and read 
 
 - Nothing ran when this was written. *Since 2026-10-15 the toolchain is installed and the phone
   connected (PLAN, M0).*
+- *Measured in step 1.8, 2026-10-15, on the owner's Galaxy S20 FE (SM-G780G, Snapdragon 865,
+  6 GB, Android 13), debug build, models pushed with `tool/push_models.ps1` (621 MB):*
+
+  | | Load | Seconds per second of audio | Recogniser |
+  | --- | --- | --- | --- |
+  | Piper Thorsten (de), 4 threads | 0.9 to 1.1 s | 0.50 to 0.55 | heard the sentence word for word |
+  | Kokoro (en), 4 threads, short sentence | 1.8 to 2.4 s | 0.73 to 0.79 | heard the sentence word for word |
+  | Kokoro (en), long mixed sentence, by threads: 2 / 3 / **4** / 6 / 8 | | 1.13 / 0.93 / **0.84 to 0.91** / 0.93 / 1.01 | |
+  | Recogniser (NeMo CTC int8) | 1.0 to 1.2 s | about 0.03 (0.1 s per sentence) | 35 tokens with 35 times |
+
+  Memory (RSS) with all three loaded: 1.45 GB, of which about 0.42 GB is the app and test
+  harness before any model. Kokoro gets slower run after run as the phone warms. **Kokoro is
+  over the 0.8 limit, so PLAN step 1.8 stopped here for the owner's decision.**
 - Kokoro's speed on a phone. On the desktop's Ryzen it takes 0.32 seconds per second of audio
   (desktop ADR 2). A phone CPU is several times slower, so it may fall behind the voice. This is
   the first thing M1 measures (step 1.8). If it is too slow, the choices are a smaller English
   voice or reading with a longer lookahead. That decision goes back to the owner.
 - Memory with Kokoro (311 MB of weights), Piper and the recogniser loaded together. Not known.
-- Whether pdfrx's text order matches PDF.js's on real papers. Step 1.6 compares them.
+- Whether pdfrx's text order matches PDF.js's on real papers. Step 1.6 compares them. *Measured:
+  the same reading order on both test files, including two columns. Font names: see section 1.*
 - Whether the build works with a space in the project path (`Work Tilly`). Native builds with
   CMake sometimes break on spaces. If they do, the fix is a drive letter mapped to the folder with
   `subst`, not moving the repository. *2026-10-15: the template app builds and runs from this

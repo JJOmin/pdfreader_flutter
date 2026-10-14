@@ -14,8 +14,12 @@ describes how we work, and it applies here too.
 | ----------------------------------------------- | --------------------------------------------------------------- |
 | `powershell -ExecutionPolicy Bypass -File tool/check.ps1` | Analyze, format check, unit tests. Run before "done". |
 | `flutter run`                                   | Runs the app on the connected phone with hot reload.            |
-| `flutter test integration_test`                 | Drives the real app on the phone. Run after UI or speech work.  |
+| `flutter test integration_test --no-uninstall`  | Drives the real app on the phone. Run after UI or speech work.  |
 | `flutter devices`, `adb devices`                | Is the phone connected and authorised?                          |
+| `powershell -File tool/push_models.ps1`         | Copies the speech models to the phone (621 MB, once).           |
+
+Always pass `--no-uninstall` to `flutter test` on the phone. Without it Flutter uninstalls the
+app afterwards, and Android deletes the pushed models with it.
 
 ## Layout
 

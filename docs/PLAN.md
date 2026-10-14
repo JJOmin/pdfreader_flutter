@@ -27,6 +27,20 @@ Windows desktop builds, not for Android or `tool/dump.dart`.
 
 ## M1: the core on Android
 
+**Status 2026-10-15: steps 1.1 to 1.7 done, 1.8 measured and stopped at its limit.**
+
+- 1.1 to 1.5: the shared logic is ported with its tests (108 tests pass with `tool/check.ps1`).
+  The segmenter passes all 1,944 word and 512 sentence cases of Unicode 17's tests and all 58
+  golden cases from Node's Intl.Segmenter, with no exceptions needed.
+- 1.6: `tool/dump.dart` gives the desktop's output on `sample.pdf` exactly. On a real paper the
+  differences are the font-based headings, recorded in ADR 1 section 1. `--runs` prints the
+  text runs for debugging. PDFium's line-end hyphen (U+0002) is handled.
+- 1.7: device: `sample.pdf` opens through the system picker and renders. **Not verified on
+  device:** pinch zoom smoothness and sharpness at 300 % (adb cannot pinch); checked in 1.11.
+- 1.8: device: both voices speak and the recogniser hears every word, but Kokoro needs 0.84 to
+  0.91 s per second of audio on a long sentence, over the limit. Numbers in ADR 1. Waiting for
+  the owner's choice of English voice before 1.9.
+
 ### Pure logic, ported (`lib/shared/`, no Flutter imports)
 
 | # | Step | Done when |
