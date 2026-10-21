@@ -164,4 +164,41 @@ void main() {
       expect(layoutPage(page.items, 800).map((b) => b.heading), [true, false]);
     });
   });
+
+  group('rangeBoxes', () {
+    // Letters 5 wide on two lines, with PDFium's empty box for the inserted space and line end.
+    CharBox glyph(double left, double bottom) =>
+        (left: left, bottom: bottom, right: left + 5, top: bottom + 7);
+    CharBox inserted(double left, double bottom) => (left: left, bottom: bottom, right: left, top: bottom);
+    final boxes = [
+      glyph(0, 100),
+      glyph(5, 100),
+      inserted(10, 100),
+      glyph(12, 100),
+      glyph(17, 99.5),
+      inserted(22, 100),
+      glyph(0, 88),
+      glyph(5, 88),
+    ];
+    // Raw offset to char index: the line end (char 5) is dropped from the raw string.
+    final charIndex = [0, 1, 2, 3, 4, 6, 7];
+
+    test('gives one box per line, spanning the inserted space', () {
+      expect(rangeBoxes([(0, 5)], charIndex, boxes), [(left: 0.0, bottom: 99.5, right: 22.0, top: 107.0)]);
+    });
+
+    test('breaks a range across a line end into two boxes', () {
+      expect(rangeBoxes([(3, 7)], charIndex, boxes), [
+        (left: 12.0, bottom: 99.5, right: 22.0, top: 107.0),
+        (left: 0.0, bottom: 88.0, right: 10.0, top: 95.0),
+      ]);
+    });
+
+    test('joins several ranges of one line, and gives nothing for inserted characters alone', () {
+      expect(rangeBoxes([(0, 1), (3, 4)], charIndex, boxes), [
+        (left: 0.0, bottom: 100.0, right: 17.0, top: 107.0),
+      ]);
+      expect(rangeBoxes([(2, 3)], charIndex, boxes), isEmpty);
+    });
+  });
 }

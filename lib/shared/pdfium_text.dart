@@ -1,6 +1,8 @@
 // Turns PDFium's char stream into the text runs layout reads (ADR 1, "How the raw string is made
 // on the phone"). PDFium gives one code point and one glyph box per char index, in content-stream
 // order, with spaces and CR LF pairs of its own inserted.
+import 'dart:math' as math;
+
 import 'types.dart';
 
 /// A glyph box in PDF units, y growing upwards. PDFium gives inserted characters an empty box.
@@ -155,4 +157,39 @@ PageText pageTextFromPdfium(String fullText, List<CharBox> boxes) {
   ];
   final capToX = ratios.isNotEmpty ? _median(ratios) : _xHeightShare / _capHeightShare;
   return PageText([for (final r in runs) r.toItem(capToX)], [for (final r in runs) ...r.index]);
+}
+
+bool _empty(CharBox b) => b.right <= b.left || b.top <= b.bottom;
+
+/// The boxes to paint for raw ranges, one per line: the glyphs' boxes joined while they share a
+/// line, so the gaps between words are painted too. Inserted characters have no box of their own.
+List<CharBox> rangeBoxes(List<RawRange> ranges, List<int> charIndex, List<CharBox> boxes) {
+  final out = <CharBox>[];
+  var last = -1;
+  for (final (start, end) in ranges) {
+    for (var i = start; i < end && i < charIndex.length; i++) {
+      final at = charIndex[i];
+      // The two halves of a surrogate pair share one char.
+      if (at == last || at >= boxes.length) continue;
+      last = at;
+      final box = boxes[at];
+      if (_empty(box)) continue;
+      if (out.isNotEmpty) {
+        final line = out.last;
+        final overlap = math.min(line.top, box.top) - math.max(line.bottom, box.bottom);
+        // On the same line, and not back at its start: the next line of a column starts left.
+        if (overlap > 0.5 * math.min(line.top - line.bottom, box.top - box.bottom) && box.left >= line.left) {
+          out.last = (
+            left: line.left,
+            bottom: math.min(line.bottom, box.bottom),
+            right: math.max(line.right, box.right),
+            top: math.max(line.top, box.top),
+          );
+          continue;
+        }
+      }
+      out.add(box);
+    }
+  }
+  return out;
 }

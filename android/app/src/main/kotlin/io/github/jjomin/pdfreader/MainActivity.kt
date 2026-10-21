@@ -4,16 +4,17 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
  * DocumentAccess (ADR 1): opens documents through the system picker and keeps their content URI,
  * so that later steps can write notes next to the PDF. A file picker package would copy the file
- * into the cache and lose where it came from.
+ * into the cache and lose where it came from. It extends audio_service's activity, which shares
+ * the Flutter engine with the playback service, so reading goes on with the screen off.
  */
-class MainActivity : FlutterActivity() {
+class MainActivity : AudioServiceActivity() {
     private var pending: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -36,7 +37,7 @@ class MainActivity : FlutterActivity() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/pdf")
-        @Suppress("DEPRECATION") // FlutterActivity is not a ComponentActivity, so no ActivityResult API.
+        @Suppress("DEPRECATION") // FlutterActivity, which this extends, is not a ComponentActivity, so no ActivityResult API.
         startActivityForResult(intent, PICK_PDF)
     }
 

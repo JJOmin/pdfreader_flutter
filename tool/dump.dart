@@ -6,10 +6,7 @@
 // Runs on the PC through pdfrx_engine, the same PDFium code the app uses.
 import 'dart:io';
 
-import 'package:pdfreader/shared/language.dart';
-import 'package:pdfreader/shared/layout.dart';
-import 'package:pdfreader/shared/pdfium_text.dart';
-import 'package:pdfreader/shared/utterances.dart';
+import 'package:pdfreader/document_text.dart';
 import 'package:pdfrx_engine/pdfrx_engine.dart';
 
 Future<void> main(List<String> arguments) async {
@@ -23,16 +20,12 @@ Future<void> main(List<String> arguments) async {
   final onlyPage = args.length > 1 ? int.parse(args[1]) : null;
   await pdfrxInitialize();
   final doc = await PdfDocument.openFile(file);
-  final pages = <List<Block>>[];
-  for (final page in doc.pages) {
-    final text = await page.loadText();
-    final pageText = pageTextFromPdfium(text?.fullText ?? '', [
-      for (final r in text?.charRects ?? const <PdfRect>[])
-        (left: r.left, bottom: r.bottom, right: r.right, top: r.top),
-    ]);
-    if (runs && (onlyPage == null || onlyPage == page.pageNumber)) {
-      stdout.writeln('## Runs on page ${page.pageNumber}');
-      for (final i in pageText.items) {
+  final text = DocumentText(doc);
+  if (runs) {
+    for (var n = 1; n <= text.pageCount; n++) {
+      if (onlyPage != null && onlyPage != n) continue;
+      stdout.writeln('## Runs on page $n');
+      for (final i in (await text.page(n)).text.items) {
         final flags = '${i.hasEOL ? 'EOL' : '   '}${i.rotated ? ' ROT' : ''}';
         stdout.writeln(
           'y ${i.y.toStringAsFixed(1).padLeft(6)}  size ${i.height.toStringAsFixed(1).padLeft(5)}  '
@@ -40,14 +33,12 @@ Future<void> main(List<String> arguments) async {
         );
       }
     }
-    pages.add(layoutPage(pageText.items, page.height));
   }
-  final lang = guessLang(pages.take(5).expand((p) => p).map((b) => b.text).join(' ')).lang;
-  stdout.writeln('# $file: ${doc.pages.length} pages, document language ${lang.name}');
-  for (var i = 0; i < pages.length; i++) {
-    if (onlyPage != null && onlyPage != i + 1) continue;
-    stdout.writeln('\n## Page ${i + 1}');
-    for (final u in buildUtterances(pages[i], i + 1, lang)) {
+  stdout.writeln('# $file: ${text.pageCount} pages, document language ${(await text.lang).name}');
+  for (var n = 1; n <= text.pageCount; n++) {
+    if (onlyPage != null && onlyPage != n) continue;
+    stdout.writeln('\n## Page $n');
+    for (final u in await text.utterances(n)) {
       stdout.writeln('[${u.role.name.padRight(7)} ${u.lang.name}] ${u.spoken}');
     }
   }

@@ -3,67 +3,113 @@ import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import 'document_access.dart';
+import 'library.dart';
+import 'playback.dart';
+import 'reader_page.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // The speech side reads page text through the engine before any viewer exists.
-  pdfrxFlutterInitialize();
-  runApp(const PdfReaderApp());
+  await pdfrxFlutterInitialize();
+  final playback = await initPlayback();
+  runApp(PdfReaderApp(library: await Library.open(), playback: playback));
 }
 
 class PdfReaderApp extends StatelessWidget {
-  const PdfReaderApp({super.key, this.documents});
+  const PdfReaderApp({super.key, this.documents, this.library, this.playback});
 
   /// Replaced in widget tests, which have no platform side.
   final DocumentAccess? documents;
+  final Library? library;
+  final ReadingHandler? playback;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'PDF Reader',
     theme: ThemeData(colorSchemeSeed: Colors.indigo),
-    home: ReaderPage(documents: documents ?? DocumentAccess()),
+    home: HomePage(documents: documents ?? DocumentAccess(), library: library, playback: playback),
   );
 }
 
-class ReaderPage extends StatefulWidget {
-  const ReaderPage({super.key, required this.documents});
+/// The documents the desktop prepared, and the picker for any other PDF.
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.documents, this.library, this.playback});
 
   final DocumentAccess documents;
+  final Library? library;
+  final ReadingHandler? playback;
 
   @override
-  State<ReaderPage> createState() => _ReaderPageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _ReaderPageState extends State<ReaderPage> {
-  OpenedDocument? _document;
+class _HomePageState extends State<HomePage> {
+  late Future<List<LibraryDocument>> _prepared = widget.library?.documents() ?? Future.value(const []);
+
+  void _show(String name, Uint8List data, LibraryDocument? prepared) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ReaderPage(name: name, data: data, prepared: prepared, playback: widget.playback),
+    ),
+  );
 
   Future<void> _open() async {
     try {
       final document = await widget.documents.pickPdf();
-      if (document != null) setState(() => _document = document);
+      if (document == null) return;
+      // A PDF the desktop prepared is found by its bytes, wherever it was opened from.
+      final prepared = await widget.library?.find(document.data);
+      if (mounted) _show(document.name, document.data, prepared);
     } on PlatformException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open: ${e.message}')));
     }
   }
 
+  Future<void> _openPrepared(LibraryDocument document) async =>
+      _show(document.manifest.name, await document.pdf.readAsBytes(), document);
+
   @override
-  Widget build(BuildContext context) {
-    final document = _document;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(document?.name ?? 'PDF Reader', overflow: TextOverflow.ellipsis),
-        actions: [IconButton(icon: const Icon(Icons.folder_open), tooltip: 'Open a PDF', onPressed: _open)],
-      ),
-      body: document == null
-          ? Center(
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('PDF Reader'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Look for prepared documents again',
+          onPressed: () => setState(() => _prepared = widget.library?.documents() ?? Future.value(const [])),
+        ),
+      ],
+    ),
+    body: FutureBuilder(
+      future: _prepared,
+      builder: (context, snapshot) {
+        final prepared = snapshot.data ?? const <LibraryDocument>[];
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Center(
               child: FilledButton.icon(
                 icon: const Icon(Icons.folder_open),
                 label: const Text('Open a PDF'),
                 onPressed: _open,
               ),
-            )
-          : PdfViewer.data(document.data, sourceName: document.uri, key: ValueKey(document.uri)),
-    );
-  }
+            ),
+            if (prepared.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text('Prepared on the desktop', style: Theme.of(context).textTheme.titleSmall),
+              for (final document in prepared)
+                ListTile(
+                  leading: const Icon(Icons.record_voice_over),
+                  title: Text(document.manifest.name),
+                  subtitle: Text(
+                    '${document.manifest.pages} pages, ${document.manifest.sentences} sentences',
+                  ),
+                  onTap: () => _openPrepared(document),
+                ),
+            ],
+          ],
+        );
+      },
+    ),
+  );
 }

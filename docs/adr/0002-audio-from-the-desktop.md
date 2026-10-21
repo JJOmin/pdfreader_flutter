@@ -119,6 +119,7 @@ This file has no German body text with hyphenation across lines, so German was c
 ## Not verified
 
 - The sentence match rate on a real German paper.
-- That ExoPlayer plays the desktop's Ogg Opus files and that their word timings line up (steps 1.9
-  to 1.11).
+- ~~That ExoPlayer plays the desktop's Ogg Opus files and that their word timings line up.~~
+  _Measured 2026-10-21 (steps 1.9 to 1.13)_: ExoPlayer plays them on the S20 FE, the owner heard
+  one, and the word mark passes over every word of each sentence in order.
 - Multicast on the owner's router and phone (step 5.3).

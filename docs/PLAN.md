@@ -43,6 +43,15 @@ Windows desktop builds, not for Android or `tool/dump.dart`.
   desktop prepared. Steps 1.9 and 1.10 were rewritten for that. The 1.8 code and `sherpa_onnx`
   stay in the repository unused. Removing them, which would shrink the APK, is a later decision.
 
+- **2026-10-21: 5.2 and 1.9 to 1.13 done**, read from a library pushed over USB. 145 unit tests
+  pass. On the phone, the integration test reads `sample.pdf` as the desktop prepared it: every
+  word of each sentence gets the mark, and the mark stays inside the tinted sentence. Next,
+  previous and pause work. **Left for the owner on the device:** 1.11 at 300 % zoom, and 1.12 for
+  two minutes with the screen off and the notification's buttons (tested: 20 s with the screen
+  off, the phone dozing, reading went on). A sentence join takes about
+  300 ms on the phone, against 80 ms on the desktop: the player reports a sentence's end 200 to
+  280 ms after its audio length. Details and limits in [SPEC.md](SPEC.md).
+
 **Order from here:** 5.1 (the match spike) and 5.2, then the desktop's S2 to S4 (it prepares a
 library), then 1.9 to 1.14 with a library copied over USB, then 5.3 to 5.6 (the network).
 
@@ -108,7 +117,7 @@ its `docs/SPEC.md`. They are built in that repository, never from here.
 | # | Step | Done when |
 | --- | --- | --- |
 | 5.1 | **Done 2026-10-21.** Sentences matched 100 % on `sample.pdf` and 92.6 % on the paper, with identical words page by page. The owner chose to take the desktop's sentence breaks by word index (ADR 2, "Measured"). Open: one real German paper. **Spike, on the PC.** Print the sentences of `sample.pdf` and two real papers with the desktop's `npm run dump` and with `tool/dump.dart`. Compare their sync keys (desktop ADR 7 section 3). | Recorded in ADR 2: per file, the share of the phone's sentences whose key is among the desktop's, and the kind of difference behind each miss. **Stop and report if it is below about 98 %** on a real paper. The phone has no voice to fall back on, so every miss is a sentence that is not read. |
-| 5.2 | `lib/shared/sync.dart`: a page's words and their hash, the sync key, and parsing the manifest, a page index and a state file. Port the desktop's tests for them (desktop S2). | All ported cases pass. The page words and hash of `sample.pdf` and the paper equal the desktop's, checked by a golden file the desktop writes. |
+| 5.2 | **Done 2026-10-21.** `test/sync_golden_test.dart` reads both PDFs with PDFium on the PC: every page's words and hash equal the desktop's golden files. `lib/shared/sync.dart`: a page's words and their hash, the sync key, and parsing the manifest, a page index and a state file. Port the desktop's tests for them (desktop S2). | All ported cases pass. The page words and hash of `sample.pdf` and the paper equal the desktop's, checked by a golden file the desktop writes. |
 | 5.3 | Discovery and pairing: the `Discovery` platform channel (`MulticastLock`), the "Desktops" screen with the announced desktops and a typed address, the code entry, the certificate pin and the stored token. Needs desktop S5. | Device: the desktop appears in the list. A wrong code is refused before anything is sent. After Accept on the desktop, the app reconnects with its token after a restart. |
 | 5.4 | Download: the desktop's library, then a document's PDF, manifest, indexes and missing audio into the app's storage. Show progress and a Remove action. Fetch again only what is missing. | Device: the fixture downloads, each file's size equals the desktop's, and a second sync fetches nothing. Remove frees the space. |
 | 5.5 | Read what was downloaded: downloaded documents open from the app's storage through the same path as the pushed library of 1.9. | Device: a document downloaded in 5.4, not pushed, is read with the word mark on the right words. |
