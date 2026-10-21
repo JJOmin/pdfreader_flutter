@@ -48,7 +48,7 @@ class Library {
     final out = <LibraryDocument>[];
     await for (final entry in root.list()) {
       if (entry is! Directory) continue;
-      final document = await _read(entry);
+      final document = await read(entry);
       if (document != null) out.add(document);
     }
     out.sort((a, b) => a.manifest.name.toLowerCase().compareTo(b.manifest.name.toLowerCase()));
@@ -56,9 +56,10 @@ class Library {
   }
 
   /// The library's copy of a PDF opened from elsewhere, found by the hash of its bytes.
-  Future<LibraryDocument?> find(List<int> pdf) => _read(Directory('${root.path}/${sha256.convert(pdf)}'));
+  Future<LibraryDocument?> find(List<int> pdf) => read(Directory('${root.path}/${sha256.convert(pdf)}'));
 
-  Future<LibraryDocument?> _read(Directory dir) async {
+  /// The document in `dir`, or null when it is not a whole one.
+  Future<LibraryDocument?> read(Directory dir) async {
     try {
       final manifest = parseManifest(jsonDecode(await File('${dir.path}/manifest.json').readAsString()));
       // A folder renamed by hand must not pass for another document.
@@ -70,4 +71,7 @@ class Library {
       return null;
     }
   }
+
+  /// Frees the space a document takes. The desktop keeps its copy.
+  Future<void> remove(LibraryDocument document) => document.dir.delete(recursive: true);
 }

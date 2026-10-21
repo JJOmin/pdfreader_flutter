@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 
+import 'desktop_link.dart';
+import 'desktops_page.dart';
 import 'document_access.dart';
 import 'library.dart';
 import 'playback.dart';
@@ -68,6 +70,38 @@ class _HomePageState extends State<HomePage> {
   Future<void> _openPrepared(LibraryDocument document) async =>
       _show(document.manifest.name, await document.pdf.readAsBytes(), document);
 
+  void _reload() => setState(() => _prepared = widget.library?.documents() ?? Future.value(const []));
+
+  Future<void> _desktops() async {
+    final library = widget.library;
+    if (library == null) return;
+    final store = await DesktopStore.open();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DesktopsPage(store: store, library: library),
+      ),
+    );
+    _reload();
+  }
+
+  Future<void> _remove(LibraryDocument document) async {
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Remove ${document.manifest.name} from this phone?'),
+        content: const Text('The desktop keeps it, and the next sync fetches it again.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (sure != true) return;
+    await widget.library?.remove(document);
+    _reload();
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -76,8 +110,9 @@ class _HomePageState extends State<HomePage> {
         IconButton(
           icon: const Icon(Icons.refresh),
           tooltip: 'Look for prepared documents again',
-          onPressed: () => setState(() => _prepared = widget.library?.documents() ?? Future.value(const [])),
+          onPressed: _reload,
         ),
+        IconButton(icon: const Icon(Icons.computer), tooltip: 'Desktops', onPressed: _desktops),
       ],
     ),
     body: FutureBuilder(
@@ -105,6 +140,11 @@ class _HomePageState extends State<HomePage> {
                     '${document.manifest.pages} pages, ${document.manifest.sentences} sentences',
                   ),
                   onTap: () => _openPrepared(document),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Remove from this phone',
+                    onPressed: () => _remove(document),
+                  ),
                 ),
             ],
           ],

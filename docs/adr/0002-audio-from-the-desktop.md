@@ -122,4 +122,5 @@ This file has no German body text with hyphenation across lines, so German was c
 - ~~That ExoPlayer plays the desktop's Ogg Opus files and that their word timings line up.~~
   _Measured 2026-10-21 (steps 1.9 to 1.13)_: ExoPlayer plays them on the S20 FE, the owner heard
   one, and the word mark passes over every word of each sentence in order.
-- Multicast on the owner's router and phone (step 5.3).
+- ~~Multicast on the owner's router and phone (step 5.3).~~ _Measured 2026-10-21:_ the S20 FE heard
+  the desktop's announcement 2.2 s after the Desktops screen opened, on the owner's Wi-Fi.
