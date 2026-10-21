@@ -147,5 +147,5 @@ The offline rule already allows it: `CLAUDE.md` should be brought in line with t
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 6.1 | **ADR 3: the store on the phone.** Sign-in on Android for both services (Login Flow v2 and OAuth with PKCE need a browser and a way back into the app), where the tokens and the key are kept, the packages needed (or none: `dart:io` `HttpClient` for WebDAV and Dropbox's HTTP API, `crypto` has no AES-GCM), and the formats of ADR 8 ported with the desktop's test vectors. | The owner has accepted it. `CLAUDE.md`'s offline rule matches the desktop's. |
-| 6.2 onward | Written from the accepted ADR, with the desktop's step S8. | |
+| 6.1 | **ADR 3: the store on the phone**, written 2026-10-21 and **proposed**: [adr/0003-the-store-on-the-phone.md](adr/0003-the-store-on-the-phone.md). It waits for the owner's four choices in its section 7 (the AES-GCM package, Dropbox's redirect, where secrets are kept, the first service). | The owner has accepted it, and `CLAUDE.md`'s offline rule matches the desktop's. |
+| 6.2 to 6.6 | The formats and `SecretBox`, the WebDAV store and Nextcloud sign-in, the Dropbox store and sign-in, the Cloud screen, and a run on the device with real accounts. Listed in the ADR's section 8, with the desktop's S8b (notes through the store). | Per step, in the ADR. |
