@@ -52,3 +52,6 @@ app.*.map.json
 
 # Download cache of tool/gen_unicode.dart
 /tool/unicode/
+
+# Claude Code per-machine settings (may hold an API key)
+.claude/settings.local.json
