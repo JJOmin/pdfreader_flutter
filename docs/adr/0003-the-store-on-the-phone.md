@@ -2,8 +2,10 @@
 
 Date: 2026-10-21
 
-Status: **Proposed.** It waits for the owner's choices in section 7. Nothing here is built. The
-design of the store, its formats and the desktop's side are in the desktop's ADR 8
+Status: **Accepted** by the owner on 2026-10-21, with all the recommendations of section 7: the
+`cryptography` package, the custom scheme for Dropbox, a `SecretBox` channel of our own, and both
+services built against stand-ins first, the real accounts tried at step 6.6. The design of the
+store, its formats and the desktop's side are in the desktop's ADR 8
 (`../pdfreader/docs/adr/0008-sync-through-a-store.md`, accepted, desktop half built). This ADR is
 the phone's half that ADR 8 asks for.
 
@@ -105,12 +107,12 @@ signed in, as encrypted files. The code that talks to the network lives in `lib/
 as `desktop_link.dart` does. `INTERNET` is already in the manifest (section 5 of ADR 2), and no
 further permission is needed.
 
-### 7. What the owner decides
+### 7. What the owner decided
 
-1. AES-GCM: the `cryptography` package (A, recommended) or the platform's (B).
-2. Dropbox's way back to the app: the custom scheme (recommended) or the loopback address.
-3. Secrets: a `SecretBox` channel of our own (A, recommended) or `flutter_secure_storage` (B).
-4. The first service to build and test on the device, which needs an account of the owner's.
+1. AES-GCM: the `cryptography` package.
+2. Dropbox's way back to the app: the custom scheme `io.github.jjomin.pdfreader:/oauth`.
+3. Secrets: a `SecretBox` channel of our own.
+4. Both services are built against stand-ins first. The real accounts are tried at the end.
 
 ### 8. The steps
 
@@ -118,7 +120,7 @@ Each step has its own test first, with the desktop's cases.
 
 | #   | Step                                                                                                                                              | Done when                                                                                                                                                                       |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6.1 | This ADR, accepted.                                                                                                                               | The owner has decided section 7, and `CLAUDE.md`'s rule matches the desktop's.                                                                                                  |
+| 6.1 | This ADR, accepted 2026-10-21.                                                                                                                    | The owner has decided section 7, and `CLAUDE.md`'s rule matches the desktop's.                                                                                                  |
 | 6.2 | `lib/shared/sync_store.dart`: `seal`, `unseal`, the pack, the key, `assertPath`, `parseServerUrl`, the paths. `SecretBox` if chosen.               | The desktop's golden files open and the phone's are opened by the desktop's code, byte for byte.                                                                                |
 | 6.3 | The WebDAV store and the Nextcloud sign-in, with in-memory stand-ins written from Nextcloud's documentation, as on the desktop.                    | Unit tests pass against the stand-in: sign-in, list, get, put, and a refused path.                                                                                              |
 | 6.4 | The Dropbox store and sign-in, the same way.                                                                                                      | Unit tests pass against the stand-in, including a refreshed token and a pause after a 429.                                                                                      |
@@ -143,10 +145,27 @@ what the phone reads. S8b is the notes exchange through the store.
   for what the HTTP API and PKCE do directly.
 - **Syncing every document automatically.** On mobile data that is a bill, so downloads are chosen.
 
+## Built, 2026-10-21 (steps 6.2 to 6.5)
+
+- Formats: the desktop's golden files, written by its own `seal` and `packAudio`, open on the phone,
+  and the phone writes the same bytes as the desktop for the same IV.
+- Stores and sign-ins: 30 tests against stand-in servers. A 600 KB file, the size of a page's audio
+  pack, goes through both byte for byte.
+- The engine: 21 tests against a whole store that the desktop's own engine filled (the prepared
+  sample, its place, its notes).
+- On the phone, in `integration_test/cloud_test.dart`: the Keystore box round trips, and the Cloud
+  screen signs in to a stand-in Nextcloud on the PC over Wi-Fi, takes the key, downloads the sample
+  in about 0.7 s, brings the desktop's notes and place down, and sends a mark that the desktop's
+  code opens with the same key. Three runs in a row against one server.
+- The desktop's counterpart, step S8b: its engine now exchanges `notes.json` through the store.
+
 ## Not verified
 
 - Against a real Nextcloud and a real Dropbox account, both sign-ins. Until 6.6 only the stand-ins
   are tested, which prove agreement with our reading of the documentation, not with the services.
+  The Dropbox sign-in has not been run on the phone at all: it needs the owner's registered app key
+  (`--dart-define=DROPBOX_APP_KEY=…`) and the redirect `io.github.jjomin.pdfreader:/oauth` added to
+  that app.
 - That Android returns from the browser to the app through the custom scheme on the owner's phone.
 - That the owner's Nextcloud accepts files of this size through its web server's upload limit.
 - How long pure Dart takes to open an hour of prepared speech on the owner's phone (option A).

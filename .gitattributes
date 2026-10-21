@@ -1,2 +1,5 @@
 # The notes golden files are compared byte for byte, so Git must not change their line endings.
 test/golden/notes*.json -text
+# Sealed binary files written by the desktop, read byte for byte.
+test/golden/store-folder/** -text
+test/golden/store.json -text

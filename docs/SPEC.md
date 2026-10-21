@@ -25,6 +25,9 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
   button lists every mark and the general notes. They are kept in the app, one file per document,
   in the desktop's notes format.
 - **Search** in both views, also across a hyphenated line break.
+- **Cloud sync** (the cloud icon): sign in to Nextcloud, the sync key from the desktop, a list of
+  the documents the desktop put there, download of the ones chosen, and a sync of their place and
+  marks. Only tried against a stand-in Nextcloud so far; Dropbox is built but not tried.
 - **Wi-Fi sync** with a paired desktop: its prepared documents, and the place in both directions.
 - **Screen off:** audio_service keeps reading in a media playback service, with a notification
   and lock screen controls.

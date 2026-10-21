@@ -45,13 +45,15 @@ and do not add a feature to one view only.
 
 - Follow `docs/PLAN.md` step by step. Each step has a "done when": show that it holds. Stop for
   review at the end of each milestone.
-- Smallest change that fully solves the task. Only the packages approved in ADR 1 and ADR 2. Ask before
+- Smallest change that fully solves the task. Only the packages approved in ADR 1, 2 and 3. Ask before
   adding any other.
 - New logic goes in `lib/shared/` with a test written first. A bug gets a failing test before
   the fix.
 - No internet at runtime: no cloud voices, no external models or LLMs, no downloads. Speech is
   made on the user's desktop. For now the phone has no voice of its own and plays only prepared
-  audio (ADR 2). The one network use is sync with the user's paired desktop on the local network.
+  audio (ADR 2). The only network uses are sync with the user's paired desktop on the local network
+  (ADR 2), and with the user's own Nextcloud or Dropbox after they signed in, as encrypted files
+  (ADR 3).
 - Comments explain why, not what. A known limit is marked `// shortcut: <limit>, <when to upgrade>`.
 - Do not claim something works on the phone without running it there. If no phone is connected,
   report the step as **not verified on device**.

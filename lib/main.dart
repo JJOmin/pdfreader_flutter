@@ -1,15 +1,23 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 
+import 'package:path_provider/path_provider.dart';
+
+import 'cloud_page.dart';
 import 'desktop_link.dart';
 import 'desktops_page.dart';
 import 'document_access.dart';
 import 'library.dart';
 import 'notes_store.dart';
 import 'places.dart';
+import 'platform_oauth.dart';
+import 'platform_secrets.dart';
 import 'playback.dart';
 import 'reader_page.dart';
+import 'store/cloud_accounts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,12 +32,26 @@ Future<void> main() async {
       playback: playback,
       places: places,
       notesStore: await NotesStore.open(),
+      cloud: CloudAccounts(
+        file: File('${(await getApplicationSupportDirectory()).path}/cloud.json'),
+        box: KeystoreSecretBox(),
+        browser: SystemBrowser(),
+        redirects: AndroidOAuthRedirects(),
+      ),
     ),
   );
 }
 
 class PdfReaderApp extends StatelessWidget {
-  const PdfReaderApp({super.key, this.documents, this.library, this.playback, this.places, this.notesStore});
+  const PdfReaderApp({
+    super.key,
+    this.documents,
+    this.library,
+    this.playback,
+    this.places,
+    this.notesStore,
+    this.cloud,
+  });
 
   /// Replaced in widget tests, which have no platform side.
   final DocumentAccess? documents;
@@ -37,6 +59,7 @@ class PdfReaderApp extends StatelessWidget {
   final ReadingHandler? playback;
   final Places? places;
   final NotesStore? notesStore;
+  final CloudAccounts? cloud;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -48,6 +71,7 @@ class PdfReaderApp extends StatelessWidget {
       playback: playback,
       places: places,
       notesStore: notesStore,
+      cloud: cloud,
     ),
   );
 }
@@ -61,6 +85,7 @@ class HomePage extends StatefulWidget {
     this.playback,
     this.places,
     this.notesStore,
+    this.cloud,
   });
 
   final DocumentAccess documents;
@@ -68,6 +93,7 @@ class HomePage extends StatefulWidget {
   final ReadingHandler? playback;
   final Places? places;
   final NotesStore? notesStore;
+  final CloudAccounts? cloud;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -131,6 +157,21 @@ class _HomePageState extends State<HomePage> {
     _reload();
   }
 
+  Future<void> _cloud() async {
+    final library = widget.library;
+    final notes = widget.notesStore;
+    final cloud = widget.cloud;
+    if (library == null || notes == null || cloud == null) return;
+    final store = await DesktopStore.open();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CloudPage(accounts: cloud, library: library, notes: notes, device: store.device),
+      ),
+    );
+    _reload();
+  }
+
   Future<void> _remove(LibraryDocument document) async {
     final sure = await showDialog<bool>(
       context: context,
@@ -159,6 +200,11 @@ class _HomePageState extends State<HomePage> {
           onPressed: _reload,
         ),
         IconButton(icon: const Icon(Icons.computer), tooltip: 'Desktops', onPressed: _desktops),
+        IconButton(
+          icon: const Icon(Icons.cloud_outlined),
+          tooltip: 'Cloud',
+          onPressed: widget.cloud == null ? null : _cloud,
+        ),
       ],
     ),
     body: FutureBuilder(
