@@ -156,6 +156,24 @@ class _HomePageState extends State<HomePage> {
                 onPressed: _open,
               ),
             ),
+            const SizedBox(height: 8),
+            Center(
+              child: OutlinedButton.icon(
+                key: const Key('connect'),
+                icon: const Icon(Icons.computer),
+                label: const Text('Connect to a desktop'),
+                onPressed: widget.library == null ? null : _desktops,
+              ),
+            ),
+            if (prepared.isEmpty && snapshot.connectionState == ConnectionState.done)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Documents prepared on your PC appear here. On the PC, open Phone and switch on '
+                  'phone sync; here, connect to it and type the code it shows.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
             if (prepared.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text('Prepared on the desktop', style: Theme.of(context).textTheme.titleSmall),
