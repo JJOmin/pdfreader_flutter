@@ -6,6 +6,7 @@ import 'desktop_link.dart';
 import 'desktops_page.dart';
 import 'document_access.dart';
 import 'library.dart';
+import 'notes_store.dart';
 import 'places.dart';
 import 'playback.dart';
 import 'reader_page.dart';
@@ -17,17 +18,25 @@ Future<void> main() async {
   final playback = await initPlayback();
   final store = await DesktopStore.open();
   final places = await Places.open((device: store.device, name: await phoneName()));
-  runApp(PdfReaderApp(library: await Library.open(), playback: playback, places: places));
+  runApp(
+    PdfReaderApp(
+      library: await Library.open(),
+      playback: playback,
+      places: places,
+      notesStore: await NotesStore.open(),
+    ),
+  );
 }
 
 class PdfReaderApp extends StatelessWidget {
-  const PdfReaderApp({super.key, this.documents, this.library, this.playback, this.places});
+  const PdfReaderApp({super.key, this.documents, this.library, this.playback, this.places, this.notesStore});
 
   /// Replaced in widget tests, which have no platform side.
   final DocumentAccess? documents;
   final Library? library;
   final ReadingHandler? playback;
   final Places? places;
+  final NotesStore? notesStore;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -38,18 +47,27 @@ class PdfReaderApp extends StatelessWidget {
       library: library,
       playback: playback,
       places: places,
+      notesStore: notesStore,
     ),
   );
 }
 
 /// The documents the desktop prepared, and the picker for any other PDF.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.documents, this.library, this.playback, this.places});
+  const HomePage({
+    super.key,
+    required this.documents,
+    this.library,
+    this.playback,
+    this.places,
+    this.notesStore,
+  });
 
   final DocumentAccess documents;
   final Library? library;
   final ReadingHandler? playback;
   final Places? places;
+  final NotesStore? notesStore;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -68,6 +86,7 @@ class _HomePageState extends State<HomePage> {
             prepared: prepared,
             playback: widget.playback,
             places: widget.places,
+            notesStore: widget.notesStore,
           ),
         ),
       );

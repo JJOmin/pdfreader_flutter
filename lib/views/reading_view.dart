@@ -6,8 +6,10 @@ import 'package:flutter/rendering.dart';
 import '../document_text.dart';
 import '../shared/highlight_runs.dart';
 import '../shared/layout.dart';
+import '../shared/notes.dart';
 import '../shared/settings.dart';
 import '../shared/types.dart';
+import 'mark_menu.dart';
 import 'text_view.dart';
 
 /// The fonts the phone can show. Verdana, Comic Sans MS, Arial and Georgia are Microsoft fonts
@@ -44,6 +46,9 @@ class ReadingController implements TextView {
   @override
   int? get currentPage => scrollAnchor()?.page;
 
+  /// Where raw ranges of a page are on the screen, for tests that press on a word.
+  Offset? globalCenterOf(int page, List<RawRange> ranges) => _state?._globalCenterOf(page, ranges);
+
   @override
   ({int page, double offset})? scrollAnchor() => _state?._anchor();
 
@@ -62,6 +67,8 @@ class ReadingView extends StatefulWidget {
     required this.controller,
     required this.highlights,
     this.onTouched,
+    this.buildSelectionMenu,
+    this.onMarkTapped,
   });
 
   final DocumentText text;
@@ -71,6 +78,10 @@ class ReadingView extends StatefulWidget {
 
   /// The user scrolled: the view stops following the voice for a while.
   final VoidCallback? onTouched;
+
+  /// The menu shown over selected text, or null where nothing can be marked.
+  final SelectionMenuBuilder? buildSelectionMenu;
+  final MarkTapped? onMarkTapped;
 
   @override
   State<ReadingView> createState() => _ReadingViewState();
@@ -125,6 +136,23 @@ class _ReadingViewState extends State<ReadingView> {
     }
   }
 
+  /// The text's render object inside a paragraph's selectable text: it knows where each character is.
+  RenderEditable? _editable(GlobalKey key) {
+    RenderEditable? found;
+    void visit(RenderObject node) {
+      if (found != null) return;
+      if (node is RenderEditable) {
+        found = node;
+        return;
+      }
+      node.visitChildren(visit);
+    }
+
+    final root = key.currentContext?.findRenderObject();
+    if (root != null) visit(root);
+    return found;
+  }
+
   RenderBox? _box(GlobalKey key) => key.currentContext?.findRenderObject() as RenderBox?;
 
   /// Where a widget's top is in the scrolled content.
@@ -163,21 +191,20 @@ class _ReadingViewState extends State<ReadingView> {
   void _reveal(int page, List<RawRange> ranges) {
     if (page > _pages.length || !_scroll.hasClients) return _showPage(page, 0);
     final blocks = _pages[page - 1];
+    final content = _box(_content);
     for (final (start, end) in ranges) {
       for (final span in blockSpans(blocks, start, end)) {
-        final key = _blockKeys[page - 1][span.block];
-        final paragraph = key.currentContext?.findRenderObject();
-        final top = _top(key);
-        if (paragraph is! RenderParagraph || top == null) continue;
-        final boxes = paragraph.getBoxesForSelection(
+        final editable = _editable(_blockKeys[page - 1][span.block]);
+        if (editable == null || content == null) continue;
+        final boxes = editable.getBoxesForSelection(
           TextSelection(baseOffset: span.from, extentOffset: span.to),
         );
         if (boxes.isEmpty) continue;
-        final y = top + boxes.first.top;
+        final y = editable.localToGlobal(Offset(0, boxes.first.top), ancestor: content).dy;
         final view = _scroll.position.viewportDimension;
         final from = _scroll.offset;
-        // Comfortably inside: leave the view still, as the desktop does.
         final height = boxes.first.bottom - boxes.first.top;
+        // Comfortably inside: leave the view still, as the desktop does.
         if (y >= from + view * 0.1 && y + height <= from + view * 0.75) return;
         unawaited(
           _scroll.animateTo(
@@ -191,30 +218,130 @@ class _ReadingViewState extends State<ReadingView> {
     }
   }
 
-  /// A paragraph's text, cut where highlights start and end.
+  Offset? _globalCenterOf(int page, List<RawRange> ranges) {
+    if (page > _pages.length) return null;
+    for (final (start, end) in ranges) {
+      for (final span in blockSpans(_pages[page - 1], start, end)) {
+        final editable = _editable(_blockKeys[page - 1][span.block]);
+        if (editable == null) continue;
+        final boxes = editable.getBoxesForSelection(
+          TextSelection(baseOffset: span.from, extentOffset: span.to),
+        );
+        if (boxes.isNotEmpty) return editable.localToGlobal(boxes.first.toRect().center);
+      }
+    }
+    return null;
+  }
+
+  /// A paragraph's text, cut where highlights start and end. Each highlight that covers a stretch
+  /// adds its look: fills blend, in list order, and underline and strike-through combine.
   TextSpan _paragraph(int page, int index, Block block, TextStyle style) {
-    final layered = <HighlightRun>[];
+    // A highlight's ranges share its number, so that `ids` name highlights, not ranges.
+    final byHighlight = <int, Highlight>{};
+    final numbered = <HighlightSpan>[];
+    var n = 0;
     for (final highlight in widget.highlights) {
       if (highlight.page != page) continue;
       for (final (start, end) in highlight.ranges) {
         for (final span in blockSpans(_pages[page - 1], start, end)) {
-          if (span.block == index) layered.add((from: span.from, to: span.to, layer: highlight.kind.index));
+          if (span.block != index) continue;
+          numbered.add((from: span.from, to: span.to, id: n));
         }
       }
+      byHighlight[n++] = highlight;
     }
     return TextSpan(
       style: style,
       children: [
-        for (final run in highlightRuns(block.text.length, layered))
+        for (final run in highlightRuns(block.text.length, numbered))
           TextSpan(
             text: block.text.substring(run.from, run.to),
-            style: run.layer == null
-                ? null
-                : TextStyle(backgroundColor: HighlightKind.values[run.layer!].color),
+            style: run.ids.isEmpty ? null : _runStyle([for (final id in run.ids) byHighlight[id]!]),
           ),
       ],
     );
   }
+
+  TextStyle _runStyle(List<Highlight> layers) {
+    var fill = const Color(0x00000000);
+    final decorations = <TextDecoration>[];
+    Color? lineColor;
+    for (final layer in layers) {
+      final kind = layer.kind;
+      if (kind != null) {
+        fill = Color.alphaBlend(kind.color, fill);
+        continue;
+      }
+      final color = layer.color!;
+      switch (layer.mark!) {
+        case MarkKind.highlight:
+          fill = Color.alphaBlend(markFill[color]!, fill);
+        case MarkKind.underline:
+          decorations.add(TextDecoration.underline);
+          lineColor = markLine[color];
+        case MarkKind.strike:
+          decorations.add(TextDecoration.lineThrough);
+          lineColor = markLine[color];
+      }
+    }
+    return TextStyle(
+      backgroundColor: fill.a == 0 ? null : fill,
+      decoration: decorations.isEmpty ? null : TextDecoration.combine(decorations),
+      decorationColor: lineColor,
+      decorationThickness: 2,
+    );
+  }
+
+  /// The raw range a selection in one paragraph covers, from its readable-text offsets.
+  Future<List<PageSelection>> _selected(int page, int index, TextSelection selection) async {
+    final block = _pages[page - 1][index];
+    final ranges = rawRanges(block.raw, selection.start, selection.end);
+    if (ranges.isEmpty) return const [];
+    return [(page: page, range: (ranges.first.$1, ranges.last.$2))];
+  }
+
+  Widget _menu(int page, int index, BuildContext context, EditableTextState state) {
+    final build = widget.buildSelectionMenu;
+    final selection = state.textEditingValue.selection;
+    if (build == null || selection.isCollapsed) return const SizedBox.shrink();
+    final anchors = state.contextMenuAnchors;
+    return build(
+      context,
+      anchors.primaryAnchor,
+      anchors.secondaryAnchor,
+      () => _selected(page, index, selection),
+      () async {
+        state.userUpdateTextEditingValue(
+          state.textEditingValue.copyWith(selection: TextSelection.collapsed(offset: selection.end)),
+          SelectionChangedCause.toolbar,
+        );
+        state.hideToolbar();
+      },
+    );
+  }
+
+  /// A tap on a paragraph: on a mark, its comment opens.
+  void _tapParagraph(int page, int index) {
+    final tapped = widget.onMarkTapped;
+    final at = _lastPointer;
+    final editable = _editable(_blockKeys[page - 1][index]);
+    if (tapped == null || at == null || editable == null) return;
+    final offset = editable.getPositionForPoint(at).offset;
+    final blocks = _pages[page - 1];
+    String? found;
+    for (final highlight in widget.highlights) {
+      if (highlight.markId == null || highlight.page != page) continue;
+      for (final (start, end) in highlight.ranges) {
+        for (final span in blockSpans(blocks, start, end)) {
+          if (span.block == index && offset >= span.from && offset < span.to) found = highlight.markId;
+        }
+      }
+    }
+    if (found != null) tapped(found);
+  }
+
+  /// Where the last pointer went down, for finding what a tap landed on.
+  Offset? _lastPointer;
 
   @override
   Widget build(BuildContext context) {
@@ -260,14 +387,19 @@ class _ReadingViewState extends State<ReadingView> {
                       for (var i = 0; i < _pages[page - 1].length; i++)
                         Padding(
                           padding: EdgeInsets.only(bottom: settings.size * 0.8),
-                          child: RichText(
-                            key: _blockKeys[page - 1][i],
-                            textScaler: scaler,
-                            text: _paragraph(
-                              page,
-                              i,
-                              _pages[page - 1][i],
-                              _pages[page - 1][i].heading ? heading : base,
+                          child: Listener(
+                            onPointerDown: (e) => _lastPointer = e.position,
+                            child: SelectableText.rich(
+                              _paragraph(
+                                page,
+                                i,
+                                _pages[page - 1][i],
+                                _pages[page - 1][i].heading ? heading : base,
+                              ),
+                              key: _blockKeys[page - 1][i],
+                              textScaler: scaler,
+                              onTap: () => _tapParagraph(page, i),
+                              contextMenuBuilder: (context, state) => _menu(page, i, context, state),
                             ),
                           ),
                         ),

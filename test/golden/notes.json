@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "notes": "Line one\nLine two\twith a tab, \"quotes\", a backslash \\ and ü ß € 😀\u0001    end",
+  "annotations": [
+    {
+      "id": "3f2b8c1e-0000-4000-8000-000000000001",
+      "page": 2,
+      "start": 120,
+      "end": 139,
+      "text": "qu-ick brown fox",
+      "quote": "quick brown fox",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-13T08:30:00.123Z"
+    },
+    {
+      "id": "3f2b8c1e-0000-4000-8000-000000000002",
+      "page": 3,
+      "start": 0,
+      "end": 5,
+      "text": "Größe",
+      "quote": "Größe",
+      "kind": "strike",
+      "color": "red",
+      "comment": "Check \"this\"\nand that: ä ö ü 😀",
+      "created": ""
+    }
+  ]
+}

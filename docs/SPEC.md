@@ -20,6 +20,10 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
 - **Reading view:** the text alone, restyled: OpenDyslexic, Lexend, or the phone's own sans or
   serif; size, line and letter spacing; light, sepia or dark. Speech, the word mark and search work
   in it as on the pages, and switching keeps the page while the voice goes on.
+- **Marks and comments** in both views: select text, choose highlight, underline or strike-through
+  and one of four colours, and the mark is made. A tap on a mark opens its comment, and the Notes
+  button lists every mark and the general notes. They are kept in the app, one file per document,
+  in the desktop's notes format.
 - **Search** in both views, also across a hyphenated line break.
 - **Wi-Fi sync** with a paired desktop: its prepared documents, and the place in both directions.
 - **Screen off:** audio_service keeps reading in a media playback service, with a notification
@@ -49,10 +53,15 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
    slow, play one gapless just_audio playlist with silences instead.
 4. **Not verified on the device:** the highlight at 300 % zoom, two minutes with the screen off,
    and the notification's buttons. These are left for the owner.
-5. **The place and the speed are remembered** (step 4.1), and a prepared document's place goes to
+5. **Marks live on the phone only until they are synced.** They are not sent to the desktop yet
+   (step 5.7). Deleting the app deletes them. A notes file can be moved by hand: the desktop reads
+   what the phone writes and the phone what the desktop writes, found again by their text.
+   In the reading view a mark cannot span two paragraphs, because each paragraph is selected on its
+   own; in the PDF it can span lines and pages (one mark per page).
+6. **The place and the speed are remembered** (step 4.1), and a prepared document's place goes to
    the desktop on each sync (step 5.6). The phone's zoom is pdfrx's, not the desktop's, so only
    the page, the offset and the sentence are shared.
-6. **Previous on a page's first sentence** goes to the previous page's last sentence. The desktop
+7. **Previous on a page's first sentence** goes to the previous page's last sentence. The desktop
    goes to the last sentence of the same page, which is a bug in its `reader.ts`.
 
 ## Size

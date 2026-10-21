@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "notes": "",
+  "annotations": [
+    {
+      "id": "desktop-1-0",
+      "page": 1,
+      "start": 0,
+      "end": 33,
+      "text": "Vorlesen wissenschaftlicher Texte",
+      "quote": "Vorlesen wissenschaftlicher Texte",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-21T00:00:00.000Z"
+    },
+    {
+      "id": "desktop-1-5",
+      "page": 1,
+      "start": 312,
+      "end": 388,
+      "text": "The proposed method is simple and it does notneed any training data at all. ",
+      "quote": "The proposed method is simple and it does not need any training data at all.",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-21T00:00:00.000Z"
+    },
+    {
+      "id": "desktop-1-10",
+      "page": 1,
+      "start": 553,
+      "end": 642,
+      "text": "Danach folgtwieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll [2, 3].",
+      "quote": "Danach folgt wieder gewöhnlicher Text, der mit der Hauptstimme gelesen werden soll [2, 3].",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-21T00:00:00.000Z"
+    },
+    {
+      "id": "desktop-2-0",
+      "page": 2,
+      "start": 0,
+      "end": 25,
+      "text": "2 Zweispaltiger Abschnitt",
+      "quote": "2 Zweispaltiger Abschnitt",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-21T00:00:00.000Z"
+    },
+    {
+      "id": "desktop-2-5",
+      "page": 2,
+      "start": 431,
+      "end": 456,
+      "text": "Damit endet das Dokument.",
+      "quote": "Damit endet das Dokument.",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-21T00:00:00.000Z"
+    }
+  ]
+}

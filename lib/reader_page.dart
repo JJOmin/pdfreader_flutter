@@ -1,19 +1,25 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import 'document_text.dart';
 import 'library.dart';
+import 'notes_store.dart';
 import 'places.dart';
 import 'playback.dart';
 import 'reader.dart';
+import 'shared/marks.dart';
+import 'shared/notes.dart';
 import 'shared/read_plan.dart';
 import 'shared/search.dart';
 import 'shared/settings.dart';
 import 'shared/sync.dart';
 import 'shared/types.dart';
+import 'views/mark_menu.dart';
+import 'views/notes_sheet.dart';
 import 'views/pdf_pages_view.dart';
 import 'views/reading_view.dart';
 import 'views/text_view.dart';
@@ -27,6 +33,12 @@ const _placeDelay = Duration(milliseconds: 400);
 /// Typing is searched once it pauses this long, as on the desktop.
 const _searchDelay = Duration(milliseconds: 200);
 
+/// The kind of mark made last, kept for the next one and across documents while the app runs.
+MarkKind _lastKind = MarkKind.highlight;
+
+/// Marks are written once they have not changed for this long.
+const _notesDelay = Duration(milliseconds: 500);
+
 /// One document: the pages or the reading view, reading aloud when the desktop prepared it, and search.
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
@@ -37,6 +49,7 @@ class ReaderPage extends StatefulWidget {
     this.prepared,
     this.playback,
     this.places,
+    this.notesStore,
   });
 
   final String name;
@@ -47,6 +60,9 @@ class ReaderPage extends StatefulWidget {
 
   /// Null in widget tests: nothing is remembered.
   final Places? places;
+
+  /// Null in widget tests: nothing is marked.
+  final NotesStore? notesStore;
 
   /// Null when the desktop has not prepared this PDF: it shows, but cannot be read aloud.
   final LibraryDocument? prepared;
@@ -100,6 +116,16 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   /// Another device's newer place in this document, offered until the user answers.
   DeviceState? _offer;
 
+  /// The document's id: the hash of its bytes, which the library and the notes files share.
+  late final String _docId = widget.prepared?.manifest.docId ?? sha256.convert(widget.data).toString();
+
+  /// The marks and general notes as written, and where each mark lies on this device's raw
+  /// strings. A mark made on the desktop is placed by its text, since the two engines' offsets differ.
+  NotesFile _notes = emptyNotes();
+  Map<String, (int, int)> _markAt = const {};
+  Timer? _notesTimer;
+  bool _notesDirty = false;
+
   /// The search box, while it is open, and what it found: page and raw ranges, in reading order.
   final _searchBox = TextEditingController();
   bool _searching = false;
@@ -133,6 +159,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     final saved = _saved;
     final sentence = saved?.sentence;
     if (sentence != null) _resume = _lastSentence = (page: sentence.page, index: sentence.index);
+    unawaited(_loadNotes());
     final prepared = widget.prepared;
     if (prepared == null) return;
     unawaited(_findOffer(prepared));
@@ -145,6 +172,136 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       playback.onStop = reader.stop;
     }
     unawaited(_countSkipped());
+  }
+
+  Future<void> _loadNotes() async {
+    final loaded = await widget.notesStore?.load(_docId);
+    if (loaded == null || !mounted) return;
+    setState(() => _notes = loaded);
+    await _place(loaded.annotations);
+  }
+
+  /// Places marks on this device's raw strings, by their text where the offsets no longer fit.
+  Future<void> _place(List<Annotation> marks) async {
+    final text = _text;
+    if (text == null || marks.isEmpty) return;
+    final raw = <int, String>{};
+    for (final page in {for (final m in marks) m.page}) {
+      if (page >= 1 && page <= text.pageCount) raw[page] = (await text.page(page)).text.raw;
+    }
+    if (!mounted) return;
+    final anchored = anchorMarks(marks, raw);
+    setState(() => _markAt = {..._markAt, for (final a in anchored.values) a.id: (a.start, a.end)});
+  }
+
+  void _notesChanged(NotesFile notes) {
+    setState(() => _notes = notes);
+    _notesDirty = true;
+    _notesTimer?.cancel();
+    _notesTimer = Timer(_notesDelay, () => unawaited(_flushNotes()));
+  }
+
+  Future<void> _flushNotes() async {
+    _notesTimer?.cancel();
+    if (!_notesDirty) return;
+    _notesDirty = false;
+    await widget.notesStore?.save(_docId, _notes);
+  }
+
+  /// Makes a mark for each page the selection reaches.
+  Future<void> _addMarks(List<PageSelection> selection, MarkKind kind, HighlightColor color) async {
+    final text = _text;
+    if (text == null) return;
+    final made = <Annotation>[];
+    for (final (:page, :range) in selection) {
+      final loaded = await text.page(page);
+      final mark = newMark(
+        page: page,
+        start: range.$1,
+        end: range.$2,
+        raw: loaded.text.raw,
+        blocks: loaded.blocks,
+        kind: kind,
+        color: color,
+        id: newId(),
+        created: isoNow(),
+      );
+      if (mark != null) made.add(mark);
+    }
+    if (made.isEmpty || !mounted) return;
+    setState(() => _markAt = {..._markAt, for (final m in made) m.id: (m.start, m.end)});
+    _notesChanged(NotesFile(notes: _notes.notes, annotations: [..._notes.annotations, ...made]));
+  }
+
+  Widget _selectionMenu(
+    BuildContext context,
+    Offset anchorA,
+    Offset? anchorB,
+    Future<List<PageSelection>> Function() selection,
+    Future<void> Function() done,
+  ) => MarkMenu(
+    anchorA: anchorA,
+    anchorB: anchorB,
+    initialKind: _lastKind,
+    onKindChanged: (kind) => _lastKind = kind,
+    onMark: (kind, color) async {
+      final selected = await selection();
+      await done();
+      await _addMarks(selected, kind, color);
+    },
+  );
+
+  late final _actions = NotesActions(
+    onNotes: (text) => _notesChanged(NotesFile(notes: text, annotations: _notes.annotations)),
+    onComment: (id, comment) => _notesChanged(
+      NotesFile(
+        notes: _notes.notes,
+        annotations: [for (final a in _notes.annotations) a.id == id ? a.copyWith(comment: comment) : a],
+      ),
+    ),
+    onDelete: (id) {
+      setState(() => _markAt = {..._markAt}..remove(id));
+      _notesChanged(
+        NotesFile(notes: _notes.notes, annotations: _notes.annotations.where((a) => a.id != id).toList()),
+      );
+    },
+    onJump: (mark) {
+      Navigator.of(context).pop();
+      final at = _markAt[mark.id];
+      if (at == null) return;
+      _lastTouch = DateTime.now();
+      unawaited(_view.reveal(mark.page, [at]));
+    },
+  );
+
+  Future<void> _openNotes() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => NotesSheet(
+      notes: _notes.notes,
+      marks: _notes.annotations,
+      found: _markAt.keys.toSet(),
+      actions: _actions,
+    ),
+  );
+
+  /// A tap on a mark opens its comment.
+  Future<void> _openMark(String id) async {
+    final mark = _notes.annotations.where((a) => a.id == id).firstOrNull;
+    if (mark == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
+        child: MarkCard(
+          mark: mark,
+          found: true,
+          actions: _actions,
+          onDeleted: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
   }
 
   /// The pages are laid out: show the saved place, then start remembering where the user goes.
@@ -300,6 +457,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   List<Highlight> get _highlights {
     final sentence = this.sentence;
     return [
+      // The marks first, so the voice and search lie over them.
+      for (final a in _notes.annotations)
+        if (_markAt[a.id] case final at?) Highlight.mark(a.page, [at], a.kind, a.color, a.id),
       if (sentence != null) Highlight(sentence.page, sentence.ranges, HighlightKind.sentence),
       for (var i = 0; i < _matches.length; i++)
         Highlight(
@@ -314,6 +474,26 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   /// The page the view shows, for the integration test.
   int? get currentPage => _view.currentPage;
+
+  /// The marks as written, for the integration test.
+  List<Annotation> get marks => _notes.annotations;
+
+  /// The general notes as written, for the integration test.
+  String get generalNotes => _notes.notes;
+
+  /// The document's sentences of a page, for tests that need words to press on.
+  @visibleForTesting
+  Future<List<Utterance>> utterancesOf(int page) => _text!.utterances(page);
+
+  /// Where raw ranges are on the screen in the view that shows, for tests that press on a word.
+  @visibleForTesting
+  Offset? globalCenterOf(int page, List<RawRange> ranges) =>
+      reading ? _readingView.globalCenterOf(page, ranges) : _pdf.globalCenterOf(page, ranges);
+
+  /// Makes a mark as the menu does, for tests that need many.
+  @visibleForTesting
+  Future<void> addMarkFor(int page, RawRange range, MarkKind kind, HighlightColor color) =>
+      _addMarks([(page: page, range: range)], kind, color);
 
   void _toggle() => _reader?.toggle(_resume ?? (page: _view.currentPage ?? 1, index: 0));
 
@@ -379,6 +559,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   void dispose() {
     _placeTimer?.cancel();
     _searchTimer?.cancel();
+    unawaited(_flushNotes());
     _pdf.viewer.removeListener(_moved);
     if (_placed) unawaited(_savePlace().then((_) => widget.places?.flush()));
     _closing = true;
@@ -447,6 +628,12 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
           tooltip: 'Search',
           onPressed: _text == null ? null : () => setState(() => _searching = true),
         ),
+        IconButton(
+          key: const Key('notes'),
+          icon: const Icon(Icons.sticky_note_2_outlined),
+          tooltip: 'Notes and marks',
+          onPressed: _text == null ? null : _openNotes,
+        ),
         if (reading)
           IconButton(
             icon: const Icon(Icons.format_size),
@@ -503,6 +690,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                           initialPage: _saved?.page ?? 1,
                           onReady: _pagesReady,
                           onTouched: _touched,
+                          buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
+                          onMarkTapped: _openMark,
                         ),
                       ),
                       if (reading)
@@ -512,6 +701,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                           controller: _readingView,
                           highlights: highlights,
                           onTouched: _touched,
+                          buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
+                          onMarkTapped: _openMark,
                         ),
                     ],
                   ),

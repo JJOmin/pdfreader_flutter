@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../document_text.dart';
+import '../shared/marks.dart';
+import '../shared/notes.dart';
 import '../shared/pdfium_text.dart';
 import '../shared/types.dart';
+import 'mark_menu.dart';
 import 'text_view.dart';
 
 /// The PDF pages as a `TextView`: raw ranges are painted on PDFium's glyph boxes (ADR 1).
@@ -29,6 +32,20 @@ class PdfPagesController implements TextView {
       pageNumber: page,
       rect: PdfRect(0, pdfPage.height, pdfPage.width, 0),
     );
+  }
+
+  /// Where raw ranges of a page are on the screen, for tests that press on a word.
+  Offset? globalCenterOf(int page, List<RawRange> ranges) {
+    final state = _state;
+    final boxes = state?._boxes(page, ranges);
+    if (state == null || boxes == null || boxes.isEmpty || !viewer.isReady) return null;
+    final b = boxes.first;
+    final doc = viewer.calcRectForRectInsidePage(
+      pageNumber: page,
+      rect: PdfRect(b.left, b.top, b.right, b.bottom),
+    );
+    final local = MatrixUtils.transformPoint(viewer.value, doc.center);
+    return (state.context.findRenderObject()! as RenderBox).localToGlobal(local);
   }
 
   @override
@@ -95,6 +112,8 @@ class PdfPagesView extends StatefulWidget {
     required this.initialPage,
     this.onReady,
     this.onTouched,
+    this.buildSelectionMenu,
+    this.onMarkTapped,
   });
 
   final PdfDocumentRef document;
@@ -106,6 +125,10 @@ class PdfPagesView extends StatefulWidget {
 
   /// The user scrolled or zoomed: the view stops following the voice for a while.
   final VoidCallback? onTouched;
+
+  /// The menu shown over selected text, or null where nothing can be marked.
+  final SelectionMenuBuilder? buildSelectionMenu;
+  final MarkTapped? onMarkTapped;
 
   @override
   State<PdfPagesView> createState() => _PdfPagesViewState();
@@ -160,20 +183,111 @@ class _PdfPagesViewState extends State<PdfPagesView> {
   void _paint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
     Rect place(CharBox b) =>
         PdfRect(b.left, b.top, b.right, b.bottom).toRectInDocument(page: page, pageRect: pageRect);
-    for (final kind in HighlightKind.values) {
-      final paint = Paint()..color = kind.color;
-      for (final highlight in widget.highlights) {
-        if (highlight.page != page.pageNumber || highlight.kind != kind) continue;
-        for (final b in _boxes(page.pageNumber, highlight.ranges) ?? const <CharBox>[]) {
-          final rect = place(b);
+    for (final highlight in widget.highlights) {
+      if (highlight.page != page.pageNumber) continue;
+      final kind = highlight.kind;
+      for (final b in _boxes(page.pageNumber, highlight.ranges) ?? const <CharBox>[]) {
+        final rect = place(b);
+        if (kind != null) {
+          final paint = Paint()..color = kind.color;
           if (kind == HighlightKind.word) {
             canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(1), const Radius.circular(2)), paint);
           } else {
             canvas.drawRect(rect, paint);
           }
+          continue;
+        }
+        final color = highlight.color!;
+        switch (highlight.mark!) {
+          case MarkKind.highlight:
+            canvas.drawRect(rect, Paint()..color = markFill[color]!);
+          case MarkKind.underline:
+            // On the baseline: PDFium's boxes are tight around the ink, so the bottom is below it.
+            final y = rect.bottom - rect.height * 0.12;
+            canvas.drawLine(
+              Offset(rect.left, y),
+              Offset(rect.right, y),
+              Paint()
+                ..color = markLine[color]!
+                ..strokeWidth = (rect.height * 0.08).clamp(1.0, 3.0),
+            );
+          case MarkKind.strike:
+            canvas.drawLine(
+              Offset(rect.left, rect.center.dy),
+              Offset(rect.right, rect.center.dy),
+              Paint()
+                ..color = markLine[color]!
+                ..strokeWidth = (rect.height * 0.08).clamp(1.0, 3.0),
+            );
         }
       }
     }
+  }
+
+  /// The mark under a tap, the last painted where several lie there.
+  String? _markAt(PdfPageHitTestResult hit) {
+    String? found;
+    for (final highlight in widget.highlights) {
+      if (highlight.markId == null || highlight.page != hit.page.pageNumber) continue;
+      for (final b in _boxes(highlight.page, highlight.ranges) ?? const <CharBox>[]) {
+        if (hit.offset.x >= b.left &&
+            hit.offset.x <= b.right &&
+            hit.offset.y >= b.bottom &&
+            hit.offset.y <= b.top) {
+          found = highlight.markId;
+        }
+      }
+    }
+    return found;
+  }
+
+  bool _tapped(
+    BuildContext context,
+    PdfViewerController controller,
+    PdfViewerGeneralTapHandlerDetails details,
+  ) {
+    if (details.type != PdfViewerGeneralTapType.tap || widget.onMarkTapped == null) return false;
+    final hit = controller.getPdfPageHitTestResult(
+      details.documentPosition,
+      useDocumentLayoutCoordinates: true,
+    );
+    final id = hit == null ? null : _markAt(hit);
+    if (id == null) return false;
+    widget.onMarkTapped!(id);
+    return true;
+  }
+
+  /// The raw ranges the selected text covers, one per page it reaches. pdfrx numbers the characters
+  /// of its own reading-order text, so the selection is placed by its glyph boxes (ADR 1).
+  Future<List<PageSelection>> _selected(PdfTextSelectionDelegate selection) async {
+    CharBox box(PdfRect r) => (left: r.left, bottom: r.bottom, right: r.right, top: r.top);
+    final out = <PageSelection>[];
+    for (final range in await selection.getSelectedTextRanges()) {
+      final loaded = await widget.text.page(range.pageNumber);
+      final raw = rawRangeFromBoxes(
+        [for (final r in range.pageText.charRects.sublist(range.start, range.end)) box(r)],
+        [for (final r in loaded.charRects) box(r)],
+        loaded.text.charIndex,
+      );
+      if (raw != null) out.add((page: range.pageNumber, range: raw));
+    }
+    return out;
+  }
+
+  Widget? _menu(BuildContext context, PdfViewerContextMenuBuilderParams params) {
+    final build = widget.buildSelectionMenu;
+    if (build == null ||
+        params.contextMenuFor != PdfViewerPart.selectedText ||
+        !params.textSelectionDelegate.hasSelectedText) {
+      return null;
+    }
+    return build(
+      context,
+      params.anchorA,
+      params.anchorB,
+      () => _selected(params.textSelectionDelegate),
+      params.textSelectionDelegate.clearTextSelection,
+    );
   }
 
   @override
@@ -185,6 +299,8 @@ class _PdfPagesViewState extends State<PdfPagesView> {
       onViewerReady: (_, _) => widget.onReady?.call(),
       onInteractionStart: (_) => widget.onTouched?.call(),
       pagePaintCallbacks: [_paint],
+      onGeneralTap: _tapped,
+      buildContextMenu: _menu,
     ),
   );
 }
