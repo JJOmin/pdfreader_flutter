@@ -1,0 +1,2 @@
+# The notes golden files are compared byte for byte, so Git must not change their line endings.
+test/golden/notes*.json -text
