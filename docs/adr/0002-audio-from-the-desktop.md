@@ -21,12 +21,15 @@ where reading stopped.
 The owner decided that, for now, the phone has no voice of its own. The speech service of step 1.9
 plays only what the desktop prepared.
 
-- **A sentence whose sync key is in the index is played.** The key is the sentence text after NFKC
-  and whitespace folding, hashed, as in desktop ADR 7 section 3. Such a sentence is ready at once:
-  no synthesis and no recogniser pass. Its word timings come from the index when the word count
-  matches, otherwise from `estimateTimings`.
-- **A sentence with no match is skipped.** The document shows how many of its sentences have no
-  audio.
+- **A prepared page whose words agree is read with the desktop's sentences** (desktop ADR 7
+  section 3, chosen by the owner after the measurement below). The phone computes the page's words
+  from its own raw string and compares their count and hash with the index. When they agree, each
+  sentence of the index becomes a raw range from its first to its last word on the phone. Audio and
+  word timings come straight from the index. Such a sentence is ready at once: no synthesis and no
+  recogniser pass.
+- **A page whose words differ** falls back to matching the phone's own sentences by their sync key:
+  the text after NFKC and whitespace folding, hashed. A sentence with no match is skipped, and the
+  document shows how many it skips.
 - **A document with no library opens and can be read on screen.** Play is off, and the app says
   "Not prepared on the desktop".
 
@@ -73,16 +76,49 @@ reached.
 ## Consequences
 
 - Reading uses less battery and starts at once, because there is no model to load.
-- A sentence that PDFium and PDF.js split differently is not read. Step 5.1 measures how often
-  that happens, and that number decides whether the design holds.
+- On a prepared page the phone tints sentences where the desktop breaks them, which can differ
+  from its own layout near headings. Only on a page whose words differ is a sentence not read.
 - A PDF the desktop has not prepared cannot be read aloud on the phone.
 - Step 1.8's question, which on-device English voice to use, is set aside until the phone gets a
   voice of its own again.
 - The release APK asks for `INTERNET`, which shows up as "network access" in the Play Store listing.
 
+## Measured: the sentence match (step 5.1, 2026-10-21)
+
+Both dump tools ran on every page: the desktop's `scripts/dump-text.ts` and this repository's
+`tool/dump.dart`. A phone sentence counts as matched when its text, after NFKC and whitespace
+folding, is among the desktop's sentences of the same file.
+
+| File                                                                 | Desktop sentences | Phone sentences | Matched          | Words, desktop / phone       |
+| -------------------------------------------------------------------- | ----------------- | --------------- | ---------------- | ---------------------------- |
+| `tests/fixtures/sample.pdf` (German and English, 2 pages)            | 17                | 17              | 17 (100 %)       |                              |
+| `docs/sample_pdfs/centric_2026_1_10_30003.pdf` (English paper, 7 pages) | 355               | 349             | **323 (92.6 %)** | 4,953 / 4,953, same sequence |
+
+**Below the 98 % bar, so the step stopped for the owner's decision.** The owner chose to take the
+desktop's sentence breaks by word index (section 1). Compared page by page, every page of both
+files has the same words on both sides (sample: 98 and 67, paper: 728, 853, 809, 767, 737, 730 and
+329), so with that design every sentence of both files has its audio.
+
+Every miss comes from where a sentence starts and ends, never from the text itself. The two word
+streams are identical, word for word. The 26 misses are all at the edges of blocks:
+
+- **Section headings.** The desktop joins "I. INTRODUCTION" to the first sentence, and the phone
+  keeps it apart. For subsection headings ("A. Experimental Design") it is the other way round.
+  Each heading costs two sentences: the heading and the sentence next to it.
+- **Roman numerals** ("II.", "VI."). The desktop reads them as a sentence of their own, and the
+  phone keeps them with the heading.
+- **A table header, a figure caption, a bullet and the reference list's heading.** These are joined
+  on one side and split on the other.
+
+These are the font-based heading differences recorded in ADR 1 section 1. The two engines give
+different font information, so `layout` draws block edges differently.
+
+This file has no German body text with hyphenation across lines, so German was checked only on
+`sample.pdf`.
+
 ## Not verified
 
-- The sentence match rate on real papers (step 5.1).
+- The sentence match rate on a real German paper.
 - That ExoPlayer plays the desktop's Ogg Opus files and that their word timings line up (steps 1.9
   to 1.11).
 - Multicast on the owner's router and phone (step 5.3).
