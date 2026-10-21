@@ -288,4 +288,29 @@ void main() {
       expect(newestState([]), isNull);
     });
   });
+
+  group('placeOffer', () {
+    DeviceState phone(num updated) => DeviceState(
+      device: 'd' * 32,
+      name: 'Galaxy S20 FE',
+      updated: updated,
+      page: 2,
+      offset: 0,
+      sentence: null,
+    );
+    final own = DeviceState(device: device, name: 'Desk', updated: 0, page: 1, offset: 0, sentence: null);
+    DeviceState ownAt(num updated) =>
+        DeviceState(device: own.device, name: own.name, updated: updated, page: 1, offset: 0, sentence: null);
+
+    test('offers another device’s place when it is newer than this device’s', () {
+      expect(placeOffer([phone(2000)], device, 1000)?.name, 'Galaxy S20 FE');
+      expect(placeOffer([phone(2000)], device, null)?.page, 2);
+    });
+
+    test('offers nothing when this device read last, or nobody else did', () {
+      expect(placeOffer([phone(1000)], device, 2000), isNull);
+      expect(placeOffer([ownAt(3000), phone(2000)], device, 1000), isNull);
+      expect(placeOffer([], device, 1000), isNull);
+    });
+  });
 }

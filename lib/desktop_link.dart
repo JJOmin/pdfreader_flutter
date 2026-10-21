@@ -296,10 +296,40 @@ class SyncResult {
   final int bytes;
 }
 
-/// Fetches every document the desktop prepared, and of each only what the phone lacks (step 5.4).
+/// Sends this phone's place in a document and keeps the other devices' (step 5.6). Each device
+/// writes only its own file, so nothing is merged.
+Future<void> _exchangeStates(
+  DesktopClient client,
+  String token,
+  String device,
+  Directory dir,
+  String docId,
+) async {
+  final own = File('${dir.path}/state/$device.json');
+  if (await own.exists()) {
+    await client.json(
+      'PUT',
+      '/v1/doc/$docId/state/$device',
+      token: token,
+      body: jsonDecode(await own.readAsString()),
+    );
+  }
+  final listed = await client.json('GET', '/v1/doc/$docId/state', token: token);
+  for (final entry in listed is List ? listed : const []) {
+    final state = parseDeviceState(entry);
+    if (state == null || state.device == device) continue;
+    final file = File('${dir.path}/state/${state.device}.json');
+    await file.parent.create(recursive: true);
+    await file.writeAsString(jsonEncode(state.toJson()));
+  }
+}
+
+/// Fetches every document the desktop prepared, and of each only what the phone lacks (step 5.4),
+/// then exchanges the places in them (step 5.6). `device` is this phone's id.
 Future<SyncResult> syncFrom(
   PairedDesktop desktop,
   Library library,
+  String device,
   void Function(SyncProgress) progress,
 ) async {
   final client = DesktopClient(
@@ -351,6 +381,15 @@ Future<SyncResult> syncFrom(
       }
       // Last, as on the desktop: a folder with a manifest is a whole document.
       await fetch('manifest.json');
+    }
+    for (final remote in manifests) {
+      await _exchangeStates(
+        client,
+        token,
+        device,
+        Directory('${library.root.path}/${remote.docId}'),
+        remote.docId,
+      );
     }
     return SyncResult(manifests.length, files, bytes);
   } finally {

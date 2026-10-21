@@ -6,6 +6,7 @@ import 'desktop_link.dart';
 import 'desktops_page.dart';
 import 'document_access.dart';
 import 'library.dart';
+import 'places.dart';
 import 'playback.dart';
 import 'reader_page.dart';
 
@@ -14,32 +15,41 @@ Future<void> main() async {
   // The speech side reads page text through the engine before any viewer exists.
   await pdfrxFlutterInitialize();
   final playback = await initPlayback();
-  runApp(PdfReaderApp(library: await Library.open(), playback: playback));
+  final store = await DesktopStore.open();
+  final places = await Places.open((device: store.device, name: await phoneName()));
+  runApp(PdfReaderApp(library: await Library.open(), playback: playback, places: places));
 }
 
 class PdfReaderApp extends StatelessWidget {
-  const PdfReaderApp({super.key, this.documents, this.library, this.playback});
+  const PdfReaderApp({super.key, this.documents, this.library, this.playback, this.places});
 
   /// Replaced in widget tests, which have no platform side.
   final DocumentAccess? documents;
   final Library? library;
   final ReadingHandler? playback;
+  final Places? places;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'PDF Reader',
     theme: ThemeData(colorSchemeSeed: Colors.indigo),
-    home: HomePage(documents: documents ?? DocumentAccess(), library: library, playback: playback),
+    home: HomePage(
+      documents: documents ?? DocumentAccess(),
+      library: library,
+      playback: playback,
+      places: places,
+    ),
   );
 }
 
 /// The documents the desktop prepared, and the picker for any other PDF.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.documents, this.library, this.playback});
+  const HomePage({super.key, required this.documents, this.library, this.playback, this.places});
 
   final DocumentAccess documents;
   final Library? library;
   final ReadingHandler? playback;
+  final Places? places;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -48,11 +58,19 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late Future<List<LibraryDocument>> _prepared = widget.library?.documents() ?? Future.value(const []);
 
-  void _show(String name, Uint8List data, LibraryDocument? prepared) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ReaderPage(name: name, data: data, prepared: prepared, playback: widget.playback),
-    ),
-  );
+  void _show(String name, Uint8List data, String placeKey, LibraryDocument? prepared) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ReaderPage(
+            name: name,
+            data: data,
+            placeKey: placeKey,
+            prepared: prepared,
+            playback: widget.playback,
+            places: widget.places,
+          ),
+        ),
+      );
 
   Future<void> _open() async {
     try {
@@ -60,17 +78,26 @@ class _HomePageState extends State<HomePage> {
       if (document == null) return;
       // A PDF the desktop prepared is found by its bytes, wherever it was opened from.
       final prepared = await widget.library?.find(document.data);
-      if (mounted) _show(document.name, document.data, prepared);
+      if (mounted) _show(document.name, document.data, document.uri, prepared);
     } on PlatformException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open: ${e.message}')));
     }
   }
 
-  Future<void> _openPrepared(LibraryDocument document) async =>
-      _show(document.manifest.name, await document.pdf.readAsBytes(), document);
+  Future<void> _openPrepared(LibraryDocument document) async => _show(
+    document.manifest.name,
+    await document.pdf.readAsBytes(),
+    'library:${document.manifest.docId}',
+    document,
+  );
 
-  void _reload() => setState(() => _prepared = widget.library?.documents() ?? Future.value(const []));
+  void _reload() {
+    final prepared = widget.library?.documents() ?? Future.value(const <LibraryDocument>[]);
+    setState(() {
+      _prepared = prepared;
+    });
+  }
 
   Future<void> _desktops() async {
     final library = widget.library;

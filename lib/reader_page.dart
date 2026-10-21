@@ -7,25 +7,41 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'document_text.dart';
 import 'library.dart';
+import 'places.dart';
 import 'playback.dart';
 import 'reader.dart';
 import 'shared/pdfium_text.dart';
 import 'shared/read_plan.dart';
 import 'shared/settings.dart';
+import 'shared/sync.dart';
 import 'shared/types.dart';
 
 /// After the user scrolls or zooms, the view leaves the voice alone this long, as on the desktop.
 const _followPause = Duration(seconds: 3);
 
-/// Kept for the session. shortcut: not saved, step 4.1 remembers settings.
-double _speed = 1;
+/// A run of scrolling is saved once it has paused this long, as on the desktop.
+const _placeDelay = Duration(milliseconds: 400);
 
 /// One document: the pages, and reading aloud when the desktop prepared it.
 class ReaderPage extends StatefulWidget {
-  const ReaderPage({super.key, required this.name, required this.data, this.prepared, this.playback});
+  const ReaderPage({
+    super.key,
+    required this.name,
+    required this.data,
+    required this.placeKey,
+    this.prepared,
+    this.playback,
+    this.places,
+  });
 
   final String name;
   final Uint8List data;
+
+  /// Names the document in the saved places: its URI, or its id when it came from the library.
+  final String placeKey;
+
+  /// Null in widget tests: nothing is remembered.
+  final Places? places;
 
   /// Null when the desktop has not prepared this PDF: it shows, but cannot be read aloud.
   final LibraryDocument? prepared;
@@ -53,11 +69,44 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   /// Set when the page closes: stopping the reader then reports back, but nothing may be rebuilt.
   bool _closing = false;
 
+  late double _speed = widget.places?.speed ?? 1;
+  PdfDocument? _document;
+
+  /// Where Play continues the first time it is pressed: the sentence the voice left off at.
+  Cursor? _resume;
+
+  /// The sentence the voice read last, kept with the place.
+  Cursor? _lastSentence;
+
+  /// The place saved when the document was last open here.
+  late final _saved = widget.places?.progress(widget.placeKey)?.progress;
+
+  /// False until the saved place is shown, so the top of the document is not saved over it.
+  bool _placed = false;
+  Timer? _placeTimer;
+
+  /// Another device's newer place in this document, offered until the user answers.
+  DeviceState? _offer;
+
   void _ready(PdfDocument document, PdfViewerController controller) {
     final text = DocumentText(document);
     final prepared = widget.prepared;
+    _document = document;
     setState(() => _text = text);
+    final saved = _saved;
+    final sentence = saved?.sentence;
+    if (sentence != null) _resume = _lastSentence = (page: sentence.page, index: sentence.index);
+    // The viewer opens on the saved page itself; the offset and zoom follow once it has settled,
+    // because a move during its first layout is undone by it.
+    Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      // Saving waits for the view to rest, so it records where this move ends.
+      _placed = true;
+      _controller.addListener(_moved);
+      if (saved != null) unawaited(_show(saved.page, saved.offset, saved.zoom));
+    });
     if (prepared == null) return;
+    unawaited(_findOffer(prepared));
     final reader = Reader(this, LibraryAudio(prepared))..speed = _speed;
     setState(() => _reader = reader);
     final playback = widget.playback;
@@ -67,6 +116,90 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       playback.onStop = reader.stop;
     }
     unawaited(_countSkipped());
+  }
+
+  /// Scrolls to a place at the given zoom, or the current one.
+  Future<void> _show(int page, double offset, double? zoom) async {
+    final document = _document;
+    if (document == null || page < 1 || page > document.pages.length || !_controller.isReady) return;
+    final rect = _pageRect(page);
+    final scale = zoom ?? _controller.currentZoom;
+    final top = rect.top + offset * rect.height;
+    final view = _controller.viewSize;
+    final matrix = _controller.calcMatrixFor(
+      Offset(_controller.centerPosition.dx, top + view.height / (2 * scale)),
+      zoom: scale,
+    );
+    await _controller.goTo(_controller.calcMatrixForClampedToNearestBoundary(matrix, viewSize: view));
+  }
+
+  /// A page's rectangle in the document's layout.
+  Rect _pageRect(int page) {
+    final pdfPage = _document!.pages[page - 1];
+    return _controller.calcRectForRectInsidePage(
+      pageNumber: page,
+      rect: PdfRect(0, pdfPage.height, pdfPage.width, 0),
+    );
+  }
+
+  void _moved() {
+    _placeTimer?.cancel();
+    _placeTimer = Timer(_placeDelay, _savePlace);
+  }
+
+  /// Remembers where the user is, and for a prepared document writes this phone's state (step 5.6).
+  Future<void> _savePlace() async {
+    final places = widget.places;
+    if (places == null || !_placed || !_controller.isReady || _closing) return;
+    final page = _controller.pageNumber ?? 1;
+    final rect = _pageRect(page);
+    final offset = ((_controller.visibleRect.top - rect.top) / rect.height).clamp(0.0, 0.999);
+    final last = _lastSentence;
+    String? key;
+    if (last != null && widget.prepared != null) {
+      final sentences = (await _plan(last.page)).sentences;
+      if (last.index < sentences.length) key = sentences[last.index].key;
+    }
+    places.remember(
+      widget.placeKey,
+      Progress(
+        view: 'pdf',
+        zoom: (_controller.currentZoom * 1000).round() / 1000,
+        page: page,
+        offset: offset,
+        sentence: last,
+      ),
+      prepared: widget.prepared,
+      sentenceKey: key,
+    );
+  }
+
+  /// Offers another device's place if it is newer than this phone's (ADR 7 section 8).
+  Future<void> _findOffer(LibraryDocument prepared) async {
+    final identity = widget.places?.identity;
+    if (identity == null) return;
+    final offer = placeOffer(
+      await libraryStates(prepared),
+      identity.device,
+      widget.places!.progress(widget.placeKey)?.updated,
+    );
+    if (offer != null && mounted) setState(() => _offer = offer);
+  }
+
+  Future<void> _continueThere(DeviceState offer) async {
+    setState(() => _offer = null);
+    _reader?.stop();
+    final sentence = offer.sentence;
+    if (sentence != null && widget.prepared != null) {
+      // Found by its key first, by its index second.
+      final sentences = (await _plan(sentence.page)).sentences;
+      final byKey = sentences.indexWhere((s) => s.key == sentence.key);
+      _resume = _lastSentence = (page: sentence.page, index: byKey >= 0 ? byKey : sentence.index);
+    } else {
+      _resume = (page: offer.page, index: 0);
+    }
+    await _show(offer.page, offer.offset, null);
+    await _savePlace();
   }
 
   /// The document says how many of its sentences have no audio (ADR 2 section 1).
@@ -106,6 +239,12 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     });
     widget.playback?.show(state, widget.name, this.sentence?.page ?? _controller.pageNumber ?? 1);
     if (changedSentence) {
+      _resume = null;
+      final at = _reader?.cursor;
+      if (at != null) {
+        _lastSentence = at;
+        unawaited(_savePlace());
+      }
       _spokenPage = null;
       unawaited(
         _text!.page(sentence.page).then((page) {
@@ -128,7 +267,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     _follow();
   }
 
-  void _toggle() => _reader?.toggle((page: _controller.pageNumber ?? 1, index: 0));
+  /// The page the view shows, for the integration test.
+  int? get currentPage => _controller.pageNumber;
+
+  void _toggle() => _reader?.toggle(_resume ?? (page: _controller.pageNumber ?? 1, index: 0));
 
   /// The boxes of raw ranges on the spoken page, in PDF units.
   List<CharBox> _boxes(List<RawRange> ranges) {
@@ -201,6 +343,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   @override
   void dispose() {
+    _placeTimer?.cancel();
+    _controller.removeListener(_moved);
+    if (_placed) unawaited(_savePlace().then((_) => widget.places?.flush()));
     _closing = true;
     final playback = widget.playback;
     if (playback != null) {
@@ -228,11 +373,25 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       appBar: AppBar(title: Text(widget.name, overflow: TextOverflow.ellipsis)),
       body: Column(
         children: [
+          if (_offer case final offer?)
+            MaterialBanner(
+              key: const Key('place-offer'),
+              content: Text('Continue where you stopped on ${offer.name}, page ${offer.page}?'),
+              actions: [
+                TextButton(onPressed: () => setState(() => _offer = null), child: const Text('Stay here')),
+                TextButton(
+                  key: const Key('place-continue'),
+                  onPressed: () => _continueThere(offer),
+                  child: const Text('Continue there'),
+                ),
+              ],
+            ),
           Expanded(
             child: PdfViewer.data(
               widget.data,
               sourceName: widget.prepared?.manifest.docId ?? widget.name,
               controller: _controller,
+              initialPageNumber: _saved?.page ?? 1,
               params: PdfViewerParams(
                 onViewerReady: _ready,
                 onInteractionStart: (_) => _lastTouch = DateTime.now(),
@@ -282,6 +441,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                         : (value) => setState(() {
                             _speed = value;
                             reader.speed = value;
+                            widget.places?.speed = value;
                           }),
                   ),
                 ),

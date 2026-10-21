@@ -81,7 +81,7 @@ class _DesktopsPageState extends State<DesktopsPage> {
       _status = 'Asking ${desktop.name}';
     });
     try {
-      final result = await syncFrom(desktop, widget.library, (p) {
+      final result = await syncFrom(desktop, widget.library, widget.store.device, (p) {
         if (!mounted) return;
         setState(() {
           _progress = p.total == 0 ? null : p.done / p.total;

@@ -1,6 +1,8 @@
 // PLAN step 1.13: the real app on the phone reads the fixture the desktop prepared. Push it first:
 //   powershell -ExecutionPolicy Bypass -File tool/push_library.ps1
 //   flutter test integration_test/reader_test.dart --no-uninstall
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -8,6 +10,7 @@ import 'package:pdfreader/main.dart' as app;
 import 'package:pdfreader/reader.dart';
 import 'package:pdfreader/reader_page.dart';
 import 'package:pdfreader/shared/types.dart';
+import 'package:path_provider/path_provider.dart';
 
 bool inside(List<RawRange> inner, List<RawRange> outer) =>
     inner.every((r) => outer.any((o) => o.$1 <= r.$1 && r.$2 <= o.$2));
@@ -16,6 +19,9 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('reads the prepared fixture with the word mark inside the spoken sentence', (tester) async {
+    // From the top: the place a previous run left must not decide where Play starts.
+    final saved = File('${(await getApplicationSupportDirectory()).path}/progress.json');
+    if (await saved.exists()) await saved.delete();
     await app.main();
     final prepared = find.text('sample.pdf');
     for (var i = 0; i < 100 && prepared.evaluate().isEmpty; i++) {

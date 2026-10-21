@@ -262,3 +262,11 @@ DeviceState? newestState(List<DeviceState> states) {
   }
   return best;
 }
+
+/// The place to offer when a document opens: the newest state, if another device wrote it after
+/// this device last moved in the document. `ownUpdated` is when this device last did.
+DeviceState? placeOffer(List<DeviceState> states, String device, num? ownUpdated) {
+  final newest = newestState(states);
+  if (newest == null || newest.device == device) return null;
+  return ownUpdated == null || newest.updated > ownUpdated ? newest : null;
+}

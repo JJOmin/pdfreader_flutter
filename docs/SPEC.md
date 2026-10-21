@@ -35,16 +35,18 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
 1. **Only documents the desktop prepared are read aloud.** Others show "Not prepared on the
    desktop" and Play is off (ADR 2). The step 1.8 voices and `sherpa_onnx` are still in the APK,
    unused.
-2. **Documents arrive over USB** with `tool/push_library.ps1`, after the app is installed:
-   installing it the first time clears the folder. Sync over the network is M5 (5.3 to 5.6) and
-   needs the desktop's server, step S5.
+2. **Documents arrive over Wi-Fi** from a paired desktop (Desktops, then Sync), or over USB with
+   `tool/push_library.ps1` after the app is installed: installing it the first time clears the
+   folder. Sync runs when the user presses it, not in the background.
 3. **Sentence joins are slower than on the desktop:** about 300 ms between sentences, against
    80 ms. Each sentence has its own preloaded player, and the player reports the end 200 to 280 ms
    after the audio's length. Marked `// shortcut` in `lib/reader.dart`: if the owner hears it as too
    slow, play one gapless just_audio playlist with silences instead.
 4. **Not verified on the device:** the highlight at 300 % zoom, two minutes with the screen off,
    and the notification's buttons. These are left for the owner.
-5. **The speed is not remembered** between sessions, nor the place in a document (step 4.1).
+5. **The place and the speed are remembered** (step 4.1), and a prepared document's place goes to
+   the desktop on each sync (step 5.6). The phone's zoom is pdfrx's, not the desktop's, so only
+   the page, the offset and the sentence are shared.
 6. **Previous on a page's first sentence** goes to the previous page's last sentence. The desktop
    goes to the last sentence of the same page, which is a bug in its `reader.ts`.
 
