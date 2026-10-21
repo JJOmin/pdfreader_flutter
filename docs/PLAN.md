@@ -52,8 +52,15 @@ Windows desktop builds, not for Android or `tool/dump.dart`.
   300 ms on the phone, against 80 ms on the desktop: the player reports a sentence's end 200 to
   280 ms after its audio length. Details and limits in [SPEC.md](SPEC.md).
 
-**Order from here:** 5.1 (the match spike) and 5.2, then the desktop's S2 to S4 (it prepares a
-library), then 1.9 to 1.14 with a library copied over USB, then 5.3 to 5.6 (the network).
+**Order from here (the owner, 2026-10-21, after M1's review):**
+
+1. **Wi-Fi sync:** 5.3 to 5.6, with the desktop's S5 and S6. Step 5.6 needs 4.1, so 4.1 comes
+   just before it.
+2. **The reading view on the phone:** 3.2 (the `TextView` interface), then 3.4. The phone's PDF
+   is hard to read on a small screen, so this comes before marks. Search (3.1, 3.3) after it.
+3. **Marks:** M2, then 5.7, which syncs them both ways with the desktop, merged per mark.
+4. **Cloud folders:** M6, Dropbox and Nextcloud. It starts with an ADR, because Dropbox would
+   change the offline rule.
 
 ### Pure logic, ported (`lib/shared/`, no Flutter imports)
 
@@ -122,9 +129,23 @@ its `docs/SPEC.md`. They are built in that repository, never from here.
 | 5.4 | Download: the desktop's library, then a document's PDF, manifest, indexes and missing audio into the app's storage. Show progress and a Remove action. Fetch again only what is missing. | Device: the fixture downloads, each file's size equals the desktop's, and a second sync fetches nothing. Remove frees the space. |
 | 5.5 | Read what was downloaded: downloaded documents open from the app's storage through the same path as the pushed library of 1.9. | Device: a document downloaded in 5.4, not pushed, is read with the word mark on the right words. |
 | 5.6 | Place: write `state/<device>.json`, send it on every sync, and offer the newest other device's place when a document opens. | Device: read to page 2 on the phone and sync. The desktop then offers page 2 at that sentence. The other way round works as well. **Stop for review.** |
+| 5.7 | **Notes both ways.** `notes.json` joins the library (desktop step S7). The phone sends its notes with `PUT` and fetches the desktop's. Merged per mark, as the owner chose on 2026-10-21 (desktop ADR 7 section 1): marks are kept by id from both sides, an edited mark takes the newer edit, a deleted mark stays deleted (a tombstone), and the general notes take the newer text. `lib/shared/notes_merge.dart` with tests, the same cases as the desktop's. | Unit tests for the merge: new on both sides, edited on both, deleted on one and edited on the other. Device: a mark made on the phone shows on the desktop after a sync, and one made on the desktop shows on the phone. Neither is lost when both changed before the sync. **Stop for review.** |
 
 ## Not planned
 
 The XTTS GPU voice, the Windows installer and Pocket TTS (out of scope). Supertonic 3, focus
 mode, softened sentence edges and an in-app model import are possible later steps, not part of
 these milestones.
+
+## M6: cloud folders (Dropbox, Nextcloud)
+
+Asked for by the owner on 2026-10-21: open and sync documents directly from Dropbox or Nextcloud
+inside the app. **Not started, and not to be built before its ADR is accepted.** The offline rule
+in `CLAUDE.md` allows one network use, sync with the user's paired desktop on the local network.
+Dropbox is a cloud service, so it would change that rule. A Nextcloud on the owner's own server or
+TrueNAS stays on the owner's network.
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 6.1 | **ADR 3: cloud folders.** What is synced (PDFs, notes, the prepared library?), Dropbox's and Nextcloud's APIs (Dropbox: OAuth with PKCE and its HTTP API; Nextcloud: WebDAV with an app password), the packages each would need, where tokens are kept, how it changes the offline rule, and whether the desktop takes part. Two options and a recommendation. | The owner has accepted it, and `CLAUDE.md` says what the rule now allows. |
+| 6.2 onward | Written from the accepted ADR. | |
