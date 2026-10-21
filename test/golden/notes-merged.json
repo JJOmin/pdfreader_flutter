@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "notes": "from the phone, ä 😀",
+  "annotations": [
+    {
+      "id": "a",
+      "page": 1,
+      "start": 0,
+      "end": 5,
+      "text": "quick",
+      "quote": "quick",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "Zeile\nzwei",
+      "created": "2026-10-13T00:00:00.000Z",
+      "updated": 1792500000000
+    },
+    {
+      "id": "b",
+      "page": 1,
+      "start": 0,
+      "end": 5,
+      "text": "quick",
+      "quote": "quick",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "edited",
+      "created": "2026-10-13T00:00:00.000Z",
+      "updated": 1792500001000
+    },
+    {
+      "id": "c",
+      "page": 1,
+      "start": 0,
+      "end": 5,
+      "text": "quick",
+      "quote": "quick",
+      "kind": "highlight",
+      "color": "yellow",
+      "comment": "",
+      "created": "2026-10-13T00:00:00.000Z",
+      "updated": 1792500001000
+    }
+  ],
+  "notesUpdated": 1792500000123,
+  "removed": [
+    {
+      "id": "gone",
+      "updated": 1792500002000
+    }
+  ]
+}

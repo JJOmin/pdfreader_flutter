@@ -19,6 +19,7 @@ class Annotation {
     required this.color,
     required this.comment,
     required this.created,
+    this.updated,
   });
 
   final String id;
@@ -36,6 +37,9 @@ class Annotation {
   final String comment;
   final String created;
 
+  /// When it was last changed, in milliseconds. Set when notes are saved; older files have none.
+  final num? updated;
+
   Annotation copyWith({
     int? start,
     int? end,
@@ -43,6 +47,7 @@ class Annotation {
     String? comment,
     MarkKind? kind,
     HighlightColor? color,
+    num? updated,
   }) => Annotation(
     id: id,
     page: page,
@@ -53,6 +58,21 @@ class Annotation {
     kind: kind ?? this.kind,
     color: color ?? this.color,
     comment: comment ?? this.comment,
+    created: created,
+    updated: updated ?? this.updated,
+  );
+
+  /// The same mark with no time of change, for comparing content.
+  Annotation get unstamped => Annotation(
+    id: id,
+    page: page,
+    start: start,
+    end: end,
+    text: text,
+    quote: quote,
+    kind: kind,
+    color: color,
+    comment: comment,
     created: created,
   );
 
@@ -68,20 +88,44 @@ class Annotation {
     'color': color.name,
     'comment': comment,
     'created': created,
+    if (updated != null) 'updated': updated,
   };
 }
 
+/// A mark that was deleted, kept so that another device does not bring it back.
+class Removal {
+  const Removal(this.id, this.updated);
+
+  final String id;
+  final num updated;
+
+  Map<String, Object?> toJson() => {'id': id, 'updated': updated};
+}
+
 class NotesFile {
-  const NotesFile({required this.notes, required this.annotations});
+  const NotesFile({
+    required this.notes,
+    required this.annotations,
+    this.notesUpdated,
+    this.removed = const [],
+  });
 
   /// The general notes on the document.
   final String notes;
   final List<Annotation> annotations;
 
+  /// When the general notes were last changed.
+  final num? notesUpdated;
+  final List<Removal> removed;
+
+  /// The fields the desktop leaves out when there is nothing to say stay out, so that a file
+  /// written before them reads and writes as it did.
   Map<String, Object?> toJson() => {
     'version': 1,
     'notes': notes,
     'annotations': [for (final a in annotations) a.toJson()],
+    if (notesUpdated != null) 'notesUpdated': notesUpdated,
+    if (removed.isNotEmpty) 'removed': [for (final r in removed) r.toJson()],
   };
 }
 
@@ -91,6 +135,8 @@ NotesFile emptyNotes() => const NotesFile(notes: '', annotations: []);
 String encodeNotes(NotesFile file) => const JsonEncoder.withIndent('  ').convert(file.toJson());
 
 bool _isInt(Object? v) => v is num && v.isFinite && v == v.roundToDouble();
+
+num? _time(Object? v) => v is num && v.isFinite ? v : null;
 
 /// Validates a parsed notes file and fills in fields that older files lack.
 /// Returns null for anything that is not a notes file.
@@ -121,10 +167,23 @@ NotesFile? parseNotes(Object? value) {
         color: color,
         comment: comment,
         created: created is String ? created : '',
+        updated: _time(entry['updated']),
       ),
     );
   }
-  return NotesFile(notes: notes, annotations: annotations);
+  // Entries that are not valid are dropped rather than refusing the file: losing a removal costs
+  // a mark coming back, losing the file costs every mark.
+  final removed = <Removal>[
+    for (final r in value['removed'] is List ? value['removed']! as List : const <Object?>[])
+      if (r is Map<String, Object?> && r['id'] is String && _time(r['updated']) != null)
+        Removal(r['id']! as String, _time(r['updated'])!),
+  ];
+  return NotesFile(
+    notes: notes,
+    annotations: annotations,
+    notesUpdated: _time(value['notesUpdated']),
+    removed: removed,
+  );
 }
 
 final _space = RegExp(r'\s+', unicode: true);

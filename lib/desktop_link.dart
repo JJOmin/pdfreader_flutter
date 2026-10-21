@@ -10,7 +10,9 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'library.dart';
+import 'notes_store.dart';
 import 'shared/download_plan.dart';
+import 'shared/notes.dart';
 import 'shared/pairing.dart';
 import 'shared/sync.dart';
 
@@ -154,9 +156,16 @@ class DesktopClient {
     return request.close();
   }
 
-  Future<Object?> json(String method, String path, {String? token, Object? body}) async {
+  Future<Object?> json(
+    String method,
+    String path, {
+    String? token,
+    Object? body,
+    bool missingIsNull = false,
+  }) async {
     final response = await _send(method, path, token: token, body: body);
     final text = await response.transform(utf8.decoder).join();
+    if (missingIsNull && response.statusCode == 404) return null;
     _check(response.statusCode);
     return text.isEmpty ? null : jsonDecode(text);
   }
@@ -287,9 +296,12 @@ class SyncProgress {
 }
 
 class SyncResult {
-  const SyncResult(this.documents, this.files, this.bytes);
+  const SyncResult(this.documents, this.files, this.bytes, {this.notes = 0});
 
   final int documents;
+
+  /// Documents whose marks or comments changed on this phone because of the sync.
+  final int notes;
 
   /// Files fetched; zero when everything was current.
   final int files;
@@ -324,14 +336,34 @@ Future<void> _exchangeStates(
   }
 }
 
+bool _blank(NotesFile f) => f.annotations.isEmpty && f.notes.isEmpty && f.removed.isEmpty;
+
+/// Sends this phone's marks and comments for a document and keeps what the desktop merged them
+/// with (step 5.7). Per mark: a mark new on either side is kept, the later edit wins, and a deleted
+/// mark stays deleted (desktop ADR 7 section 1). Returns whether this phone's copy changed.
+Future<bool> _exchangeNotes(DesktopClient client, String token, NotesStore store, String docId) async {
+  final local = await store.load(docId);
+  final path = '/v1/doc/$docId/notes';
+  // Nothing here to send: ask whether the desktop has some. It answers 404 when it has none.
+  final answer = _blank(local)
+      ? await client.json('GET', path, token: token, missingIsNull: true)
+      : await client.json('PUT', path, token: token, body: local.toJson());
+  final merged = parseNotes(answer);
+  if (merged == null) return false;
+  if (encodeNotes(merged) == encodeNotes(local)) return false;
+  await store.save(docId, merged);
+  return true;
+}
+
 /// Fetches every document the desktop prepared, and of each only what the phone lacks (step 5.4),
 /// then exchanges the places in them (step 5.6). `device` is this phone's id.
 Future<SyncResult> syncFrom(
   PairedDesktop desktop,
   Library library,
   String device,
-  void Function(SyncProgress) progress,
-) async {
+  void Function(SyncProgress) progress, {
+  NotesStore? notes,
+}) async {
   final client = DesktopClient(
     desktop.host,
     desktop.port,
@@ -391,7 +423,13 @@ Future<SyncResult> syncFrom(
         remote.docId,
       );
     }
-    return SyncResult(manifests.length, files, bytes);
+    var changed = 0;
+    if (notes != null) {
+      for (final remote in manifests) {
+        if (await _exchangeNotes(client, token, notes, remote.docId)) changed++;
+      }
+    }
+    return SyncResult(manifests.length, files, bytes, notes: changed);
   } finally {
     client.close();
   }

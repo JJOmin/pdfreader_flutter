@@ -53,9 +53,11 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
    slow, play one gapless just_audio playlist with silences instead.
 4. **Not verified on the device:** the highlight at 300 % zoom, two minutes with the screen off,
    and the notification's buttons. These are left for the owner.
-5. **Marks live on the phone only until they are synced.** They are not sent to the desktop yet
-   (step 5.7). Deleting the app deletes them. A notes file can be moved by hand: the desktop reads
-   what the phone writes and the phone what the desktop writes, found again by their text.
+5. **Marks are synced with the desktop on each sync, merged per mark** (step 5.7): marks new on
+   either side are kept, the later edit of a mark wins, a mark deleted on either side stays
+   deleted, and the later general notes win. Times are the two devices' own clocks. Marks are
+   found again on the other device by their text, since the two engines' offsets differ. Only
+   documents the desktop prepared are synced, and only when the user presses sync.
    In the reading view a mark cannot span two paragraphs, because each paragraph is selected on its
    own; in the PDF it can span lines and pages (one mark per page).
 6. **The place and the speed are remembered** (step 4.1), and a prepared document's place goes to

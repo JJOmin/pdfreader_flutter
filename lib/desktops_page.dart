@@ -4,14 +4,18 @@ import 'package:flutter/material.dart';
 
 import 'desktop_link.dart';
 import 'library.dart';
+import 'notes_store.dart';
 import 'shared/pairing.dart';
 
 /// Desktops on the network and the ones this phone paired with (PLAN steps 5.3 and 5.4).
 class DesktopsPage extends StatefulWidget {
-  const DesktopsPage({super.key, required this.store, required this.library});
+  const DesktopsPage({super.key, required this.store, required this.library, this.notes});
 
   final DesktopStore store;
   final Library library;
+
+  /// Where this phone's marks are kept: they are sent and merged on each sync.
+  final NotesStore? notes;
 
   @override
   State<DesktopsPage> createState() => _DesktopsPageState();
@@ -87,14 +91,16 @@ class _DesktopsPageState extends State<DesktopsPage> {
           _progress = p.total == 0 ? null : p.done / p.total;
           _status = 'Fetching ${p.document}: ${p.done} of ${p.total}';
         });
-      });
+      }, notes: widget.notes);
       if (desktop.host != paired.host || desktop.port != paired.port) await widget.store.remember(desktop);
       if (!mounted) return;
       setState(
-        () => _status = result.files == 0
-            ? 'Everything from ${desktop.name} is here already'
-            : '${result.documents} documents from ${desktop.name}, '
-                  '${result.files} files, ${(result.bytes / 1024 / 1024).toStringAsFixed(1)} MB',
+        () => _status =
+            (result.files == 0
+                ? 'Everything from ${desktop.name} is here already'
+                : '${result.documents} documents from ${desktop.name}, '
+                      '${result.files} files, ${(result.bytes / 1024 / 1024).toStringAsFixed(1)} MB') +
+            (result.notes == 0 ? '' : '; marks changed in ${result.notes}'),
       );
     } catch (error) {
       if (mounted) setState(() => _status = '$error');

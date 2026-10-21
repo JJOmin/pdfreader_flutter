@@ -125,7 +125,7 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => DesktopsPage(store: store, library: library),
+        builder: (_) => DesktopsPage(store: store, library: library, notes: widget.notesStore),
       ),
     );
     _reload();

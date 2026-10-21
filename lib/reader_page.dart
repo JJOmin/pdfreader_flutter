@@ -13,6 +13,7 @@ import 'playback.dart';
 import 'reader.dart';
 import 'shared/marks.dart';
 import 'shared/notes.dart';
+import 'shared/notes_merge.dart';
 import 'shared/read_plan.dart';
 import 'shared/search.dart';
 import 'shared/settings.dart';
@@ -195,7 +196,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   }
 
   void _notesChanged(NotesFile notes) {
-    setState(() => _notes = notes);
+    // Stamped here, by comparing with what was before, as the desktop does on save (ADR 7 section 1).
+    final stamped = stampChanges(_notes, notes, DateTime.now().millisecondsSinceEpoch);
+    setState(() => _notes = stamped);
     _notesDirty = true;
     _notesTimer?.cancel();
     _notesTimer = Timer(_notesDelay, () => unawaited(_flushNotes()));
@@ -489,6 +492,14 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   @visibleForTesting
   Offset? globalCenterOf(int page, List<RawRange> ranges) =>
       reading ? _readingView.globalCenterOf(page, ranges) : _pdf.globalCenterOf(page, ranges);
+
+  /// Changes a mark's comment as the card does, for tests.
+  @visibleForTesting
+  void setCommentFor(String id, String comment) => _actions.onComment(id, comment);
+
+  /// Deletes a mark as the card does, for tests.
+  @visibleForTesting
+  void deleteMarkFor(String id) => _actions.onDelete(id);
 
   /// Makes a mark as the menu does, for tests that need many.
   @visibleForTesting
