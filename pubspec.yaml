@@ -63,6 +63,20 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # The reading view's bundled fonts (OFL 1.1, licences beside them), turned from the desktop's
+  # @fontsource WOFF files into TTF by tool/woff_to_ttf.dart.
+  fonts:
+    - family: Lexend
+      fonts:
+        - asset: assets/fonts/Lexend-Regular.ttf
+        - asset: assets/fonts/Lexend-Bold.ttf
+          weight: 700
+    - family: OpenDyslexic
+      fonts:
+        - asset: assets/fonts/OpenDyslexic-Regular.ttf
+        - asset: assets/fonts/OpenDyslexic-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

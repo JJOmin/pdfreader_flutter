@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -10,11 +9,14 @@ import 'library.dart';
 import 'places.dart';
 import 'playback.dart';
 import 'reader.dart';
-import 'shared/pdfium_text.dart';
 import 'shared/read_plan.dart';
+import 'shared/search.dart';
 import 'shared/settings.dart';
 import 'shared/sync.dart';
 import 'shared/types.dart';
+import 'views/pdf_pages_view.dart';
+import 'views/reading_view.dart';
+import 'views/text_view.dart';
 
 /// After the user scrolls or zooms, the view leaves the voice alone this long, as on the desktop.
 const _followPause = Duration(seconds: 3);
@@ -22,7 +24,10 @@ const _followPause = Duration(seconds: 3);
 /// A run of scrolling is saved once it has paused this long, as on the desktop.
 const _placeDelay = Duration(milliseconds: 400);
 
-/// One document: the pages, and reading aloud when the desktop prepared it.
+/// Typing is searched once it pauses this long, as on the desktop.
+const _searchDelay = Duration(milliseconds: 200);
+
+/// One document: the pages or the reading view, reading aloud when the desktop prepared it, and search.
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
     super.key,
@@ -52,17 +57,24 @@ class ReaderPage extends StatefulWidget {
 }
 
 class ReaderPageState extends State<ReaderPage> implements ReaderHost {
-  final _controller = PdfViewerController();
+  PdfDocument? _document;
+  PdfDocumentRef? _documentRef;
   DocumentText? _text;
   Reader? _reader;
   final _plans = <int, Future<PagePlan>>{};
   int? _skipped;
 
-  /// The sentence being read and its word, and the page's text they are painted from.
+  final _pdf = PdfPagesController();
+  final _readingView = ReadingController();
+
+  /// True while the reading view is shown instead of the pages.
+  late bool reading = _saved?.view == 'reading';
+  TextView get _view => reading ? _readingView : _pdf;
+
+  /// The sentence being read and its word.
   PlannedSentence? sentence;
   int word = -1;
   ReaderState state = ReaderState.idle;
-  LoadedPage? _spokenPage;
   DateTime _lastTouch = DateTime(0);
   String? _error;
 
@@ -70,7 +82,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   bool _closing = false;
 
   late double _speed = widget.places?.speed ?? 1;
-  PdfDocument? _document;
+  late ReadingSettings _readingSettings = widget.places?.reading ?? defaultSettings().reading;
 
   /// Where Play continues the first time it is pressed: the sentence the voice left off at.
   Cursor? _resume;
@@ -88,23 +100,40 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   /// Another device's newer place in this document, offered until the user answers.
   DeviceState? _offer;
 
-  void _ready(PdfDocument document, PdfViewerController controller) {
-    final text = DocumentText(document);
-    final prepared = widget.prepared;
-    _document = document;
-    setState(() => _text = text);
+  /// The search box, while it is open, and what it found: page and raw ranges, in reading order.
+  final _searchBox = TextEditingController();
+  bool _searching = false;
+  Timer? _searchTimer;
+  List<({int page, List<RawRange> ranges})> _matches = const [];
+  int _match = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_open());
+  }
+
+  Future<void> _open() async {
+    try {
+      final document = await PdfDocument.openData(widget.data, sourceName: widget.placeKey);
+      if (!mounted) {
+        await document.dispose();
+        return;
+      }
+      setState(() {
+        _document = document;
+        // Both views and the speech share one document: the app opens it and closes it.
+        _documentRef = PdfDocumentRefDirect(document, autoDispose: false);
+        _text = DocumentText(document);
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = 'Could not open ${widget.name}: $error');
+      return;
+    }
     final saved = _saved;
     final sentence = saved?.sentence;
     if (sentence != null) _resume = _lastSentence = (page: sentence.page, index: sentence.index);
-    // The viewer opens on the saved page itself; the offset and zoom follow once it has settled,
-    // because a move during its first layout is undone by it.
-    Timer(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      // Saving waits for the view to rest, so it records where this move ends.
-      _placed = true;
-      _controller.addListener(_moved);
-      if (saved != null) unawaited(_show(saved.page, saved.offset, saved.zoom));
-    });
+    final prepared = widget.prepared;
     if (prepared == null) return;
     unawaited(_findOffer(prepared));
     final reader = Reader(this, LibraryAudio(prepared))..speed = _speed;
@@ -118,28 +147,16 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     unawaited(_countSkipped());
   }
 
-  /// Scrolls to a place at the given zoom, or the current one.
-  Future<void> _show(int page, double offset, double? zoom) async {
-    final document = _document;
-    if (document == null || page < 1 || page > document.pages.length || !_controller.isReady) return;
-    final rect = _pageRect(page);
-    final scale = zoom ?? _controller.currentZoom;
-    final top = rect.top + offset * rect.height;
-    final view = _controller.viewSize;
-    final matrix = _controller.calcMatrixFor(
-      Offset(_controller.centerPosition.dx, top + view.height / (2 * scale)),
-      zoom: scale,
-    );
-    await _controller.goTo(_controller.calcMatrixForClampedToNearestBoundary(matrix, viewSize: view));
-  }
-
-  /// A page's rectangle in the document's layout.
-  Rect _pageRect(int page) {
-    final pdfPage = _document!.pages[page - 1];
-    return _controller.calcRectForRectInsidePage(
-      pageNumber: page,
-      rect: PdfRect(0, pdfPage.height, pdfPage.width, 0),
-    );
+  /// The pages are laid out: show the saved place, then start remembering where the user goes.
+  void _pagesReady() {
+    // A move during the viewer's first layout is undone by it, so the offset follows a moment later.
+    Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _placed = true;
+      _pdf.viewer.addListener(_moved);
+      final saved = _saved;
+      if (saved != null && !reading) unawaited(_pdf.showPage(saved.page, saved.offset, zoom: saved.zoom));
+    });
   }
 
   void _moved() {
@@ -147,13 +164,17 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     _placeTimer = Timer(_placeDelay, _savePlace);
   }
 
+  void _touched() {
+    _lastTouch = DateTime.now();
+    _moved();
+  }
+
   /// Remembers where the user is, and for a prepared document writes this phone's state (step 5.6).
   Future<void> _savePlace() async {
     final places = widget.places;
-    if (places == null || !_placed || !_controller.isReady || _closing) return;
-    final page = _controller.pageNumber ?? 1;
-    final rect = _pageRect(page);
-    final offset = ((_controller.visibleRect.top - rect.top) / rect.height).clamp(0.0, 0.999);
+    if (places == null || !_placed || _closing || !_view.isReady) return;
+    final anchor = _view.scrollAnchor();
+    if (anchor == null) return;
     final last = _lastSentence;
     String? key;
     if (last != null && widget.prepared != null) {
@@ -163,15 +184,27 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     places.remember(
       widget.placeKey,
       Progress(
-        view: 'pdf',
-        zoom: (_controller.currentZoom * 1000).round() / 1000,
-        page: page,
-        offset: offset,
+        view: reading ? 'reading' : 'pdf',
+        zoom: _pdf.isReady ? (_pdf.zoom * 1000).round() / 1000 : _saved?.zoom,
+        page: anchor.page,
+        offset: anchor.offset,
         sentence: last,
       ),
       prepared: widget.prepared,
       sentenceKey: key,
     );
+  }
+
+  /// Switches between the pages and the reading view, at the same page and with the voice going on.
+  void _switchView() {
+    final page = sentence?.page ?? _view.currentPage ?? 1;
+    setState(() => reading = !reading);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _view.showPage(page, 0);
+      _revealSpoken(force: true);
+      if (reading) _placed = true;
+      unawaited(_savePlace());
+    });
   }
 
   /// Offers another device's place if it is newer than this phone's (ADR 7 section 8).
@@ -198,7 +231,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     } else {
       _resume = (page: offer.page, index: 0);
     }
-    await _show(offer.page, offer.offset, null);
+    await _view.showPage(offer.page, offer.offset);
     await _savePlace();
   }
 
@@ -237,7 +270,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         this.word = -1;
       }
     });
-    widget.playback?.show(state, widget.name, this.sentence?.page ?? _controller.pageNumber ?? 1);
+    widget.playback?.show(state, widget.name, this.sentence?.page ?? _view.currentPage ?? 1);
     if (changedSentence) {
       _resume = null;
       final at = _reader?.cursor;
@@ -245,16 +278,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         _lastSentence = at;
         unawaited(_savePlace());
       }
-      _spokenPage = null;
-      unawaited(
-        _text!.page(sentence.page).then((page) {
-          if (!mounted || this.sentence != sentence) return;
-          _spokenPage = page;
-          _repaint();
-        }),
-      );
     }
-    _repaint();
+    _revealSpoken();
   }
 
   @override
@@ -262,89 +287,99 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     if (mounted && !_closing) setState(() => _error = '$error');
   }
 
-  void _repaint() {
-    if (_controller.isReady) _controller.invalidate();
-    _follow();
+  /// Keeps the spoken word in view, unless the user has just moved the view somewhere else.
+  void _revealSpoken({bool force = false}) {
+    final sentence = this.sentence;
+    if (sentence == null || (!force && DateTime.now().difference(_lastTouch) < _followPause)) return;
+    final ranges = word >= 0 && word < sentence.words.length ? sentence.words[word].ranges : sentence.ranges;
+    // After the frame, so the reading view has laid out the new highlight's paragraph.
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_view.reveal(sentence.page, ranges)));
+  }
+
+  /// What both views paint: the spoken sentence and word, and the search matches.
+  List<Highlight> get _highlights {
+    final sentence = this.sentence;
+    return [
+      if (sentence != null) Highlight(sentence.page, sentence.ranges, HighlightKind.sentence),
+      for (var i = 0; i < _matches.length; i++)
+        Highlight(
+          _matches[i].page,
+          _matches[i].ranges,
+          i == _match ? HighlightKind.searchCurrent : HighlightKind.search,
+        ),
+      if (sentence != null && word >= 0 && word < sentence.words.length)
+        Highlight(sentence.page, sentence.words[word].ranges, HighlightKind.word),
+    ];
   }
 
   /// The page the view shows, for the integration test.
-  int? get currentPage => _controller.pageNumber;
+  int? get currentPage => _view.currentPage;
 
-  void _toggle() => _reader?.toggle(_resume ?? (page: _controller.pageNumber ?? 1, index: 0));
+  void _toggle() => _reader?.toggle(_resume ?? (page: _view.currentPage ?? 1, index: 0));
 
-  /// The boxes of raw ranges on the spoken page, in PDF units.
-  List<CharBox> _boxes(List<RawRange> ranges) {
-    final page = _spokenPage;
-    if (page == null) return const [];
-    final rects = [
-      for (final r in page.charRects) (left: r.left, bottom: r.bottom, right: r.right, top: r.top),
-    ];
-    return rangeBoxes(ranges, page.text.charIndex, rects);
+  void _searchChanged(String query) {
+    _searchTimer?.cancel();
+    _searchTimer = Timer(_searchDelay, () => unawaited(_search(query)));
   }
 
-  /// Keeps the spoken word in view, unless the user has just moved the view somewhere else.
-  void _follow() {
-    final sentence = this.sentence;
-    if (sentence == null || !_controller.isReady || DateTime.now().difference(_lastTouch) < _followPause) {
-      return;
-    }
-    final word = this.word;
-    final boxes = _boxes(
-      word >= 0 && word < sentence.words.length ? sentence.words[word].ranges : sentence.ranges,
-    );
-    if (boxes.isEmpty) {
-      if (_spokenPage == null && _controller.pageNumber != sentence.page) {
-        unawaited(_controller.goToPage(pageNumber: sentence.page));
-      }
-      return;
-    }
-    final b = boxes.first;
-    final rect = _controller.calcRectForRectInsidePage(
-      pageNumber: sentence.page,
-      rect: PdfRect(b.left, b.top, b.right, b.bottom),
-    );
-    final visible = _controller.visibleRect;
-    // Comfortably inside: leave the view still, as the desktop does.
-    final comfort = Rect.fromLTRB(
-      visible.left,
-      visible.top + visible.height * 0.1,
-      visible.right,
-      visible.bottom - visible.height * 0.25,
-    );
-    if (!comfort.contains(rect.topLeft) || !comfort.contains(rect.bottomRight)) {
-      // Scrolls at the user's zoom: the word goes to 30 % from the top, sideways only if it is off
-      // screen. ensureVisible would zoom in on the word.
-      final x = visible.left <= rect.left && rect.right <= visible.right ? visible.center.dx : rect.center.dx;
-      final matrix = _controller.calcMatrixFor(Offset(x, rect.center.dy + visible.height * 0.2));
-      unawaited(
-        _controller.goTo(
-          _controller.calcMatrixForClampedToNearestBoundary(matrix, viewSize: _controller.viewSize),
-        ),
-      );
-    }
-  }
-
-  void _paint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
-    final sentence = this.sentence;
-    if (sentence == null || page.pageNumber != sentence.page) return;
-    Rect place(CharBox b) =>
-        PdfRect(b.left, b.top, b.right, b.bottom).toRectInDocument(page: page, pageRect: pageRect);
-    final tint = Paint()..color = const Color(0x40FFD54F);
-    for (final b in _boxes(sentence.ranges)) {
-      canvas.drawRect(place(b), tint);
-    }
-    if (word >= 0 && word < sentence.words.length) {
-      final mark = Paint()..color = const Color(0x66FF8F00);
-      for (final b in _boxes(sentence.words[word].ranges)) {
-        canvas.drawRRect(RRect.fromRectAndRadius(place(b).inflate(1), const Radius.circular(2)), mark);
+  /// Finds the phrase on every page, in order, and shows the first match from the current page on.
+  Future<void> _search(String query) async {
+    final text = _text;
+    if (text == null) return;
+    final matches = <({int page, List<RawRange> ranges})>[];
+    for (var page = 1; page <= text.pageCount; page++) {
+      for (final ranges in findInBlocks((await text.page(page)).blocks, query)) {
+        matches.add((page: page, ranges: ranges));
       }
     }
+    if (!mounted || _searchBox.text != query) return;
+    final here = _view.currentPage ?? 1;
+    final first = matches.indexWhere((m) => m.page >= here);
+    setState(() {
+      _matches = matches;
+      _match = first < 0 ? 0 : first;
+    });
+    _showMatch();
   }
+
+  void _step(int direction) {
+    if (_matches.isEmpty) return;
+    setState(() => _match = (_match + direction) % _matches.length);
+    _showMatch();
+  }
+
+  void _showMatch() {
+    if (_matches.isEmpty) return;
+    final match = _matches[_match];
+    _lastTouch = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_view.reveal(match.page, match.ranges)));
+  }
+
+  void _closeSearch() {
+    _searchTimer?.cancel();
+    _searchBox.clear();
+    setState(() {
+      _searching = false;
+      _matches = const [];
+    });
+  }
+
+  Future<void> _openReadingSettings() => showModalBottomSheet<void>(
+    context: context,
+    builder: (_) => ReadingSettingsSheet(
+      settings: _readingSettings,
+      onChanged: (settings) {
+        setState(() => _readingSettings = settings);
+        widget.places?.reading = settings;
+      },
+    ),
+  );
 
   @override
   void dispose() {
     _placeTimer?.cancel();
-    _controller.removeListener(_moved);
+    _searchTimer?.cancel();
+    _pdf.viewer.removeListener(_moved);
     if (_placed) unawaited(_savePlace().then((_) => widget.places?.flush()));
     _closing = true;
     final playback = widget.playback;
@@ -354,6 +389,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       playback.show(ReaderState.idle, widget.name, 1);
     }
     unawaited(_reader?.dispose());
+    _searchBox.dispose();
+    unawaited(_document?.dispose());
     super.dispose();
   }
 
@@ -365,12 +402,76 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     return null;
   }
 
+  PreferredSizeWidget _appBar() {
+    if (_searching) {
+      return AppBar(
+        leading: IconButton(icon: const Icon(Icons.close), tooltip: 'Close search', onPressed: _closeSearch),
+        title: TextField(
+          key: const Key('search'),
+          controller: _searchBox,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Search', border: InputBorder.none),
+          textInputAction: TextInputAction.search,
+          onChanged: _searchChanged,
+          onSubmitted: (_) => _step(1),
+        ),
+        actions: [
+          Center(
+            child: Text(
+              _searchBox.text.trim().isEmpty
+                  ? ''
+                  : _matches.isEmpty
+                  ? 'No results'
+                  : '${_match + 1} / ${_matches.length}',
+              key: const Key('search-count'),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.keyboard_arrow_up),
+            tooltip: 'Previous match',
+            onPressed: () => _step(-1),
+          ),
+          IconButton(
+            icon: const Icon(Icons.keyboard_arrow_down),
+            tooltip: 'Next match',
+            onPressed: () => _step(1),
+          ),
+        ],
+      );
+    }
+    return AppBar(
+      title: Text(widget.name, overflow: TextOverflow.ellipsis),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search),
+          tooltip: 'Search',
+          onPressed: _text == null ? null : () => setState(() => _searching = true),
+        ),
+        if (reading)
+          IconButton(
+            icon: const Icon(Icons.format_size),
+            tooltip: 'Text settings',
+            onPressed: _openReadingSettings,
+          ),
+        IconButton(
+          key: const Key('toggle-reading'),
+          icon: Icon(reading ? Icons.picture_as_pdf : Icons.article),
+          tooltip: reading ? 'Show the pages' : 'Reading view',
+          onPressed: _text == null ? null : _switchView,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final reader = _reader;
     final status = _status;
+    final documentRef = _documentRef;
+    final text = _text;
+    final highlights = _highlights;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.name, overflow: TextOverflow.ellipsis)),
+      appBar: _appBar(),
       body: Column(
         children: [
           if (_offer case final offer?)
@@ -387,17 +488,33 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
               ],
             ),
           Expanded(
-            child: PdfViewer.data(
-              widget.data,
-              sourceName: widget.prepared?.manifest.docId ?? widget.name,
-              controller: _controller,
-              initialPageNumber: _saved?.page ?? 1,
-              params: PdfViewerParams(
-                onViewerReady: _ready,
-                onInteractionStart: (_) => _lastTouch = DateTime.now(),
-                pagePaintCallbacks: [_paint],
-              ),
-            ),
+            child: documentRef == null || text == null
+                ? const Center(child: CircularProgressIndicator())
+                // The pages stay built behind the reading view, so switching back keeps their place.
+                : Stack(
+                    children: [
+                      Offstage(
+                        offstage: reading,
+                        child: PdfPagesView(
+                          document: documentRef,
+                          text: text,
+                          controller: _pdf,
+                          highlights: reading ? const [] : highlights,
+                          initialPage: _saved?.page ?? 1,
+                          onReady: _pagesReady,
+                          onTouched: _touched,
+                        ),
+                      ),
+                      if (reading)
+                        ReadingView(
+                          text: text,
+                          settings: _readingSettings,
+                          controller: _readingView,
+                          highlights: highlights,
+                          onTouched: _touched,
+                        ),
+                    ],
+                  ),
           ),
           if (status != null)
             Padding(

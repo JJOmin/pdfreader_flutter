@@ -17,6 +17,11 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
 - **Highlighting:** the spoken sentence is tinted and the spoken word marked, painted from raw
   ranges onto PDFium's glyph boxes, one box per line. The view follows the voice at the user's
   zoom, unless the user touched it in the last three seconds.
+- **Reading view:** the text alone, restyled: OpenDyslexic, Lexend, or the phone's own sans or
+  serif; size, line and letter spacing; light, sepia or dark. Speech, the word mark and search work
+  in it as on the pages, and switching keeps the page while the voice goes on.
+- **Search** in both views, also across a hyphenated line break.
+- **Wi-Fi sync** with a paired desktop: its prepared documents, and the place in both directions.
 - **Screen off:** audio_service keeps reading in a media playback service, with a notification
   and lock screen controls.
 

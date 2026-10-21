@@ -56,6 +56,13 @@ class Places {
     _schedule();
   }
 
+  ReadingSettings get reading => _settings.reading;
+
+  set reading(ReadingSettings value) {
+    _settings = normalizeSettings({..._settings.toJson(), 'reading': value.toJson()});
+    _schedule();
+  }
+
   ({Progress progress, num updated})? progress(String key) => _store.documents[key];
 
   /// Remembers the place in a document. `state` is this phone's state for a prepared document.
