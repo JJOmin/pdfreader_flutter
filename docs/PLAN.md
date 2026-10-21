@@ -59,8 +59,8 @@ Windows desktop builds, not for Android or `tool/dump.dart`.
 2. **The reading view on the phone:** 3.2 (the `TextView` interface), then 3.4. The phone's PDF
    is hard to read on a small screen, so this comes before marks. Search (3.1, 3.3) after it.
 3. **Marks:** M2, then 5.7, which syncs them both ways with the desktop, merged per mark.
-4. **Cloud folders:** M6, Dropbox and Nextcloud. It starts with an ADR, because Dropbox would
-   change the offline rule.
+4. **Nextcloud and Dropbox:** M6, the phone's half of the desktop's ADR 8, which is accepted and
+   whose desktop half is built (its step S7). It starts with this repository's ADR 3.
 
 ### Pure logic, ported (`lib/shared/`, no Flutter imports)
 
@@ -129,7 +129,7 @@ its `docs/SPEC.md`. They are built in that repository, never from here.
 | 5.4 | Download: the desktop's library, then a document's PDF, manifest, indexes and missing audio into the app's storage. Show progress and a Remove action. Fetch again only what is missing. | Device: the fixture downloads, each file's size equals the desktop's, and a second sync fetches nothing. Remove frees the space. |
 | 5.5 | Read what was downloaded: downloaded documents open from the app's storage through the same path as the pushed library of 1.9. | Device: a document downloaded in 5.4, not pushed, is read with the word mark on the right words. |
 | 5.6 | Place: write `state/<device>.json`, send it on every sync, and offer the newest other device's place when a document opens. | Device: read to page 2 on the phone and sync. The desktop then offers page 2 at that sentence. The other way round works as well. **Stop for review.** |
-| 5.7 | **Notes both ways.** `notes.json` joins the library (desktop step S7). The phone sends its notes with `PUT` and fetches the desktop's. Merged per mark, as the owner chose on 2026-10-21 (desktop ADR 7 section 1): marks are kept by id from both sides, an edited mark takes the newer edit, a deleted mark stays deleted (a tombstone), and the general notes take the newer text. `lib/shared/notes_merge.dart` with tests, the same cases as the desktop's. | Unit tests for the merge: new on both sides, edited on both, deleted on one and edited on the other. Device: a mark made on the phone shows on the desktop after a sync, and one made on the desktop shows on the phone. Neither is lost when both changed before the sync. **Stop for review.** |
+| 5.7 | **Notes both ways.** `notes.json` joins the library (desktop step S9). The phone sends its notes with `PUT` and fetches the desktop's. Merged per mark, as the owner chose on 2026-10-21 (desktop ADR 7 section 1): marks are kept by id from both sides, an edited mark takes the newer edit, a deleted mark stays deleted (a tombstone), and the general notes take the newer text. `lib/shared/notes_merge.dart` with tests, the same cases as the desktop's. | Unit tests for the merge: new on both sides, edited on both, deleted on one and edited on the other. Device: a mark made on the phone shows on the desktop after a sync, and one made on the desktop shows on the phone. Neither is lost when both changed before the sync. **Stop for review.** |
 
 ## Not planned
 
@@ -137,15 +137,15 @@ The XTTS GPU voice, the Windows installer and Pocket TTS (out of scope). Superto
 mode, softened sentence edges and an in-app model import are possible later steps, not part of
 these milestones.
 
-## M6: cloud folders (Dropbox, Nextcloud)
+## M6: Nextcloud and Dropbox (the phone's half of desktop ADR 8)
 
-Asked for by the owner on 2026-10-21: open and sync documents directly from Dropbox or Nextcloud
-inside the app. **Not started, and not to be built before its ADR is accepted.** The offline rule
-in `CLAUDE.md` allows one network use, sync with the user's paired desktop on the local network.
-Dropbox is a cloud service, so it would change that rule. A Nextcloud on the owner's own server or
-TrueNAS stays on the owner's network.
+Accepted for the desktop on 2026-10-21 in `../pdfreader/docs/adr/0008-sync-through-a-store.md`,
+and built there (its step S7): the same library as ADR 7, encrypted (AES-256-GCM, a key the user
+enters on every device), in the user's own Nextcloud (WebDAV, Login Flow v2) or Dropbox (App
+folder, OAuth with PKCE). ADR 8 asks for this repository's own ADR before the phone's side is built.
+The offline rule already allows it: `CLAUDE.md` should be brought in line with the desktop's.
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 6.1 | **ADR 3: cloud folders.** What is synced (PDFs, notes, the prepared library?), Dropbox's and Nextcloud's APIs (Dropbox: OAuth with PKCE and its HTTP API; Nextcloud: WebDAV with an app password), the packages each would need, where tokens are kept, how it changes the offline rule, and whether the desktop takes part. Two options and a recommendation. | The owner has accepted it, and `CLAUDE.md` says what the rule now allows. |
-| 6.2 onward | Written from the accepted ADR. | |
+| 6.1 | **ADR 3: the store on the phone.** Sign-in on Android for both services (Login Flow v2 and OAuth with PKCE need a browser and a way back into the app), where the tokens and the key are kept, the packages needed (or none: `dart:io` `HttpClient` for WebDAV and Dropbox's HTTP API, `crypto` has no AES-GCM), and the formats of ADR 8 ported with the desktop's test vectors. | The owner has accepted it. `CLAUDE.md`'s offline rule matches the desktop's. |
+| 6.2 onward | Written from the accepted ADR, with the desktop's step S8. | |
