@@ -12,13 +12,17 @@ import 'desktop_link.dart';
 import 'desktops_page.dart';
 import 'document_access.dart';
 import 'library.dart';
+import 'library_list.dart';
+import 'shared/library_view.dart';
 import 'notes_store.dart';
 import 'places.dart';
 import 'platform_secrets.dart';
 import 'playback.dart';
 import 'reader_page.dart';
 import 'store/cloud_accounts.dart';
+import 'shared/sync.dart' show Manifest;
 import 'shared/sync_state.dart';
+import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
 import 'sync_controller.dart';
 
@@ -43,7 +47,9 @@ Future<void> main() async {
     notes: notesStore,
     device: store.device,
     memoFile: MemoFile(File('$support/sync-memo.json')),
+    catalogFile: CloudCatalog(File('$support/cloud-catalog.json')),
   );
+  await sync.loadCatalog();
   // What the user changes is sent soon; what a sync brings in is not sent back.
   notesStore.onSaved = sync.ownChanged;
   places.onStateWritten = () => sync.ownChanged(place: true);
@@ -126,6 +132,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   var _syncsSeen = 0;
 
+  /// What the list listens to where there is no sync (widget tests).
+  static final _never = ChangeNotifier();
+
   @override
   void initState() {
     super.initState();
@@ -157,7 +166,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (sync.syncs == _syncsSeen) return;
     _syncsSeen = sync.syncs;
     final summary = sync.lastSummary;
-    if (summary != null && summary.updated > 0 && mounted) _reload();
+    if (mounted && (summary == null || summary.updated > 0)) _reload();
   }
 
   Future<void> _pull() async {
@@ -231,12 +240,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _reload();
   }
 
+  /// A tap on a document that is not here, or on Download: always, whatever the network.
+  Future<void> _download(Manifest manifest) async {
+    try {
+      await widget.sync?.download(manifest);
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    }
+    if (mounted) _reload();
+  }
+
   Future<void> _remove(LibraryDocument document) async {
     final sure = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Remove ${document.manifest.name} from this phone?'),
-        content: const Text('The desktop keeps it, and the next sync fetches it again.'),
+        content: const Text('It stays in your cloud, and you can download it again.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
@@ -244,7 +263,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
     if (sure != true) return;
-    await widget.library?.remove(document);
+    await widget.sync?.removeFromPhone(document);
+    if (widget.sync == null) await widget.library?.remove(document);
     _reload();
   }
 
@@ -307,33 +327,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   onPressed: widget.library == null ? null : _desktops,
                 ),
               ),
-              if (prepared.isEmpty && snapshot.connectionState == ConnectionState.done)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Documents prepared on your PC appear here. On the PC, open Phone and switch on '
-                    'phone sync; here, connect to it and type the code it shows.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              if (prepared.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                Text('Prepared on the desktop', style: Theme.of(context).textTheme.titleSmall),
-                for (final document in prepared)
-                  ListTile(
-                    leading: const Icon(Icons.record_voice_over),
-                    title: Text(document.manifest.name),
-                    subtitle: Text(
-                      '${document.manifest.pages} pages, ${document.manifest.sentences} sentences',
+              ListenableBuilder(
+                listenable: widget.sync ?? _never,
+                builder: (context, _) {
+                  final sync = widget.sync;
+                  final entries = libraryEntries(
+                    local: [for (final d in prepared) d.manifest],
+                    cloud: sync?.cloud ?? const [],
+                    downloading: sync?.downloading ?? const {},
+                  );
+                  if (entries.isEmpty) {
+                    return snapshot.connectionState == ConnectionState.done
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              'Documents prepared on your computer appear here once it syncs with your '
+                              'Nextcloud, or when you connect to it over Wi-Fi.',
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        : const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: LibraryList(
+                      entries: entries,
+                      onOpen: (e) =>
+                          _openPrepared(prepared.firstWhere((d) => d.manifest.docId == e.manifest.docId)),
+                      onDownload: (e) => _download(e.manifest),
+                      onRemove: (e) =>
+                          _remove(prepared.firstWhere((d) => d.manifest.docId == e.manifest.docId)),
                     ),
-                    onTap: () => _openPrepared(document),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Remove from this phone',
-                      onPressed: () => _remove(document),
-                    ),
-                  ),
-              ],
+                  );
+                },
+              ),
             ],
           ),
         );

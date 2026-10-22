@@ -44,6 +44,7 @@ void main() {
       notes: NotesStore(Directory('${dir.path}/notes')),
       device: 'e0' * 16,
       name: () async => 'Test phone',
+      metered: () async => false,
     );
     await tester.pumpWidget(PdfReaderApp(documents: _CancelledPicker(), sync: sync));
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));

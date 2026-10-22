@@ -2,6 +2,7 @@ package io.github.jjomin.pdfreader
 
 import android.app.Activity
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.net.Uri
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -93,6 +94,12 @@ class MainActivity : AudioServiceActivity() {
                     "deviceName" -> result.success(
                         Settings.Global.getString(contentResolver, "device_name") ?: Build.MODEL
                     )
+                    // Downloads the phone starts on its own wait for a network that is not metered
+                    // (desktop ADR 10 section 4); a tap on a document always downloads.
+                    "isMetered" -> {
+                        val connectivity = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+                        result.success(connectivity.isActiveNetworkMetered)
+                    }
                     else -> result.notImplemented()
                 }
             }

@@ -61,6 +61,8 @@ class SyncSummary {
     required this.notesChanged,
     required this.unreadable,
     this.newInCloud = const {},
+    this.cloud = const [],
+    this.cloudComplete = false,
   });
 
   /// Documents on the phone that were downloaded again because the desktop prepared them again.
@@ -76,6 +78,11 @@ class SyncSummary {
   /// again, in the cloud. An incremental sync does not list the cloud, so this is how the library
   /// learns of them.
   final Set<String> newInCloud;
+
+  /// The manifests this sync learned of in the cloud: all of them after a full walk
+  /// ([cloudComplete]), otherwise only those whose journal entry said they changed.
+  final List<Manifest> cloud;
+  final bool cloudComplete;
 }
 
 final _docId = RegExp(r'^[0-9a-f]{64}$');
@@ -339,8 +346,14 @@ class StoreSync {
   ///
   /// With a memo it asks the store one question, which journals changed, and touches only the
   /// documents and parts they name, plus whatever changed here. The first sync, one after the memo was
-  /// lost and a [full] one walk everything, which also writes a lost journal again.
-  Future<SyncSummary> sync(void Function(DownloadProgress) progress, {bool full = false}) async {
+  /// lost and a [full] one walk everything, which also writes a lost journal again. With
+  /// [allowDownloads] false (a metered network) a document the desktop prepared again is left for the
+  /// user to download.
+  Future<SyncSummary> sync(
+    void Function(DownloadProgress) progress, {
+    bool full = false,
+    bool allowDownloads = true,
+  }) async {
     // Nothing sent yet means nothing is known: walk everything once.
     final walk = full || memo.own.isEmpty;
     final poll = await _poll(walk);
@@ -365,6 +378,7 @@ class StoreSync {
     var notesChanged = 0;
     var unreadable = poll.unreadable + (listing?.unreadable ?? 0);
     final onPhone = <String>{};
+    final learned = <String, Manifest>{};
 
     for (final local in await library.documents()) {
       final docId = local.manifest.docId;
@@ -383,7 +397,10 @@ class StoreSync {
         final remote = listing == null
             ? await _remoteDocument(docId)
             : listing.documents.where((d) => d.manifest.docId == docId).firstOrNull;
-        if (remote != null && await download(remote, progress)) updated++;
+        if (remote != null) {
+          learned[docId] = remote.manifest;
+          if (allowDownloads && await download(remote, progress)) updated++;
+        }
       }
 
       final stateHash = await _stateHash(docId);
@@ -409,6 +426,14 @@ class StoreSync {
       nextSynced[docId] = synced;
     }
 
+    // What changed in the cloud and is not on the phone: its manifest, for the library to list.
+    if (!walk) {
+      for (final docId in poll.changed.keys) {
+        if (onPhone.contains(docId) || !poll.changed[docId]!.contains(JournalPart.manifest)) continue;
+        final remote = await _remoteDocument(docId);
+        if (remote != null) learned[docId] = remote.manifest;
+      }
+    }
     // Documents no longer on the phone leave the journal too.
     if (own.length != memo.own.length) dirty = true;
     // A journal the store lost, or that differs from ours, is written again by any full walk.
@@ -432,6 +457,13 @@ class StoreSync {
     memo.synced = nextSynced;
     memo.seen.addAll(poll.opened);
     return SyncSummary(
+      cloud: [
+        if (listing != null)
+          for (final d in listing.documents) d.manifest
+        else
+          ...learned.values,
+      ],
+      cloudComplete: listing != null,
       updated: updated,
       notesChanged: notesChanged,
       unreadable: unreadable,

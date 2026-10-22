@@ -5,13 +5,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import 'desktop_link.dart' show phoneName;
+import 'desktop_link.dart' show isMetered, phoneName;
 import 'library.dart';
 import 'notes_store.dart';
 import 'shared/auto_sync.dart';
+import 'shared/sync.dart' show Manifest;
 import 'shared/sync_memo.dart';
 import 'shared/sync_state.dart';
 import 'store/cloud_accounts.dart';
+import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
 import 'store/store_sync.dart';
 
@@ -41,9 +43,12 @@ class SyncController extends ChangeNotifier {
     required this.notes,
     required this.device,
     this.memoFile,
+    this.catalogFile,
     this.timers = const RealTimers(),
     Future<String> Function()? name,
-  }) : _name = name ?? phoneName {
+    Future<bool> Function()? metered,
+  }) : _name = name ?? phoneName,
+       _metered = metered ?? isMetered {
     _auto = AutoSync(timers: timers, run: () async => _runAutomatic());
   }
 
@@ -56,7 +61,11 @@ class SyncController extends ChangeNotifier {
 
   /// What a sync remembers for the next one; without it the controller remembers only while it lives.
   final MemoFile? memoFile;
+
+  /// The cloud's documents as the syncs learned them; without it only while the controller lives.
+  final CloudCatalog? catalogFile;
   final Timers timers;
+  final Future<bool> Function() _metered;
   final Future<String> Function() _name;
   late final AutoSync _auto;
 
@@ -73,6 +82,12 @@ class SyncController extends ChangeNotifier {
   /// How the last sync ended, for the Sync screen; null until one has.
   String? lastError;
   SyncSummary? lastSummary;
+
+  /// The documents the cloud holds, as far as the syncs know.
+  List<Manifest> cloud = const [];
+
+  /// Downloads the user started, by document id, with how far each is (null when not known yet).
+  final downloading = <String, double?>{};
 
   /// Counts the syncs that finished, so that a screen can reload when one did.
   int syncs = 0;
@@ -99,8 +114,45 @@ class SyncController extends ChangeNotifier {
   Future<void> forget() async {
     _engine = null;
     _memo = null;
+    cloud = const [];
     await memoFile?.clear();
+    await catalogFile?.clear();
     await refreshStatus();
+    notifyListeners();
+  }
+
+  /// Reads the catalog the last run left, so the library lists the cloud before the first sync ends.
+  Future<void> loadCatalog() async {
+    final loaded = await catalogFile?.load();
+    if (loaded != null && loaded.isNotEmpty && cloud.isEmpty) {
+      cloud = loaded;
+      notifyListeners();
+    }
+  }
+
+  /// Downloads a document on the user's tap: always, whatever the network.
+  Future<void> download(Manifest manifest) => exclusive(() async {
+    downloading[manifest.docId] = null;
+    notifyListeners();
+    try {
+      final engine = await this.engine();
+      await engine.download(CloudDocument(manifest), (p) {
+        downloading[manifest.docId] = p.total == 0 ? null : p.done / p.total;
+        notifyListeners();
+      });
+      syncs++;
+      lastSummary = null;
+    } finally {
+      downloading.remove(manifest.docId);
+      notifyListeners();
+    }
+  });
+
+  /// Takes a document off the phone. It stays in the cloud, and the library lists it as such.
+  Future<void> removeFromPhone(LibraryDocument document) async {
+    await exclusive(() => library.remove(document));
+    syncs++;
+    notifyListeners();
   }
 
   /// Runs something that uses the engine after whatever runs now: two syncs, or a download and a
@@ -122,37 +174,54 @@ class SyncController extends ChangeNotifier {
 
   /// A sync now. [full] walks the whole store (pull to refresh); otherwise the journals say what to
   /// fetch. Null when nothing is signed in. Throws what failed, after the icon has said so.
-  Future<SyncSummary?> sync({bool full = false, void Function(DownloadProgress)? progress}) =>
-      exclusive(() async {
-        await refreshStatus();
-        if (!_signedIn) return null;
-        final started = timers.now();
-        _busy = true;
-        notifyListeners();
-        try {
-          final engine = await this.engine();
-          final summary = await engine.sync(progress ?? (_) {}, full: full);
-          // Only after it finished, so a failed one is repeated from the same journals.
-          await memoFile?.save(_memo!);
-          _syncedAt = started;
-          _failed = false;
-          lastError = null;
-          lastSummary = summary;
-          syncs++;
-          return summary;
-        } catch (error) {
-          _failed = true;
-          lastError = '$error';
-          rethrow;
-        } finally {
-          _busy = false;
-          notifyListeners();
-        }
-      });
+  Future<SyncSummary?> sync({
+    bool full = false,
+    bool allowDownloads = true,
+    void Function(DownloadProgress)? progress,
+  }) => exclusive(() async {
+    await refreshStatus();
+    if (!_signedIn) return null;
+    final started = timers.now();
+    _busy = true;
+    notifyListeners();
+    try {
+      final engine = await this.engine();
+      final summary = await engine.sync(progress ?? (_) {}, full: full, allowDownloads: allowDownloads);
+      cloud = await _catalog(summary);
+      // Only after it finished, so a failed one is repeated from the same journals.
+      await memoFile?.save(_memo!);
+      _syncedAt = started;
+      _failed = false;
+      lastError = null;
+      lastSummary = summary;
+      syncs++;
+      return summary;
+    } catch (error) {
+      _failed = true;
+      lastError = '$error';
+      rethrow;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  });
+
+  /// Remembers what the sync learned of the cloud, and returns the whole list.
+  Future<List<Manifest>> _catalog(SyncSummary summary) async {
+    final file = catalogFile;
+    if (file != null) return file.update(summary.cloud, complete: summary.cloudComplete);
+    return [
+      if (!summary.cloudComplete)
+        for (final m in cloud)
+          if (!summary.cloud.any((n) => n.docId == m.docId)) m,
+      ...summary.cloud,
+    ];
+  }
 
   Future<void> _runAutomatic() async {
     try {
-      await sync();
+      // What the phone starts on its own waits for a network that is not metered.
+      await sync(allowDownloads: !await _metered());
     } catch (_) {
       // The icon shows it, and the Sync screen says why.
     }

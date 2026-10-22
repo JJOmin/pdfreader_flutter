@@ -251,6 +251,16 @@ Stream<FoundDesktop> discoverDesktops() {
 /// The name the desktop shows in "Pair with …?".
 Future<String> phoneName() async => await _channel.invokeMethod<String>('deviceName') ?? 'Phone';
 
+/// Whether the network in use is metered (mobile data, or a Wi-Fi the user marked so). Downloads the
+/// phone starts on its own wait for one that is not. False where the platform cannot say.
+Future<bool> isMetered() async {
+  try {
+    return await _channel.invokeMethod<bool>('isMetered') ?? false;
+  } on MissingPluginException {
+    return false;
+  }
+}
+
 /// Pairs with the desktop at `host`. The certificate must match the typed code before anything is
 /// sent; then the desktop asks its user, and the phone waits for the answer.
 Future<PairedDesktop> pair(DesktopStore store, String host, int port, String code) async {

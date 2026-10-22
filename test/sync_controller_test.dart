@@ -22,6 +22,7 @@ void main() {
   late FakeTimers timers;
   late CloudAccounts accounts;
   late SyncController controller;
+  var metered = false;
 
   Future<void> waitFor(bool Function() done) async {
     for (var i = 0; i < 100 && !done(); i++) {
@@ -39,6 +40,7 @@ void main() {
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('controller-');
     nextcloud = await FakeNextcloud.start();
+    metered = false;
     timers = FakeTimers();
     accounts = CloudAccounts(
       file: File('${dir.path}/cloud.json'),
@@ -53,6 +55,7 @@ void main() {
       memoFile: MemoFile(File('${dir.path}/sync-memo.json')),
       timers: timers,
       name: () async => 'Test phone',
+      metered: () async => metered,
     );
   });
   tearDown(() async {

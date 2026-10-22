@@ -467,6 +467,45 @@ void main() {
       expect((await journaled.sync((_) {})).updated, 1);
     });
 
+    test('leaves an update for the user on a metered network, but still says it is there', () async {
+      final path = RemotePath.manifest(docId);
+      final manifest =
+          jsonDecode(utf8.decode(await unseal(key, path, store.files[path]!))) as Map<String, Object?>;
+      manifest['updated'] = (manifest['updated']! as num) + 1;
+      store.files[path] = await seal(key, path, text(jsonEncode(manifest)));
+      await desktopChanged(const JournalDoc(manifest: 9));
+      final summary = await journaled.sync((_) {}, allowDownloads: false);
+      expect(summary.updated, 0);
+      expect(summary.cloud.single.updated, manifest['updated']);
+      expect(summary.cloudComplete, isFalse);
+      final here = await library.read(Directory('${library.root.path}/$docId'));
+      expect(here!.manifest.updated, isNot(manifest['updated']));
+    });
+
+    test('hands the library the manifest of a document new in the cloud', () async {
+      final other = '5' * 64;
+      final otherManifest = Manifest(
+        docId: other,
+        name: 'new.pdf',
+        pages: 1,
+        sentences: 3,
+        bytes: 99,
+        updated: 7,
+      );
+      final path = RemotePath.manifest(other);
+      store.files[path] = await seal(key, path, text(jsonEncode(otherManifest.toJson())));
+      await desktopChanged(const JournalDoc(manifest: 1), other: other);
+      final summary = await journaled.sync((_) {});
+      expect(summary.cloud.map((m) => m.name), ['new.pdf']);
+      expect(summary.newInCloud, {other});
+    });
+
+    test('lists the whole cloud after a full walk', () async {
+      final summary = await journaled.sync((_) {}, full: true);
+      expect(summary.cloudComplete, isTrue);
+      expect(summary.cloud.map((m) => m.docId), [docId]);
+    });
+
     test('tells of a document the phone does not hold, without listing the cloud', () async {
       final other = '5' * 64;
       await desktopChanged(const JournalDoc(manifest: 1), other: other);
