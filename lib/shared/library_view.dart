@@ -2,16 +2,18 @@
 // the cloud, and what is out of date, each with its state. Pure, so the states and filters are tested
 // without a screen.
 import 'download_plan.dart';
+import 'inbox.dart';
 import 'sync.dart';
 
 /// onPhone: here and up to date. updateAvailable: here, and the desktop prepared it again.
-/// inCloud: not here. downloading: a download is running, for either of the last two.
-enum DocState { onPhone, updateAvailable, inCloud, downloading }
+/// inCloud: not here. downloading: a download is running. offered: a computer sent it to this phone,
+/// which has not answered yet ("Send to phone").
+enum DocState { onPhone, updateAvailable, inCloud, downloading, offered }
 
 enum LibraryFilter { all, onPhone, cloudOnly }
 
 class LibraryEntry {
-  const LibraryEntry({required this.manifest, required this.state, this.local, this.progress});
+  const LibraryEntry({required this.manifest, required this.state, this.local, this.progress, this.offer});
 
   /// The newest manifest known: the cloud's if it has one, else the phone's.
   final Manifest manifest;
@@ -23,6 +25,9 @@ class LibraryEntry {
   /// How far a running download is, 0 to 1, or null when not known (or not downloading).
   final double? progress;
 
+  /// The offer, while the phone has not answered it.
+  final PendingOffer? offer;
+
   bool get onThisPhone => local != null;
 }
 
@@ -32,17 +37,24 @@ List<LibraryEntry> libraryEntries({
   required List<Manifest> local,
   required List<Manifest> cloud,
   Map<String, double?> downloading = const {},
+  List<PendingOffer> offers = const [],
 }) {
   final here = {for (final m in local) m.docId: m};
   final there = {for (final m in cloud) m.docId: m};
+  final offered = {for (final p in offers) p.offer.docId: p};
+  // An offered document the cloud does not list yet is shown by what the offer says of it.
+  Manifest fromOffer(Offer o) =>
+      Manifest(docId: o.docId, name: o.name, pages: 0, sentences: 0, bytes: o.bytes, updated: 0);
   final entries = [
-    for (final docId in {...here.keys, ...there.keys})
+    for (final docId in {...here.keys, ...there.keys, ...offered.keys})
       LibraryEntry(
-        manifest: there[docId] ?? here[docId]!,
+        manifest: there[docId] ?? here[docId] ?? fromOffer(offered[docId]!.offer),
         local: here[docId],
         progress: downloading[docId],
+        offer: offered[docId],
         state: switch ((downloading.containsKey(docId), here[docId], there[docId])) {
           (true, _, _) => DocState.downloading,
+          (_, null, _) when offered.containsKey(docId) => DocState.offered,
           (_, null, _) => DocState.inCloud,
           (_, final mine?, final theirs?) when !isCurrent(theirs, mine) => DocState.updateAvailable,
           _ => DocState.onPhone,

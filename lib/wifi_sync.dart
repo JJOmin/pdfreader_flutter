@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'desktop_link.dart';
+import 'shared/inbox.dart';
 import 'shared/auto_sync.dart' show Cancel, Timers;
 
 const wifiPoll = Duration(seconds: 5);
@@ -20,6 +21,8 @@ class WifiSync {
     required this.changes,
     required this.sync,
     this.onSynced,
+    this.inbox,
+    this.onOffers,
   });
 
   /// The paired computers, read each time one is heard: pairing can happen while this runs.
@@ -33,6 +36,10 @@ class WifiSync {
 
   /// Told after each sync, so that the library can show what came.
   final void Function(PairedDesktop desktop, SyncResult result)? onSynced;
+
+  /// "Send to phone": what a computer offers, asked at each poll, and who is told of it.
+  final Future<List<Offer>> Function(PairedDesktop desktop)? inbox;
+  final void Function(PairedDesktop desktop, List<Offer> offers)? onOffers;
 
   StreamSubscription<FoundDesktop>? _listening;
   final _connected = <String, _Link>{};
@@ -98,6 +105,7 @@ class WifiSync {
         return;
       }
       await _sync(link);
+      await _askInbox(link);
       link.since = first.now;
       if (_connected[desktop.name] != link) return;
       link.poll = timers.every(wifiPoll, () => unawaited(_poll(link)));
@@ -118,6 +126,7 @@ class WifiSync {
         await _sync(link);
       }
       link.since = answer.now;
+      await _askInbox(link);
     } catch (_) {
       // Gone, or asleep: listen again, and sync at once when it is heard.
       _drop(link);
@@ -129,6 +138,11 @@ class WifiSync {
   Future<void> _sync(_Link link) async {
     final result = await sync(link.desktop);
     onSynced?.call(link.desktop, result);
+  }
+
+  Future<void> _askInbox(_Link link) async {
+    final ask = inbox;
+    if (ask != null) onOffers?.call(link.desktop, await ask(link.desktop));
   }
 
   void _drop(_Link link) {

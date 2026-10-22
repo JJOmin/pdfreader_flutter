@@ -3,13 +3,16 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfreader/desktop_link.dart';
 import 'package:pdfreader/library.dart';
 import 'package:pdfreader/notes_store.dart';
+import 'package:pdfreader/shared/inbox.dart';
 import 'package:pdfreader/shared/sync_state.dart';
 import 'package:pdfreader/shared/sync_store.dart';
 import 'package:pdfreader/store/cancellation.dart';
 import 'package:pdfreader/store/cloud_accounts.dart';
 import 'package:pdfreader/store/memo_file.dart';
+import 'package:pdfreader/store/offer_file.dart';
 import 'package:pdfreader/sync_controller.dart';
 
 import 'fake_platform.dart';
@@ -136,5 +139,23 @@ void main() {
     final second = controller.exclusive(() async => order.add('second'));
     await Future.wait([first, second]);
     expect(order, ['first', 'second']);
+  });
+
+  test('lists what a computer offers, and a declined offer is not asked about again', () async {
+    controller.offerFile = OfferFile(File('${dir.path}/offers.json'));
+    const mac = PairedDesktop(name: 'Mac', host: '10.0.0.5', port: 47613, fingerprint: 'f', token: 't');
+    final offer = Offer(docId: 'a' * 64, name: 'sent.pdf', bytes: 10, sent: 3);
+    controller.wifiOffers(mac, [offer]);
+    await waitFor(() => controller.offers.isNotEmpty);
+    expect((controller.offers.single.from, controller.offers.single.offer.name), ('Mac', 'sent.pdf'));
+    await controller.decline(controller.offers.single);
+    expect(controller.offers, isEmpty);
+    // Still offered by the computer, but answered: and so after a restart too.
+    controller.wifiOffers(mac, [offer]);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(controller.offers, isEmpty);
+    final again = OfferFile(File('${dir.path}/offers.json'));
+    await again.load();
+    expect(again.handled, {offer.key});
   });
 }

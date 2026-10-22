@@ -11,12 +11,16 @@ class LibraryList extends StatefulWidget {
     required this.onOpen,
     required this.onDownload,
     required this.onRemove,
+    required this.onOffer,
   });
 
   final List<LibraryEntry> entries;
   final void Function(LibraryEntry) onOpen;
   final void Function(LibraryEntry) onDownload;
   final void Function(LibraryEntry) onRemove;
+
+  /// A tap on an offered document: the question "Accept / Decline".
+  final void Function(LibraryEntry) onOffer;
 
   @override
   State<LibraryList> createState() => _LibraryListState();
@@ -39,6 +43,7 @@ class _LibraryListState extends State<LibraryList> {
       DocState.inCloud => 'In the cloud · $size',
       DocState.downloading =>
         e.progress == null ? 'Downloading…' : 'Downloading ${(e.progress! * 100).round()} %',
+      DocState.offered => 'Offered by ${e.offer!.from} · $size',
     };
   }
 
@@ -46,6 +51,7 @@ class _LibraryListState extends State<LibraryList> {
     DocState.onPhone => const Icon(Icons.check_circle_outline),
     DocState.updateAvailable => const Icon(Icons.update),
     DocState.inCloud => const Icon(Icons.cloud_outlined),
+    DocState.offered => const Icon(Icons.move_to_inbox_outlined),
     DocState.downloading => SizedBox(
       width: 24,
       height: 24,
@@ -92,8 +98,12 @@ class _LibraryListState extends State<LibraryList> {
                 : Text(_subtitle(e)),
             onTap: e.state == DocState.downloading
                 ? null
-                : () => e.onThisPhone ? widget.onOpen(e) : widget.onDownload(e),
-            trailing: e.state == DocState.downloading
+                : () => e.state == DocState.offered
+                      ? widget.onOffer(e)
+                      : e.onThisPhone
+                      ? widget.onOpen(e)
+                      : widget.onDownload(e),
+            trailing: e.state == DocState.downloading || e.state == DocState.offered
                 ? null
                 : PopupMenuButton<String>(
                     key: Key('menu-${e.manifest.docId}'),

@@ -11,6 +11,7 @@ import 'desktop_link.dart';
 import 'document_access.dart';
 import 'library.dart';
 import 'library_list.dart';
+import 'shared/inbox.dart' show PendingOffer;
 import 'shared/library_view.dart';
 import 'notes_store.dart';
 import 'places.dart';
@@ -22,6 +23,7 @@ import 'shared/sync.dart' show Manifest;
 import 'shared/sync_state.dart';
 import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
+import 'store/offer_file.dart';
 import 'sync_controller.dart';
 import 'sync_page.dart';
 import 'wifi_sync.dart';
@@ -73,7 +75,11 @@ Future<void> main() async {
       return result;
     }),
     onSynced: (_, result) => sync.wifiSynced(result),
+    inbox: inboxFrom,
+    onOffers: sync.wifiOffers,
   );
+  sync.offerFile = OfferFile(File('$support/offers.json'));
+  await sync.offerFile.load();
   // What the user changes is sent soon; what a sync brings in is not sent back.
   notesStore.onSaved = sync.ownChanged;
   places.onStateWritten = () => sync.ownChanged(place: true);
@@ -184,9 +190,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  /// A sync that brought something shows it in the list without a tap.
+  /// Offers already asked about in this run: one that is not answered stays in the list.
+  final _asked = <String>{};
+  var _asking = false;
+
+  /// "Leos-MacBook sends paper.pdf (12 MB): Accept, Decline", with "Always accept from this computer".
+  Future<void> _ask(PendingOffer p) async {
+    final sync = widget.sync;
+    if (sync == null || _asking) return;
+    _asking = true;
+    _asked.add(p.offer.key);
+    var always = false;
+    final accept = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('${p.from} sends ${p.offer.name} (${formatBytes(p.offer.bytes)})'),
+          content: CheckboxListTile(
+            key: const Key('always-accept'),
+            contentPadding: EdgeInsets.zero,
+            value: always,
+            onChanged: (value) => setState(() => always = value ?? false),
+            title: const Text('Always accept from this computer'),
+          ),
+          actions: [
+            TextButton(
+              key: const Key('decline-offer'),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Decline'),
+            ),
+            FilledButton(
+              key: const Key('accept-offer'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Accept'),
+            ),
+          ],
+        ),
+      ),
+    );
+    _asking = false;
+    try {
+      // Closed without an answer: it stays offered in the list.
+      if (accept == true) await sync.accept(p, always: always);
+      if (accept == false) await sync.decline(p);
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    }
+    if (mounted) _reload();
+  }
+
+  /// A sync that brought something shows it in the list without a tap, and a new offer asks.
   void _onSync() {
     final sync = widget.sync!;
+    final fresh = sync.offers.where(
+      (p) => !_asked.contains(p.offer.key) && !sync.offerFile.alwaysFrom.contains(p.from),
+    );
+    if (fresh.isNotEmpty && mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      unawaited(_ask(fresh.first));
+    }
     if (sync.syncs == _syncsSeen) return;
     _syncsSeen = sync.syncs;
     final summary = sync.lastSummary;
@@ -352,6 +413,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     local: [for (final d in prepared) d.manifest],
                     cloud: sync?.cloud ?? const [],
                     downloading: sync?.downloading ?? const {},
+                    offers: sync?.offers ?? const [],
                   );
                   if (entries.isEmpty) {
                     return snapshot.connectionState == ConnectionState.done
@@ -372,6 +434,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       onOpen: (e) =>
                           _openPrepared(prepared.firstWhere((d) => d.manifest.docId == e.manifest.docId)),
                       onDownload: (e) => _download(e.manifest),
+                      onOffer: (e) => _ask(e.offer!),
                       onRemove: (e) =>
                           _remove(prepared.firstWhere((d) => d.manifest.docId == e.manifest.docId)),
                     ),

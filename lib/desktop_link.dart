@@ -13,6 +13,7 @@ import 'library.dart';
 import 'notes_store.dart';
 import 'shared/download_plan.dart';
 import 'shared/notes.dart';
+import 'shared/inbox.dart';
 import 'shared/pairing.dart';
 import 'shared/sync.dart';
 
@@ -424,6 +425,34 @@ Future<({int now, Set<String> docs})?> changesFrom(PairedDesktop desktop, int si
   }
 }
 
+/// "Send to phone": what the desktop offers this phone (`GET /v1/inbox`, protocol 2).
+Future<List<Offer>> inboxFrom(PairedDesktop desktop) async {
+  final client = DesktopClient(
+    desktop.host,
+    desktop.port,
+    (fingerprint) => fingerprint == desktop.fingerprint,
+  );
+  try {
+    return parseOffers(await client.json('GET', '/v1/inbox', token: desktop.token, missingIsNull: true));
+  } finally {
+    client.close();
+  }
+}
+
+/// Tells the desktop an offer was accepted or declined, so it leaves its inbox.
+Future<void> handledAt(PairedDesktop desktop, String docId) async {
+  final client = DesktopClient(
+    desktop.host,
+    desktop.port,
+    (fingerprint) => fingerprint == desktop.fingerprint,
+  );
+  try {
+    await client.json('DELETE', '/v1/inbox/$docId', token: desktop.token, missingIsNull: true);
+  } finally {
+    client.close();
+  }
+}
+
 /// Fetches every document the desktop prepared, and of each only what the phone lacks (step 5.4),
 /// then exchanges the places in them (step 5.6). `device` is this phone's id.
 Future<SyncResult> syncFrom(
@@ -433,6 +462,7 @@ Future<SyncResult> syncFrom(
   void Function(SyncProgress) progress, {
   NotesStore? notes,
   bool onlyHeld = false,
+  Set<String>? only,
 }) async {
   final client = DesktopClient(
     desktop.host,
@@ -449,7 +479,8 @@ Future<SyncResult> syncFrom(
     // is on the phone is the user's choice (desktop ADR 10 section 3).
     final manifests = [
       for (final m in listedManifests)
-        if (!onlyHeld || await library.read(Directory('${library.root.path}/${m.docId}')) != null) m,
+        if (only == null || only.contains(m.docId))
+          if (!onlyHeld || await library.read(Directory('${library.root.path}/${m.docId}')) != null) m,
     ];
     for (final remote in manifests) {
       final dir = Directory('${library.root.path}/${remote.docId}');

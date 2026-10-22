@@ -26,5 +26,9 @@ the user opens "Scan to pair", not at start. A refusal leaves the typed code, wh
   manifests (`cloud-catalog.json`): a full walk replaces it, journals add to it.
 - **Automatic downloads.** Updates the phone starts on its own wait for a network that is not metered;
   a tap always downloads.
-- **Not yet.** Documents offered by a paired computer over Wi-Fi are not in the library list until
-  steps 7.7 and 7.8.
+- **Offers travel in the journal.** Away from home a "Send to phone" offer is read from the desktop's
+  change journal, which the phone polls anyway, not from a separate `inbox/<device>.json`: an offer
+  costs no extra request. The phone cannot write the desktop's journal, so a decline made away from
+  home is only remembered on the phone (`offers.json`) until it is next on the desktop's Wi-Fi.
+- **Automatic Wi-Fi syncs fetch nothing new.** They keep up to date what is on the phone; a new
+  document comes by the user's tap, an accepted offer, or the Sync screen's button.

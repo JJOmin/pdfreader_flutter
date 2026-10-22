@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfreader/shared/inbox.dart';
 import 'package:pdfreader/shared/library_view.dart';
 import 'package:pdfreader/shared/sync.dart';
 
@@ -74,5 +75,15 @@ void main() {
     expect(formatBytes(1500), '2 KB');
     expect(formatBytes(340 * 1024 * 1024), '340 MB');
     expect(formatBytes((1.2 * 1024 * 1024 * 1024).round()), '1.2 GB');
+  });
+
+  test('says offered for a document a computer sent, until it is here, and counts it as cloud only', () {
+    final offer = PendingOffer(Offer(docId: 'd' * 64, name: 'Sent.pdf', bytes: 5000, sent: 3), 'Mac');
+    final entries = libraryEntries(local: [a], cloud: [a], offers: [offer]);
+    final sent = entries.firstWhere((e) => e.manifest.name == 'Sent.pdf');
+    expect((sent.state, sent.offer!.from, sent.manifest.bytes), (DocState.offered, 'Mac', 5000));
+    expect(filterEntries(entries, LibraryFilter.cloudOnly).map((e) => e.manifest.name), ['Sent.pdf']);
+    final downloading = libraryEntries(local: [], cloud: [], offers: [offer], downloading: {'d' * 64: 0.5});
+    expect(downloading.single.state, DocState.downloading);
   });
 }

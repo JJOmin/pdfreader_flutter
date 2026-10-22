@@ -395,7 +395,7 @@ class StoreSync {
 
       if (walk || parts.contains(JournalPart.manifest)) {
         final remote = listing == null
-            ? await _remoteDocument(docId)
+            ? await remoteDocument(docId)
             : listing.documents.where((d) => d.manifest.docId == docId).firstOrNull;
         if (remote != null) {
           learned[docId] = remote.manifest;
@@ -430,7 +430,7 @@ class StoreSync {
     if (!walk) {
       for (final docId in poll.changed.keys) {
         if (onPhone.contains(docId) || !poll.changed[docId]!.contains(JournalPart.manifest)) continue;
-        final remote = await _remoteDocument(docId);
+        final remote = await remoteDocument(docId);
         if (remote != null) learned[docId] = remote.manifest;
       }
     }
@@ -475,7 +475,7 @@ class StoreSync {
   }
 
   /// The document as its manifest in the store says, or null when there is none.
-  Future<CloudDocument?> _remoteDocument(String docId) async {
+  Future<CloudDocument?> remoteDocument(String docId) async {
     final bytes = await _open(RemotePath.manifest(docId));
     final manifest = bytes == null ? null : parseManifest(jsonDecode(utf8.decode(bytes)));
     return manifest != null && manifest.docId == docId ? CloudDocument(manifest) : null;

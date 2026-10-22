@@ -2,19 +2,23 @@
 // owns the store engine and the memo, runs the syncs one at a time, schedules the automatic ones
 // (`shared/auto_sync.dart`) and tells the sync icon its state.
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-import 'desktop_link.dart' show DesktopStore, SyncResult, isMetered, phoneName;
+import 'desktop_link.dart'
+    show DesktopStore, PairedDesktop, SyncResult, handledAt, isMetered, phoneName, syncFrom;
 import 'library.dart';
 import 'notes_store.dart';
 import 'shared/auto_sync.dart';
+import 'shared/inbox.dart';
 import 'shared/sync.dart' show Manifest;
 import 'shared/sync_memo.dart';
 import 'shared/sync_state.dart';
 import 'store/cloud_accounts.dart';
 import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
+import 'store/offer_file.dart';
 import 'store/store_sync.dart';
 import 'wifi_sync.dart';
 
@@ -75,6 +79,19 @@ class SyncController extends ChangeNotifier {
 
   /// The paired computers, shared by the Sync screen and [wifi].
   DesktopStore? desktopStore;
+
+  /// "Send to phone": the offers answered, and the computers always accepted from. The app sets the
+  /// real file; this one is for tests, which never save it under a name of the app's own.
+  OfferFile offerFile = OfferFile(File('${Directory.systemTemp.path}/pdfreader-offers-test.json'));
+
+  /// What the computers on Wi-Fi offer now, by computer name.
+  final _wifiOffers = <String, ({PairedDesktop desktop, List<Offer> offers})>{};
+
+  /// The offers the phone still has to answer, oldest first.
+  List<PendingOffer> offers = const [];
+
+  /// Offers being accepted now, by `Offer.key`, so that one is not downloaded twice.
+  final _accepting = <String>{};
 
   StoreSync? _engine;
   SyncMemo? _memo;
@@ -209,6 +226,7 @@ class SyncController extends ChangeNotifier {
       lastError = null;
       lastSummary = summary;
       syncs++;
+      unawaited(_offersChanged());
       return summary;
     } catch (error) {
       _failed = true;
@@ -251,6 +269,102 @@ class SyncController extends ChangeNotifier {
     wifi?.ownChanged();
   }
 
+  /// What a computer on Wi-Fi offers now.
+  void wifiOffers(PairedDesktop desktop, List<Offer> list) {
+    _wifiOffers[desktop.name] = (desktop: desktop, offers: list);
+    unawaited(_offersChanged());
+  }
+
+  /// Gathers the offers of the computers on Wi-Fi and those in the journals read from the cloud, and
+  /// accepts at once those from a computer the user always accepts from.
+  Future<void> _offersChanged() async {
+    final here = {for (final d in await library.documents()) d.manifest.docId};
+    // Asked for after a sync, so it can come after the app let go of the controller.
+    if (_disposed) return;
+    offers = pendingOffers(
+      [
+        for (final seen in _memo?.seen.values ?? const <SeenJournal>[])
+          for (final o in seen.journal.offers[device] ?? const <Offer>[]) PendingOffer(o, seen.journal.name),
+        for (final e in _wifiOffers.values)
+          for (final o in e.offers) PendingOffer(o, e.desktop.name),
+      ],
+      handled: offerFile.handled,
+      onPhone: here,
+    );
+    notifyListeners();
+    for (final p in offers) {
+      if (!offerFile.alwaysFrom.contains(p.from) || _accepting.contains(p.offer.key)) continue;
+      // Downloads the phone starts on its own wait for a network that is not metered; one from a
+      // computer on the same Wi-Fi never leaves it.
+      if (_wifiSource(p) == null && await _metered()) continue;
+      unawaited(accept(p).catchError((Object _) {}));
+    }
+  }
+
+  /// The computer on Wi-Fi that offers this, if it still does.
+  PairedDesktop? _wifiSource(PendingOffer p) {
+    final source = _wifiOffers[p.from];
+    final connected = wifi?.connected.contains(p.from) ?? false;
+    return connected && source != null && source.offers.any((o) => o.docId == p.offer.docId)
+        ? source.desktop
+        : null;
+  }
+
+  /// Downloads an offered document: from the computer itself when it is on the same Wi-Fi, else from
+  /// the cloud. [always] remembers to accept from this computer without asking.
+  Future<void> accept(PendingOffer p, {bool always = false}) async {
+    if (!_accepting.add(p.offer.key)) return;
+    try {
+      if (always && offerFile.alwaysFrom.add(p.from)) await offerFile.save();
+      final desktop = _wifiSource(p);
+      if (desktop != null) {
+        downloading[p.offer.docId] = null;
+        notifyListeners();
+        try {
+          await exclusive(
+            () => syncFrom(
+              desktop,
+              library,
+              device,
+              (progress) {
+                downloading[p.offer.docId] = progress.total == 0 ? null : progress.done / progress.total;
+                notifyListeners();
+              },
+              notes: notes,
+              only: {p.offer.docId},
+            ),
+          );
+        } finally {
+          downloading.remove(p.offer.docId);
+        }
+        await handledAt(desktop, p.offer.docId).catchError((Object _) {});
+      } else {
+        var manifest = cloud.where((m) => m.docId == p.offer.docId).firstOrNull;
+        manifest ??= (await exclusive(() async => (await engine()).remoteDocument(p.offer.docId)))?.manifest;
+        if (manifest == null) {
+          throw StateError('${p.offer.name} is not in the cloud yet. Try again in a minute.');
+        }
+        await download(manifest);
+      }
+      offerFile.handled.add(p.offer.key);
+      await offerFile.save();
+      syncs++;
+      lastSummary = null;
+    } finally {
+      _accepting.remove(p.offer.key);
+      await _offersChanged();
+    }
+  }
+
+  /// Declines an offer: it is not asked about again, and the computer on Wi-Fi forgets it.
+  Future<void> decline(PendingOffer p) async {
+    offerFile.handled.add(p.offer.key);
+    await offerFile.save();
+    final desktop = _wifiSource(p);
+    if (desktop != null) await handledAt(desktop, p.offer.docId).catchError((Object _) {});
+    await _offersChanged();
+  }
+
   /// A Wi-Fi sync finished: the library shows what came, and the icon who is connected.
   void wifiSynced(SyncResult result) {
     if (result.files > 0 || result.notes > 0) {
@@ -274,8 +388,11 @@ class SyncController extends ChangeNotifier {
     _auto.stop();
   }
 
+  var _disposed = false;
+
   @override
   void dispose() {
+    _disposed = true;
     wifi?.stop();
     _auto.stop();
     super.dispose();

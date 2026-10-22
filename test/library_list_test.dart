@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfreader/library_list.dart';
+import 'package:pdfreader/shared/inbox.dart';
 import 'package:pdfreader/shared/library_view.dart';
 import 'package:pdfreader/shared/sync.dart';
 
@@ -16,15 +17,18 @@ void main() {
   final opened = <String>[];
   final downloaded = <String>[];
   final removed = <String>[];
+  final offered = <String>[];
 
   Future<void> show(WidgetTester tester, {Map<String, double?> downloading = const {}}) async {
     opened.clear();
     downloaded.clear();
     removed.clear();
+    offered.clear();
     final entries = libraryEntries(
       local: [onPhone, stale],
       cloud: [onPhone, doc('b', 'Stale.pdf', updated: 2), cloudOnly, loading],
       downloading: downloading,
+      offers: [PendingOffer(Offer(docId: 'e' * 64, name: 'Sent.pdf', bytes: 1024 * 1024, sent: 2), 'Mac')],
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -35,6 +39,7 @@ void main() {
               onOpen: (e) => opened.add(e.manifest.name),
               onDownload: (e) => downloaded.add(e.manifest.name),
               onRemove: (e) => removed.add(e.manifest.name),
+              onOffer: (e) => offered.add(e.manifest.name),
             ),
           ),
         ),
@@ -106,6 +111,15 @@ void main() {
     expect(find.text('Downloading…'), findsOneWidget);
     expect(find.byKey(Key('menu-${loading.docId}')), findsNothing);
     await tester.tap(find.text('Loading.pdf'));
+    expect(downloaded, isEmpty);
+  });
+
+  testWidgets('shows an offered document with who sent it, and a tap asks about it', (tester) async {
+    await show(tester);
+    expect(find.text('Offered by Mac · 1 MB'), findsOneWidget);
+    expect(find.byKey(Key('menu-${'e' * 64}')), findsNothing);
+    await tester.tap(find.text('Sent.pdf'));
+    expect(offered, ['Sent.pdf']);
     expect(downloaded, isEmpty);
   });
 }

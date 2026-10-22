@@ -8,6 +8,8 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
+import 'inbox.dart';
+
 class RemoteEntry {
   const RemoteEntry(this.name, {required this.folder, required this.size, this.etag});
 
@@ -96,12 +98,21 @@ class JournalDoc {
 /// has read it before can tell from the difference which documents and parts to fetch. It is a
 /// hint: a full walk of the store repairs whatever a lost journal missed.
 class Journal {
-  const Journal({required this.device, required this.name, required this.updated, required this.docs});
+  const Journal({
+    required this.device,
+    required this.name,
+    required this.updated,
+    required this.docs,
+    this.offers = const {},
+  });
 
   final String device;
   final String name;
   final int updated;
   final Map<String, JournalDoc> docs;
+
+  /// "Send to phone": what this device offers each phone, by the phone's id. Left out when empty.
+  final Map<String, List<Offer>> offers;
 
   /// The desktop's bytes for the same journal: the keys in this order.
   Map<String, Object?> toJson() => {
@@ -109,6 +120,10 @@ class Journal {
     'name': name,
     'updated': updated,
     'docs': {for (final MapEntry(:key, :value) in docs.entries) key: value.toJson()},
+    if (offers.isNotEmpty)
+      'offers': {
+        for (final MapEntry(:key, :value) in offers.entries) key: [for (final o in value) o.toJson()],
+      },
   };
 }
 
@@ -140,6 +155,7 @@ Journal? parseJournal(Object? value) {
     name: name is String && name.length <= 256 ? name : '',
     updated: updated,
     docs: docs,
+    offers: parseInbox(value['offers']),
   );
 }
 
