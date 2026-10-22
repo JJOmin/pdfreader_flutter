@@ -18,6 +18,7 @@ import 'package:pdfreader/notes_store.dart';
 import 'package:pdfreader/platform_secrets.dart';
 import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/store/cloud_accounts.dart';
+import 'package:pdfreader/sync_controller.dart';
 
 const server = String.fromEnvironment('SERVER');
 const key = String.fromEnvironment('KEY');
@@ -61,7 +62,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: CloudPage(accounts: accounts, library: library, notes: notes, device: 'e0' * 16),
+        home: CloudPage(
+          sync: SyncController(accounts: accounts, library: library, notes: notes, device: 'e0' * 16),
+        ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 500));

@@ -15,6 +15,9 @@ class NotesStore {
 
   final Directory dir;
 
+  /// Told after a save, so that the sync can send it.
+  void Function()? onSaved;
+
   static Future<NotesStore> open() async {
     final support = await getApplicationSupportDirectory();
     return NotesStore(Directory('${support.path}/notes'));
@@ -37,12 +40,14 @@ class NotesStore {
     }
   }
 
-  Future<void> save(String docId, NotesFile file) async {
+  /// [fromSync] is for notes the sync merged in: they came from the store, so nothing is sent for them.
+  Future<void> save(String docId, NotesFile file, {bool fromSync = false}) async {
     final target = _file(docId);
     await dir.create(recursive: true);
     // Written beside the file and renamed over it, so a stop in the middle loses nothing.
     final partial = File('${target.path}.part');
     await partial.writeAsString(encodeNotes(file), flush: true);
     await partial.rename(target.path);
+    if (!fromSync) onSaved?.call();
   }
 }

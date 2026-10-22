@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,7 +18,9 @@ import 'platform_secrets.dart';
 import 'playback.dart';
 import 'reader_page.dart';
 import 'store/cloud_accounts.dart';
+import 'shared/sync_state.dart';
 import 'store/memo_file.dart';
+import 'sync_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,17 +29,32 @@ Future<void> main() async {
   final playback = await initPlayback();
   final store = await DesktopStore.open();
   final places = await Places.open((device: store.device, name: await phoneName()));
+  final library = await Library.open();
+  final notesStore = await NotesStore.open();
+  final support = (await getApplicationSupportDirectory()).path;
+  final cloud = CloudAccounts(
+    file: File('$support/cloud.json'),
+    box: KeystoreSecretBox(),
+    browser: SystemBrowser(),
+  );
+  final sync = SyncController(
+    accounts: cloud,
+    library: library,
+    notes: notesStore,
+    device: store.device,
+    memoFile: MemoFile(File('$support/sync-memo.json')),
+  );
+  // What the user changes is sent soon; what a sync brings in is not sent back.
+  notesStore.onSaved = sync.ownChanged;
+  places.onStateWritten = () => sync.ownChanged(place: true);
   runApp(
     PdfReaderApp(
-      library: await Library.open(),
+      library: library,
       playback: playback,
       places: places,
-      notesStore: await NotesStore.open(),
-      cloud: CloudAccounts(
-        file: File('${(await getApplicationSupportDirectory()).path}/cloud.json'),
-        box: KeystoreSecretBox(),
-        browser: SystemBrowser(),
-      ),
+      notesStore: notesStore,
+      cloud: cloud,
+      sync: sync,
     ),
   );
 }
@@ -50,6 +68,7 @@ class PdfReaderApp extends StatelessWidget {
     this.places,
     this.notesStore,
     this.cloud,
+    this.sync,
   });
 
   /// Replaced in widget tests, which have no platform side.
@@ -59,6 +78,7 @@ class PdfReaderApp extends StatelessWidget {
   final Places? places;
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
+  final SyncController? sync;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -71,6 +91,7 @@ class PdfReaderApp extends StatelessWidget {
       places: places,
       notesStore: notesStore,
       cloud: cloud,
+      sync: sync,
     ),
   );
 }
@@ -85,6 +106,7 @@ class HomePage extends StatefulWidget {
     this.places,
     this.notesStore,
     this.cloud,
+    this.sync,
   });
 
   final DocumentAccess documents;
@@ -93,13 +115,59 @@ class HomePage extends StatefulWidget {
   final Places? places;
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
+  final SyncController? sync;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late Future<List<LibraryDocument>> _prepared = widget.library?.documents() ?? Future.value(const []);
+
+  var _syncsSeen = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.sync?.addListener(_onSync);
+    widget.sync?.resume();
+  }
+
+  @override
+  void dispose() {
+    widget.sync?.removeListener(_onSync);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// The app in front syncs now and every 30 seconds; in the background it does not.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.sync?.resume();
+    } else if (state == AppLifecycleState.paused) {
+      unawaited(widget.sync?.pause());
+    }
+  }
+
+  /// A sync that brought something shows it in the list without a tap.
+  void _onSync() {
+    final sync = widget.sync!;
+    if (sync.syncs == _syncsSeen) return;
+    _syncsSeen = sync.syncs;
+    final summary = sync.lastSummary;
+    if (summary != null && summary.updated > 0 && mounted) _reload();
+  }
+
+  Future<void> _pull() async {
+    try {
+      await widget.sync?.sync(full: true);
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    }
+    if (mounted) _reload();
+  }
 
   void _show(String name, Uint8List data, String placeKey, LibraryDocument? prepared) =>
       Navigator.of(context).push(
@@ -157,19 +225,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _cloud() async {
-    final library = widget.library;
-    final notes = widget.notesStore;
-    final cloud = widget.cloud;
-    if (library == null || notes == null || cloud == null) return;
-    final store = await DesktopStore.open();
-    final memo = MemoFile(File('${(await getApplicationSupportDirectory()).path}/sync-memo.json'));
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            CloudPage(accounts: cloud, library: library, notes: notes, device: store.device, memoFile: memo),
-      ),
-    );
+    final sync = widget.sync;
+    if (sync == null) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CloudPage(sync: sync)));
     _reload();
   }
 
@@ -201,64 +259,83 @@ class _HomePageState extends State<HomePage> {
           onPressed: _reload,
         ),
         IconButton(icon: const Icon(Icons.computer), tooltip: 'Desktops', onPressed: _desktops),
-        IconButton(
-          icon: const Icon(Icons.cloud_outlined),
-          tooltip: 'Cloud',
-          onPressed: widget.cloud == null ? null : _cloud,
-        ),
+        if (widget.sync case final sync?)
+          ListenableBuilder(
+            listenable: sync,
+            builder: (context, _) => IconButton(
+              key: Key('sync-${sync.state.name}'),
+              icon: Icon(switch (sync.state) {
+                SyncState.off => Icons.cloud_off_outlined,
+                SyncState.pending => Icons.cloud_upload_outlined,
+                SyncState.syncing => Icons.sync,
+                SyncState.done => Icons.cloud_done_outlined,
+              }),
+              tooltip: switch (sync.state) {
+                SyncState.off => 'Cloud: not set up',
+                SyncState.pending => 'Cloud: waiting to sync',
+                SyncState.syncing => 'Cloud: syncing',
+                SyncState.done => 'Cloud: up to date',
+              },
+              onPressed: _cloud,
+            ),
+          ),
       ],
     ),
     body: FutureBuilder(
       future: _prepared,
       builder: (context, snapshot) {
         final prepared = snapshot.data ?? const <LibraryDocument>[];
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Center(
-              child: FilledButton.icon(
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Open a PDF'),
-                onPressed: _open,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: OutlinedButton.icon(
-                key: const Key('connect'),
-                icon: const Icon(Icons.computer),
-                label: const Text('Connect to a desktop'),
-                onPressed: widget.library == null ? null : _desktops,
-              ),
-            ),
-            if (prepared.isEmpty && snapshot.connectionState == ConnectionState.done)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Documents prepared on your PC appear here. On the PC, open Phone and switch on '
-                  'phone sync; here, connect to it and type the code it shows.',
-                  textAlign: TextAlign.center,
+        return RefreshIndicator(
+          onRefresh: _pull,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              Center(
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('Open a PDF'),
+                  onPressed: _open,
                 ),
               ),
-            if (prepared.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text('Prepared on the desktop', style: Theme.of(context).textTheme.titleSmall),
-              for (final document in prepared)
-                ListTile(
-                  leading: const Icon(Icons.record_voice_over),
-                  title: Text(document.manifest.name),
-                  subtitle: Text(
-                    '${document.manifest.pages} pages, ${document.manifest.sentences} sentences',
-                  ),
-                  onTap: () => _openPrepared(document),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'Remove from this phone',
-                    onPressed: () => _remove(document),
+              const SizedBox(height: 8),
+              Center(
+                child: OutlinedButton.icon(
+                  key: const Key('connect'),
+                  icon: const Icon(Icons.computer),
+                  label: const Text('Connect to a desktop'),
+                  onPressed: widget.library == null ? null : _desktops,
+                ),
+              ),
+              if (prepared.isEmpty && snapshot.connectionState == ConnectionState.done)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Documents prepared on your PC appear here. On the PC, open Phone and switch on '
+                    'phone sync; here, connect to it and type the code it shows.',
+                    textAlign: TextAlign.center,
                   ),
                 ),
+              if (prepared.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Text('Prepared on the desktop', style: Theme.of(context).textTheme.titleSmall),
+                for (final document in prepared)
+                  ListTile(
+                    leading: const Icon(Icons.record_voice_over),
+                    title: Text(document.manifest.name),
+                    subtitle: Text(
+                      '${document.manifest.pages} pages, ${document.manifest.sentences} sentences',
+                    ),
+                    onTap: () => _openPrepared(document),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Remove from this phone',
+                      onPressed: () => _remove(document),
+                    ),
+                  ),
+              ],
             ],
-          ],
+          ),
         );
       },
     ),

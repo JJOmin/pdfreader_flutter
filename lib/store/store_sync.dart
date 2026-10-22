@@ -284,7 +284,7 @@ class StoreSync {
     final text = encodeNotes(merged);
     var changed = false;
     if (encodeNotes(local) != text) {
-      await notes.save(docId, merged);
+      await notes.save(docId, merged, fromSync: true);
       changed = true;
     }
     final sent = remote == null || encodeNotes(remote) != text;

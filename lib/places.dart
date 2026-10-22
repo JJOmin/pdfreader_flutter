@@ -27,6 +27,9 @@ class Places {
   /// Null in widget tests, where there is no platform to name the phone.
   final PhoneIdentity? identity;
   Timer? _timer;
+
+  /// Told after this phone's place in a prepared document was written, so that the sync can send it.
+  void Function()? onStateWritten;
   final _pendingStates = <String, String>{};
 
   static Future<Places> open(PhoneIdentity? identity) async {
@@ -99,7 +102,9 @@ class Places {
       await file.parent.create(recursive: true);
       await file.writeAsString(json);
     }
+    final wrote = _pendingStates.isNotEmpty;
     _pendingStates.clear();
+    if (wrote) onStateWritten?.call();
   }
 }
 
