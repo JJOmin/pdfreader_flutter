@@ -497,9 +497,18 @@ Future<SyncResult> syncFrom(
       if (local != null) await File('${dir.path}/manifest.json').delete();
       // Its id is its hash, so a PDF already here is the same PDF.
       if (!await File('${dir.path}/document.pdf').exists()) await fetch('document.pdf');
-      final pages = <PageIndex>[];
-      for (var page = 1; page <= remote.pages; page++) {
+      // Only the pages it lacks (desktop ADR 11); all of them when its audio is of other voices.
+      if (local == null || local.manifest.voices != remote.voices) {
+        final old = Directory('${dir.path}/pages');
+        if (await old.exists()) await old.delete(recursive: true);
+      }
+      for (final page in pagesToFetch(local?.manifest, remote)) {
         await fetch('pages/$page.json');
+        final index = parsePageIndex(jsonDecode(await File('${dir.path}/pages/$page.json').readAsString()));
+        if (index == null) throw DesktopException('Page $page of ${remote.name} is not valid');
+      }
+      final pages = <PageIndex>[];
+      for (final page in remote.voiced) {
         final index = parsePageIndex(jsonDecode(await File('${dir.path}/pages/$page.json').readAsString()));
         if (index == null) throw DesktopException('Page $page of ${remote.name} is not valid');
         pages.add(index);

@@ -6,7 +6,7 @@ import 'package:pdfreader/shared/library_view.dart';
 import 'package:pdfreader/shared/sync.dart';
 
 Manifest doc(String id, String name, {num updated = 1, int bytes = 2 * 1024 * 1024}) =>
-    Manifest(docId: id * 64, name: name, pages: 2, sentences: 10, bytes: bytes, updated: updated);
+    Manifest.allVoiced(docId: id * 64, name: name, pages: 2, sentences: 10, bytes: bytes, updated: updated);
 
 void main() {
   final onPhone = doc('a', 'On.pdf');
@@ -121,5 +121,36 @@ void main() {
     await tester.tap(find.text('Sent.pdf'));
     expect(offered, ['Sent.pdf']);
     expect(downloaded, isEmpty);
+  });
+
+  testWidgets('says how many pages have audio while the computer is still making it', (tester) async {
+    Manifest partial(List<int> voiced) => Manifest(
+      docId: 'p' * 64,
+      name: 'Part.pdf',
+      pages: 4,
+      sentences: 1,
+      bytes: 1024,
+      updated: 1,
+      voiced: voiced,
+    );
+    for (final (voiced, text) in [
+      (<int>[1], 'On this phone · 1 KB · audio 1 of 4 pages'),
+      (<int>[], 'On this phone · 1 KB · no audio yet'),
+    ]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: LibraryList(
+              entries: libraryEntries(local: [partial(voiced)], cloud: []),
+              onOpen: (_) {},
+              onDownload: (_) {},
+              onRemove: (_) {},
+              onOffer: (_) {},
+            ),
+          ),
+        ),
+      );
+      expect(find.text(text), findsOneWidget);
+    }
   });
 }

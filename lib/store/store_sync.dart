@@ -176,9 +176,14 @@ class StoreSync {
       await pdf.writeAsBytes(bytes);
     }
 
-    final pages = <PageIndex>[];
-    for (var page = 1; page <= manifest.pages; page++) {
-      progress(DownloadProgress(manifest.name, page - 1, manifest.pages));
+    // Only the pages it lacks (desktop ADR 11); all of them when its audio is of other voices.
+    final fetch = pagesToFetch(local?.manifest, manifest);
+    if (local == null || local.manifest.voices != manifest.voices) {
+      final old = Directory('${dir.path}/pages');
+      if (await old.exists()) await old.delete(recursive: true);
+    }
+    for (final (i, page) in fetch.indexed) {
+      progress(DownloadProgress(manifest.name, i, fetch.length));
       final bytes = await _open(RemotePath.page(manifest.docId, page));
       final index = bytes == null ? null : parsePageIndex(jsonDecode(utf8.decode(bytes)));
       if (bytes == null || index == null) {
@@ -205,13 +210,17 @@ class StoreSync {
       }
       await Directory('${dir.path}/pages').create(recursive: true);
       await File('${dir.path}/pages/$page.json').writeAsBytes(bytes);
-      pages.add(index);
     }
-    // Audio no page refers to any more, as after the desktop prepared the document with other voices.
+    // Audio no voiced page refers to any more, as after the desktop prepared the document with other voices.
+    final pages = <PageIndex>[
+      for (final page in manifest.voiced)
+        ?parsePageIndex(jsonDecode(await File('${dir.path}/pages/$page.json').readAsString())),
+    ];
     final audio = Directory('${dir.path}/audio');
     final onDisk = {
-      for (final f in audio.listSync().whereType<File>())
-        if (f.path.endsWith('.opus')) f.uri.pathSegments.last.replaceAll('.opus', ''),
+      if (await audio.exists())
+        for (final f in audio.listSync().whereType<File>())
+          if (f.path.endsWith('.opus')) f.uri.pathSegments.last.replaceAll('.opus', ''),
     };
     for (final unused in audioToRemove(pages, onDisk)) {
       await File('${audio.path}/$unused.opus').delete();

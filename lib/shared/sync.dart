@@ -9,11 +9,13 @@ import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 import 'types.dart';
 
-const libraryVersion = 1;
+/// 2 adds the pages that have audio and the voices that made it (desktop ADR 11); 1 is still read.
+const libraryVersion = 2;
 
 final _key = RegExp(r'^[0-9a-f]{40}$');
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
 final _deviceId = RegExp(r'^[0-9a-f]{32}$');
+final _voices = RegExp(r'^[0-9a-f]{0,64}$');
 final _space = RegExp(r'\s+', unicode: true);
 
 String sha256Hex(String text) => sha256.convert(utf8.encode(text)).toString();
@@ -98,15 +100,47 @@ class Manifest {
     required this.sentences,
     required this.bytes,
     required this.updated,
-  });
+    List<int>? voiced,
+    this.voices = '',
+  }) : voiced = voiced ?? const [];
+
+  /// Every page voiced, as a manifest of version 1 says implicitly, or a test that does not care.
+  Manifest.allVoiced({
+    required String docId,
+    required String name,
+    required int pages,
+    required int sentences,
+    required int bytes,
+    required num updated,
+  }) : this(
+         docId: docId,
+         name: name,
+         pages: pages,
+         sentences: sentences,
+         bytes: bytes,
+         updated: updated,
+         voiced: [for (var p = 1; p <= pages; p++) p],
+       );
 
   /// SHA-256 of the PDF's bytes.
   final String docId;
   final String name;
+
+  /// The PDF's pages.
   final int pages;
+
+  /// Sentences with audio, on the voiced pages.
   final int sentences;
   final int bytes;
+
+  /// Changes with every page the desktop adds, so that the other devices notice.
   final num updated;
+
+  /// The pages that have audio, in order; none for a PDF the desktop has just opened.
+  final List<int> voiced;
+
+  /// A hash of the voices that made the audio; empty while there is none, or for version 1.
+  final String voices;
 
   Map<String, Object?> toJson() => {
     'version': libraryVersion,
@@ -116,6 +150,8 @@ class Manifest {
     'sentences': sentences,
     'bytes': bytes,
     'updated': updated,
+    'voiced': voiced,
+    'voices': voices,
   };
 }
 
@@ -210,18 +246,38 @@ PageIndex? parsePageIndex(Object? value) {
 
 Manifest? parseManifest(Object? value) {
   final input = _record(value);
-  if (input == null || input['version'] != libraryVersion) return null;
+  final version = input?['version'];
+  if (input == null || (version != 1 && version != libraryVersion)) return null;
   final Object? docId = input['docId'], name = input['name'], updated = input['updated'];
   final Object? pages = input['pages'], sentences = input['sentences'], bytes = input['bytes'];
   if (docId is! String || !_sha256.hasMatch(docId) || !_name(name, 255)) return null;
   if (!_integer(pages, 1) || !_integer(sentences, 0) || !_integer(bytes, 0) || !_finite(updated)) return null;
+  final count = (pages! as num).toInt();
+  // Version 1 was written only when every page had its audio.
+  if (version == 1) {
+    return Manifest.allVoiced(
+      docId: docId,
+      name: name! as String,
+      pages: count,
+      sentences: (sentences! as num).toInt(),
+      bytes: (bytes! as num).toInt(),
+      updated: updated! as num,
+    );
+  }
+  final Object? voiced = input['voiced'], voices = input['voices'];
+  if (voices is! String || !_voices.hasMatch(voices) || voiced is! List) return null;
+  if (!voiced.every((p) => p is int && p >= 1 && p <= count)) return null;
+  final sorted = {...voiced.cast<int>()}.toList()..sort();
+  if (sorted.length != voiced.length) return null;
   return Manifest(
     docId: docId,
     name: name! as String,
-    pages: (pages! as num).toInt(),
+    pages: count,
     sentences: (sentences! as num).toInt(),
     bytes: (bytes! as num).toInt(),
     updated: updated! as num,
+    voiced: sorted,
+    voices: voices,
   );
 }
 

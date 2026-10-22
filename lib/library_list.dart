@@ -36,7 +36,14 @@ class _LibraryListState extends State<LibraryList> {
   };
 
   String _subtitle(LibraryEntry e) {
-    final size = formatBytes(e.manifest.bytes);
+    final m = e.manifest;
+    // The computer adds the audio page by page (desktop ADR 11).
+    final audio = m.voiced.length == m.pages || e.state == DocState.offered
+        ? ''
+        : m.voiced.isEmpty
+        ? ' · no audio yet'
+        : ' · audio ${m.voiced.length} of ${m.pages} pages';
+    final size = '${formatBytes(m.bytes)}$audio';
     return switch (e.state) {
       DocState.onPhone => 'On this phone · $size',
       DocState.updateAvailable => 'Update available · $size',

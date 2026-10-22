@@ -37,4 +37,27 @@ void main() {
       expect(audioToRemove(pages, {'a' * 40, 'd' * 40}), ['d' * 40]);
     });
   });
+
+  group('pagesToFetch', () {
+    Manifest m(List<int> voiced, {String voices = 'aa'}) => Manifest(
+      docId: 'a' * 64,
+      name: 'p',
+      pages: 5,
+      sentences: 0,
+      bytes: 0,
+      updated: 1,
+      voiced: voiced,
+      voices: voices,
+    );
+
+    test('is every voiced page when the phone has none, or other voices', () {
+      expect(pagesToFetch(null, m([1, 2])), [1, 2]);
+      expect(pagesToFetch(m([1, 2], voices: 'bb'), m([1, 2])), [1, 2]);
+    });
+
+    test('is only the pages the phone lacks when the voices are the same', () {
+      expect(pagesToFetch(m([1, 2]), m([1, 2, 4])), [4]);
+      expect(pagesToFetch(m([1, 2, 4]), m([1, 2, 4])), isEmpty);
+    });
+  });
 }

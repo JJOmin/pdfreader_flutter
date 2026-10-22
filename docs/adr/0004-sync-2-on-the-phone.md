@@ -32,3 +32,6 @@ the user opens "Scan to pair", not at start. A refusal leaves the typed code, wh
   home is only remembered on the phone (`offers.json`) until it is next on the desktop's Wi-Fi.
 - **Automatic Wi-Fi syncs fetch nothing new.** They keep up to date what is on the phone; a new
   document comes by the user's tap, an accepted offer, or the Sync screen's button.
+- **Audio page by page (desktop ADR 11).** A document can be on the phone before any of its audio:
+  the manifest of version 2 names the pages that have it, and a download fetches only the pages the
+  phone lacks. The reader reads those pages and shows the others as a plain PDF.

@@ -203,22 +203,38 @@ void main() {
 
   group('parseManifest', () {
     Map<String, Object?> manifest([Map<String, Object?> over = const {}]) => {
-      'version': 1,
+      'version': 2,
       'docId': hash,
       'name': 'paper.pdf',
       'pages': 7,
       'sentences': 355,
       'bytes': 1200000,
       'updated': 1792500000000,
+      'voiced': [3, 1, 2],
+      'voices': 'a1b2c3d4e5f60718',
       ...over,
     };
 
-    test('accepts a valid manifest', () {
-      expect(parseManifest(manifest())?.toJson(), manifest());
+    test('accepts a valid manifest, its voiced pages in order', () {
+      expect(parseManifest(manifest())?.toJson(), {
+        ...manifest(),
+        'voiced': [1, 2, 3],
+      });
+      // A PDF that has no audio yet.
+      expect(parseManifest(manifest({'voiced': <int>[], 'voices': '', 'sentences': 0}))!.voiced, isEmpty);
+    });
+
+    test('reads version 1 as every page voiced, by voices unknown', () {
+      final old = manifest({'version': 1})
+        ..remove('voiced')
+        ..remove('voices');
+      final read = parseManifest(old)!;
+      expect(read.voiced, [1, 2, 3, 4, 5, 6, 7]);
+      expect(read.voices, '');
     });
 
     test('rejects other versions and bad fields', () {
-      expect(parseManifest(manifest({'version': 2})), isNull);
+      expect(parseManifest(manifest({'version': 3})), isNull);
       expect(parseManifest(manifest({'docId': 'x'})), isNull);
       expect(parseManifest(manifest({'name': ''})), isNull);
       expect(parseManifest(manifest({'name': 'x' * 256})), isNull);
@@ -226,6 +242,24 @@ void main() {
       expect(parseManifest(manifest({'sentences': 1.5})), isNull);
       expect(parseManifest(manifest({'bytes': -1})), isNull);
       expect(parseManifest(manifest({'updated': 'today'})), isNull);
+      expect(
+        parseManifest(
+          manifest({
+            'voiced': [8],
+          }),
+        ),
+        isNull,
+      );
+      expect(
+        parseManifest(
+          manifest({
+            'voiced': [1, 1],
+          }),
+        ),
+        isNull,
+      );
+      expect(parseManifest(manifest({'voiced': 'all'})), isNull);
+      expect(parseManifest(manifest({'voices': 'NOT HEX'})), isNull);
     });
   });
 

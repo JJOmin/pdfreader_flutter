@@ -588,7 +588,15 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   String? get _status {
     if (_error != null) return _error;
-    if (widget.prepared == null) return 'Not prepared on the desktop';
+    final prepared = widget.prepared;
+    if (prepared == null) return 'Not prepared on the desktop';
+    // The computer adds the audio page by page; the rest is read once it is there (desktop ADR 11).
+    final m = prepared.manifest;
+    if (m.voiced.length < m.pages) {
+      return m.voiced.isEmpty
+          ? 'The audio is being made on the computer'
+          : 'Audio for ${m.voiced.length} of ${m.pages} pages so far';
+    }
     final skipped = _skipped ?? 0;
     if (skipped > 0) return '$skipped sentences have no audio and are skipped';
     return null;

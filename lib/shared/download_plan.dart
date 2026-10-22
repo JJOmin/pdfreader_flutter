@@ -7,6 +7,17 @@ import 'sync.dart';
 bool isCurrent(Manifest remote, Manifest? local) =>
     local != null && local.docId == remote.docId && local.updated == remote.updated;
 
+/// The voiced pages the phone has to fetch so that `have` matches `want`: those it lacks, or all of
+/// them when its audio was made with other voices (desktop ADR 11).
+List<int> pagesToFetch(Manifest? have, Manifest want) {
+  if (have == null || have.voices != want.voices) return [...want.voiced];
+  final held = have.voiced.toSet();
+  return [
+    for (final page in want.voiced)
+      if (!held.contains(page)) page,
+  ];
+}
+
 Set<String> _keys(List<PageIndex> pages) => {
   for (final page in pages)
     for (final s in page.sentences) s.key,

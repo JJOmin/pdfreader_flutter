@@ -139,6 +139,41 @@ void main() {
     });
   });
 
+  group('audio page by page (desktop ADR 11)', () {
+    Future<CloudDocument> withVoiced(List<int> voiced, num updated) async {
+      final path = RemotePath.manifest(docId);
+      final json =
+          jsonDecode(utf8.decode(await unseal(key, path, store.files[path]!))) as Map<String, Object?>;
+      final m = {...json, 'version': 2, 'voiced': voiced, 'voices': 'ab', 'updated': updated};
+      store.files[path] = await seal(key, path, text(jsonEncode(m)));
+      return CloudDocument(parseManifest(m)!);
+    }
+
+    test('downloads the pages that have audio, and later only the page that was added', () async {
+      await sync.download(await withVoiced([1], 10), (_) {});
+      final dir = '${library.root.path}/$docId';
+      expect(File('$dir/pages/1.json').existsSync(), isTrue);
+      expect(File('$dir/pages/2.json').existsSync(), isFalse);
+      expect((await library.read(Directory(dir)))!.manifest.voiced, [1]);
+
+      store.gets.clear();
+      await sync.download(await withVoiced([1, 2], 11), (_) {});
+      expect(store.gets.where((p) => p.contains('/pages/') || p.contains('/audio/')), [
+        RemotePath.page(docId, 2),
+        RemotePath.pack(docId, 2),
+      ]);
+      expect((await library.read(Directory(dir)))!.manifest.voiced, [1, 2]);
+    });
+
+    test('downloads a PDF that has no audio yet: the PDF and the manifest only', () async {
+      await sync.download(await withVoiced([], 10), (_) {});
+      final dir = '${library.root.path}/$docId';
+      expect(File('$dir/document.pdf').existsSync(), isTrue);
+      expect(Directory('$dir/pages').existsSync(), isFalse);
+      expect((await library.read(Directory(dir)))!.manifest.voiced, isEmpty);
+    });
+  });
+
   group('places', () {
     Future<void> downloaded() async => sync.download((await sync.documents()).documents.single, (_) {});
 
