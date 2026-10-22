@@ -40,7 +40,8 @@ class NotesStore {
     }
   }
 
-  /// [fromSync] is for notes the sync merged in: they came from the store, so nothing is sent for them.
+  /// [fromSync] is for notes a sync merged in: they came from another device, so saving them does not
+  /// start a sync.
   Future<void> save(String docId, NotesFile file, {bool fromSync = false}) async {
     final target = _file(docId);
     await dir.create(recursive: true);

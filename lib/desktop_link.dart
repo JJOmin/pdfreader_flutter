@@ -147,7 +147,8 @@ class DesktopClient {
   String? seenFingerprint;
 
   Future<HttpClientResponse> _send(String method, String path, {String? token, Object? body}) async {
-    final request = await _http.openUrl(method, Uri(scheme: 'https', host: host, port: port, path: path));
+    // `resolve`, not `path:`, so a query such as `?since=` stays a query.
+    final request = await _http.openUrl(method, Uri(scheme: 'https', host: host, port: port).resolve(path));
     if (token != null) request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
     if (body != null) {
       request.headers.contentType = ContentType.json;
@@ -207,6 +208,10 @@ class DesktopClient {
 /// A desktop heard on the network.
 typedef FoundDesktop = ({String name, String host, int port});
 
+/// How many streams listen now. Android's multicast lock is one for the app, so it is taken by the first
+/// and given back by the last: the Sync screen and the Wi-Fi sync listen at the same time.
+var _listeners = 0;
+
 /// Listens for the desktops' announcements while the stream is listened to.
 Stream<FoundDesktop> discoverDesktops() {
   RawDatagramSocket? socket;
@@ -214,7 +219,7 @@ Stream<FoundDesktop> discoverDesktops() {
   controller = StreamController(
     onListen: () async {
       try {
-        await _channel.invokeMethod<void>('acquire');
+        if (_listeners++ == 0) await _channel.invokeMethod<void>('acquire');
         final s = socket = await RawDatagramSocket.bind(
           InternetAddress.anyIPv4,
           desktopPort,
@@ -242,7 +247,7 @@ Stream<FoundDesktop> discoverDesktops() {
     },
     onCancel: () async {
       socket?.close();
-      await _channel.invokeMethod<void>('release');
+      if (--_listeners == 0) await _channel.invokeMethod<void>('release');
     },
   );
   return controller.stream;
@@ -386,8 +391,37 @@ Future<bool> _exchangeNotes(DesktopClient client, String token, NotesStore store
   final merged = parseNotes(answer);
   if (merged == null) return false;
   if (encodeNotes(merged) == encodeNotes(local)) return false;
-  await store.save(docId, merged);
+  // From a sync: not the phone's own change, so it does not start the next sync. The cloud gets it at
+  // its next poll, which compares the notes with what it last exchanged.
+  await store.save(docId, merged, fromSync: true);
   return true;
+}
+
+/// What changed on the desktop since `since` (`GET /v1/changes`, protocol 2): the documents, and the
+/// desktop's time to ask from next. Null for a desktop of protocol 1, which does not know the request.
+Future<({int now, Set<String> docs})?> changesFrom(PairedDesktop desktop, int since) async {
+  final client = DesktopClient(
+    desktop.host,
+    desktop.port,
+    (fingerprint) => fingerprint == desktop.fingerprint,
+  );
+  try {
+    final answer = await client.json(
+      'GET',
+      '/v1/changes?since=$since',
+      token: desktop.token,
+      missingIsNull: true,
+    );
+    if (answer == null) return null;
+    final now = (answer as Map<String, Object?>)['now'];
+    final docs = answer['docs'];
+    if (now is! int || docs is! Map<String, Object?>) {
+      throw const DesktopException('The desktop answered in a way this app does not know.');
+    }
+    return (now: now, docs: docs.keys.toSet());
+  } finally {
+    client.close();
+  }
 }
 
 /// Fetches every document the desktop prepared, and of each only what the phone lacks (step 5.4),
@@ -398,6 +432,7 @@ Future<SyncResult> syncFrom(
   String device,
   void Function(SyncProgress) progress, {
   NotesStore? notes,
+  bool onlyHeld = false,
 }) async {
   final client = DesktopClient(
     desktop.host,
@@ -409,7 +444,13 @@ Future<SyncResult> syncFrom(
   var bytes = 0;
   try {
     final listed = await client.json('GET', '/v1/library', token: token);
-    final manifests = [for (final entry in listed is List ? listed : const []) ?parseManifest(entry)];
+    final listedManifests = [for (final entry in listed is List ? listed : const []) ?parseManifest(entry)];
+    // A sync the phone starts on its own keeps up to date what is here, and fetches nothing new: what
+    // is on the phone is the user's choice (desktop ADR 10 section 3).
+    final manifests = [
+      for (final m in listedManifests)
+        if (!onlyHeld || await library.read(Directory('${library.root.path}/${m.docId}')) != null) m,
+    ];
     for (final remote in manifests) {
       final dir = Directory('${library.root.path}/${remote.docId}');
       final local = await library.read(dir);

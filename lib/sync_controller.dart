@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import 'desktop_link.dart' show isMetered, phoneName;
+import 'desktop_link.dart' show DesktopStore, SyncResult, isMetered, phoneName;
 import 'library.dart';
 import 'notes_store.dart';
 import 'shared/auto_sync.dart';
@@ -16,6 +16,7 @@ import 'store/cloud_accounts.dart';
 import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
 import 'store/store_sync.dart';
+import 'wifi_sync.dart';
 
 class RealTimers implements Timers {
   const RealTimers();
@@ -69,6 +70,12 @@ class SyncController extends ChangeNotifier {
   final Future<String> Function() _name;
   late final AutoSync _auto;
 
+  /// Sync with the paired computers on the same Wi-Fi; set once it is made, as it uses [exclusive].
+  WifiSync? wifi;
+
+  /// The paired computers, shared by the Sync screen and [wifi].
+  DesktopStore? desktopStore;
+
   StoreSync? _engine;
   SyncMemo? _memo;
   Future<void> _queue = Future.value();
@@ -93,7 +100,14 @@ class SyncController extends ChangeNotifier {
   int syncs = 0;
 
   SyncState get state => syncState(
-    SyncFacts(store: _signedIn, busy: _busy, changedAt: _changedAt, syncedAt: _syncedAt, failed: _failed),
+    SyncFacts(
+      store: _signedIn,
+      phones: wifi?.connected.isNotEmpty ?? false,
+      busy: _busy,
+      changedAt: _changedAt,
+      syncedAt: _syncedAt,
+      failed: _failed,
+    ),
   );
 
   /// The store engine, made once for the account and key that are set.
@@ -233,22 +247,36 @@ class SyncController extends ChangeNotifier {
     _changedAt = timers.now();
     notifyListeners();
     if (!place) _auto.changed();
+    // On the home Wi-Fi a poll is every 5 seconds, so a place goes with it too.
+    wifi?.ownChanged();
+  }
+
+  /// A Wi-Fi sync finished: the library shows what came, and the icon who is connected.
+  void wifiSynced(SyncResult result) {
+    if (result.files > 0 || result.notes > 0) {
+      syncs++;
+      lastSummary = null;
+    }
+    notifyListeners();
   }
 
   /// The app is in front: sync now and every 30 seconds.
   void resume() {
     unawaited(refreshStatus());
     _auto.start();
+    wifi?.start();
   }
 
   /// The app went to the background: nothing runs by itself. A change that waits is sent first.
   Future<void> pause() async {
+    wifi?.stop();
     await _auto.flush();
     _auto.stop();
   }
 
   @override
   void dispose() {
+    wifi?.stop();
     _auto.stop();
     super.dispose();
   }

@@ -24,6 +24,7 @@ import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
 import 'sync_controller.dart';
 import 'sync_page.dart';
+import 'wifi_sync.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,30 @@ Future<void> main() async {
     catalogFile: CloudCatalog(File('$support/cloud-catalog.json')),
   );
   await sync.loadCatalog();
+  // One store of paired computers: a pairing on the Sync screen is seen by the Wi-Fi sync at once.
+  sync.desktopStore = store;
+  sync.wifi = WifiSync(
+    desktops: () => store.desktops,
+    timers: const RealTimers(),
+    discover: discoverDesktops,
+    changes: changesFrom,
+    sync: (desktop) => sync.exclusive(() async {
+      final result = await syncFrom(
+        desktop,
+        library,
+        store.device,
+        (_) {},
+        notes: notesStore,
+        onlyHeld: true,
+      );
+      // Heard at another address than the one it was paired at: remember where it is now.
+      if (store.desktops.every((d) => d.host != desktop.host || d.port != desktop.port)) {
+        await store.remember(desktop);
+      }
+      return result;
+    }),
+    onSynced: (_, result) => sync.wifiSynced(result),
+  );
   // What the user changes is sent soon; what a sync brings in is not sent back.
   notesStore.onSaved = sync.ownChanged;
   places.onStateWritten = () => sync.ownChanged(place: true);
@@ -223,7 +248,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _syncScreen() async {
     final sync = widget.sync;
     if (sync == null) return;
-    final desktops = await DesktopStore.open();
+    final desktops = sync.desktopStore ?? await DesktopStore.open();
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
