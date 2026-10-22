@@ -1,10 +1,10 @@
 {
 	"folders": [
 		{
-			"path": "../pdfreader"
+			"path": "."
 		},
 		{
-			"path": "."
+			"path": "../pdfReaderWindows"
 		}
 	],
 	"settings": {}
