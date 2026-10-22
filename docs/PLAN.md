@@ -10,6 +10,22 @@ reported as **not verified on device**. Work stops after each milestone for the 
 Every step that adds logic writes the test first. A port of a TypeScript test keeps its name, its
 inputs and its expected outputs.
 
+## Order from here (the owner, 2026-10-22)
+
+The owner moved to a MacBook Air M1, with Flutter through FVM and the Android phone on the Mac.
+
+1. **The desktop app on the Mac**, steps MAC0 to MAC5 in the desktop's `docs/SPEC.md`. Nothing new
+   on the phone meanwhile, except that MAC4 runs the sync tests against the Mac.
+2. **Then ask the owner how to continue.** The candidates, in their rough order:
+   - Sync: 6.6 with a real Dropbox account (needs the owner's app key), and the Nextcloud
+     tweaks. The owner checked the phone against their own Nextcloud on 2026-10-21. It works,
+     with tweaks to make later.
+   - The open device checks: 1.7 pinch zoom, 1.11 at 300 %, 1.12 screen off and the
+     notification, 5.4 Remove, 2.6 seen in the desktop app, 5.1 a German paper.
+   - M4: export and the annotated PDF.
+   - **iOS**, last: the Swift side of the platform channels. There is no iPhone yet, so the
+     simulator first.
+
 ## M0: toolchain and an empty app
 
 **Done 2026-10-15.** Flutter 3.47.7, Dart 3.13.5, Android SDK 36, phone SM-G780G (Android 13)
