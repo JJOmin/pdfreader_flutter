@@ -18,10 +18,12 @@ The owner moved to a MacBook Air M1, with Flutter through FVM and the Android ph
    on the phone meanwhile, except that MAC4 runs the sync tests against the Mac.
    **2026-10-22:** MAC4 done for Wi-Fi: `desktop_sync_test`, `reader_test` and `notes_sync_test`
    pass against the Mac (with its VPN off; the desktop now warns about VPNs).
-2. **Then ask the owner how to continue.** The candidates, in their rough order:
-   - Sync: 6.6 with a real Dropbox account (needs the owner's app key), and the Nextcloud
-     tweaks. The owner checked the phone against their own Nextcloud on 2026-10-21. It works,
-     with tweaks to make later.
+2. **Asked 2026-10-22 after MAC5. The owner chose "sync 2", M7 below**: no Dropbox for now,
+   Nextcloud fast and automatic, a phone library that shows what is on the phone and what is only
+   in the cloud, pairing by QR code, Wi-Fi sync that works like the cloud, and sending a document
+   from the desktop. Opening a PDF from Finder with the installed Mac app works (owner, MAC5).
+   The rest waits:
+   - Dropbox (6.6), removed for now in 7.1.
    - The open device checks: 1.7 pinch zoom, 1.11 at 300 %, 1.12 screen off and the
      notification, 5.4 Remove, 2.6 seen in the desktop app, 5.1 a German paper.
    - M4: export and the annotated PDF.
@@ -167,3 +169,21 @@ The offline rule already allows it: `CLAUDE.md` should be brought in line with t
 | --- | --- | --- |
 | 6.1 | **ADR 3: the store on the phone**, written 2026-10-21 and **proposed**: [adr/0003-the-store-on-the-phone.md](adr/0003-the-store-on-the-phone.md). It waits for the owner's four choices in its section 7 (the AES-GCM package, Dropbox's redirect, where secrets are kept, the first service). | The owner has accepted it, and `CLAUDE.md`'s offline rule matches the desktop's. |
 | 6.2 to 6.5 | **Done 2026-10-21**, against stand-ins; 6.6 is not done. 6.2: `lib/shared/sync_store.dart`, 20 tests with the desktop's golden files (a file sealed by the desktop opens on the phone, and the phone writes the very same bytes for the same IV), and `SecretBox` and the browser channel, run on the phone. 6.3 and 6.4: `lib/store/` with 30 tests against stand-in servers written from the documentation. 6.5: the Cloud screen, `lib/store/store_sync.dart` with 21 tests against a store the desktop's own engine wrote, and `integration_test/cloud_test.dart`, which on the phone signs in to a stand-in Nextcloud on the PC over Wi-Fi, enters the key, downloads the sample (0.7 s), syncs, and sends a mark the desktop's code then opens, three runs in a row. The desktop's S8b is done. The formats and `SecretBox`, the WebDAV store and Nextcloud sign-in, the Dropbox store and sign-in, the Cloud screen, and a run on the device with real accounts. Listed in the ADR's section 8, with the desktop's S8b (notes through the store). | Per step, in the ADR. |
+
+## M7: sync 2 (desktop ADR 10)
+
+Designed in `../pdfReaderWindows/docs/adr/0010-sync-2.md`, **accepted** 2026-10-22; its owner's
+choices decide 7.6 and 7.8. Each step is built with its desktop step (S10 to S15 in that
+repository's `docs/SPEC.md`) and tested against it on the device. This repository's ADR 4 records
+the phone's packages once the owner chose them.
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 7.1 | **Remove Dropbox** (with S10): `lib/store/dropbox_store.dart`, its part of `cloud_accounts.dart` and `cloud_page.dart`, the redirect in the Android manifest, `test/store/dropbox_test.dart` and its fake server. ADR 3 gets a note. | `tool/check.ps1` passes; nothing in `lib/`, `test/` or `android/` mentions Dropbox. |
+| 7.2 | **The change journal** (with S11): `lib/shared/sync_store.dart` reads and writes `devices/<device>.json` with the desktop's golden files; `store_sync.dart` fetches only what changed; a full walk on request. | Unit tests with the desktop's cases and a golden journal written by the desktop. |
+| 7.3 | **Automatic sync on the phone** (with S12): on start and resume, every 30 s while open, 5 s after its own change; pull to refresh walks everything; an app-bar icon with the desktop's four states. | Unit tests for the timing (fake clock). Device: a mark made on the Mac shows on the phone within 45 s with no tap, and at once after a pull to refresh. |
+| 7.4 | **One library** (ADR 10 section 4): every document with its state (on this phone, update available, in the cloud, downloading, offered), filter chips, space used, Download and Remove from this phone. Automatic downloads wait for Wi-Fi (metered network through the existing channel). | Widget tests for each state and the filters. Device: download a cloud-only document, remove it again, and it stays listed as in the cloud. |
+| 7.5 | **One Sync screen**: the Nextcloud account and key, the paired computers, "Scan to pair". Desktops and Cloud screens go. | The integration tests (`cloud_test`, `desktop_sync_test`, `notes_sync_test`) pass on the new screens. **Stop for review** of the phone's design. |
+| 7.6 | **Pair by QR** (with S13): the scanner (owner's choice 3), the camera permission asked on the first tap, pairing with the secret. | Device: scanning the Mac's dialog pairs in one step; the old typed code still works. |
+| 7.7 | **Wi-Fi like the cloud** (with S14): heard computers are synced at once, then polled every 5 s while the app is open. | Device: a mark made on the Mac shows on the phone within 10 s on the home Wi-Fi. |
+| 7.8 | **Accept a sent document** (with S15): the offer in the library and as a prompt, "Always accept from this computer" (owner's choice 1), Wi-Fi only for automatic downloads. | Device: "Send to phone" on the Mac shows the offer, Accept downloads it, Decline removes it. **Stop for review.** |
