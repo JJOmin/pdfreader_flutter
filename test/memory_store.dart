@@ -11,6 +11,17 @@ class MemoryStore implements SyncStore {
   final Map<String, Uint8List> files;
   final gets = <String>[];
   final puts = <String>[];
+  final lists = <String>[];
+
+  /// Like a WebDAV server's ETag: new whenever the file is written.
+  final etags = <String, String>{};
+  var _writes = 0;
+
+  void forget() {
+    gets.clear();
+    puts.clear();
+    lists.clear();
+  }
 
   /// Every file under `dir`, by its path relative to it, except the plain helper files of the fixture.
   static MemoryStore fromFolder(String dir) {
@@ -26,12 +37,18 @@ class MemoryStore implements SyncStore {
 
   @override
   Future<List<RemoteEntry>> list(String dir) async {
+    lists.add(dir);
     final names = <String, RemoteEntry>{};
     final prefix = dir.isEmpty ? '' : '$dir/';
     for (final MapEntry(key: path, value: bytes) in files.entries) {
       if (!path.startsWith(prefix)) continue;
       final rest = path.substring(prefix.length).split('/');
-      names[rest.first] = RemoteEntry(rest.first, folder: rest.length > 1, size: bytes.length);
+      names[rest.first] = RemoteEntry(
+        rest.first,
+        folder: rest.length > 1,
+        size: bytes.length,
+        etag: rest.length == 1 ? (etags[path] ?? '') : null,
+      );
     }
     return names.values.toList();
   }
@@ -46,5 +63,6 @@ class MemoryStore implements SyncStore {
   Future<void> put(String path, Uint8List bytes) async {
     puts.add(path);
     files[path] = bytes;
+    etags[path] = '"${++_writes}"';
   }
 }

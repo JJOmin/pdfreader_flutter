@@ -17,6 +17,7 @@ import 'platform_secrets.dart';
 import 'playback.dart';
 import 'reader_page.dart';
 import 'store/cloud_accounts.dart';
+import 'store/memo_file.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -161,10 +162,12 @@ class _HomePageState extends State<HomePage> {
     final cloud = widget.cloud;
     if (library == null || notes == null || cloud == null) return;
     final store = await DesktopStore.open();
+    final memo = MemoFile(File('${(await getApplicationSupportDirectory()).path}/sync-memo.json'));
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => CloudPage(accounts: cloud, library: library, notes: notes, device: store.device),
+        builder: (_) =>
+            CloudPage(accounts: cloud, library: library, notes: notes, device: store.device, memoFile: memo),
       ),
     );
     _reload();

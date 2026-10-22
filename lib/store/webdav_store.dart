@@ -30,6 +30,7 @@ final _responseSplit = RegExp(r'<(?:\w+:)?response[\s>]');
 final _hrefPattern = RegExp(r'<(?:\w+:)?href>([^<]*)<');
 final _collectionPattern = RegExp(r'<(?:\w+:)?collection\s*/?>');
 final _lengthPattern = RegExp(r'<(?:\w+:)?getcontentlength>(\d+)<');
+final _etagPattern = RegExp(r'<(?:\w+:)?getetag>([^<]*)<');
 
 /// The children in a PROPFIND answer. Servers differ in the namespace prefix they use, so the tags
 /// are matched without one. `dir` is the folder that was asked about, which the answer lists first.
@@ -44,8 +45,16 @@ List<RemoteEntry> parsePropfind(String xml, Uri dir) {
     if (_withSlash(path) == own) continue;
     final name = path.replaceFirst(RegExp(r'/$'), '').split('/').last;
     final size = int.tryParse(_lengthPattern.firstMatch(block)?.group(1) ?? '') ?? 0;
+    final etag = _etagPattern.firstMatch(block)?.group(1);
     if (name.isNotEmpty) {
-      entries.add(RemoteEntry(name, folder: _collectionPattern.hasMatch(block), size: size));
+      entries.add(
+        RemoteEntry(
+          name,
+          folder: _collectionPattern.hasMatch(block),
+          size: size,
+          etag: etag == null || etag.isEmpty ? null : etag,
+        ),
+      );
     }
   }
   return entries;

@@ -7,7 +7,10 @@ import 'library.dart';
 import 'notes_store.dart';
 import 'shared/download_plan.dart';
 import 'store/cancellation.dart';
+import 'desktop_link.dart' show phoneName;
+import 'shared/sync_memo.dart';
 import 'store/cloud_accounts.dart';
+import 'store/memo_file.dart';
 import 'store/store_sync.dart';
 
 /// The user's own Nextcloud (ADR 3): sign in, the sync key, the documents the desktop
@@ -19,7 +22,11 @@ class CloudPage extends StatefulWidget {
     required this.library,
     required this.notes,
     required this.device,
+    this.memoFile,
   });
+
+  /// What a sync remembers for the next one; without it the page remembers only while it is open.
+  final MemoFile? memoFile;
 
   final CloudAccounts accounts;
   final Library library;
@@ -70,13 +77,27 @@ class _CloudPageState extends State<CloudPage> {
     }
   }
 
-  Future<StoreSync> _engine() async => _sync ??= StoreSync(
-    await widget.accounts.store(),
-    await widget.accounts.key(),
-    widget.library,
-    widget.notes,
-    widget.device,
-  );
+  SyncMemo? _memo;
+
+  Future<StoreSync> _engine() async {
+    final memo = _memo ??= await widget.memoFile?.load() ?? SyncMemo();
+    return _sync ??= StoreSync(
+      await widget.accounts.store(),
+      await widget.accounts.key(),
+      widget.library,
+      widget.notes,
+      widget.device,
+      memo: memo,
+      name: await phoneName(),
+    );
+  }
+
+  /// A new account or key: the memo describes another store, so the next sync walks everything.
+  Future<void> _forget() async {
+    _sync = null;
+    _memo = null;
+    await widget.memoFile?.clear();
+  }
 
   Future<void> _refresh() async {
     final status = await widget.accounts.status();
@@ -122,7 +143,7 @@ class _CloudPageState extends State<CloudPage> {
     await _run(() async {
       _say(waiting);
       final status = await connect(cancel);
-      _sync = null;
+      await _forget();
       if (mounted) setState(() => _status = status);
       _say('Signed in as ${status.account}');
       if (status.hasKey) await _list();
@@ -134,7 +155,7 @@ class _CloudPageState extends State<CloudPage> {
     await _run(() async {
       final status = await widget.accounts.setKey(_key.text);
       _key.clear();
-      _sync = null;
+      await _forget();
       if (mounted) setState(() => _status = status);
       _say('The key is saved on this phone.');
       if (status.backend != CloudBackend.none) await _list();
@@ -154,9 +175,11 @@ class _CloudPageState extends State<CloudPage> {
 
   Future<void> _syncNow() async {
     await _run(() async {
+      // The button walks the whole store; the automatic sync of step 7.3 asks the journals instead.
       final summary = await (await _engine()).sync((p) {
         if (mounted) setState(() => _progress = p.total == 0 ? null : p.done / p.total);
-      });
+      }, full: true);
+      await widget.memoFile?.save(_memo!);
       final parts = [
         if (summary.updated > 0) '${summary.updated} documents updated',
         if (summary.notesChanged > 0) 'marks changed in ${summary.notesChanged}',
@@ -169,7 +192,7 @@ class _CloudPageState extends State<CloudPage> {
 
   Future<void> _signOut() async {
     final status = await widget.accounts.disconnect();
-    _sync = null;
+    await _forget();
     if (!mounted) return;
     setState(() {
       _status = status;

@@ -10,6 +10,7 @@ import 'package:pdfreader/library.dart';
 import 'package:pdfreader/notes_store.dart';
 import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/shared/sync.dart';
+import 'package:pdfreader/shared/sync_memo.dart';
 import 'package:pdfreader/shared/sync_store.dart';
 import 'package:pdfreader/store/store_sync.dart';
 
@@ -22,6 +23,20 @@ const phone = 'e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0';
 const desktop = 'dddddddddddddddddddddddddddddddd';
 
 Uint8List text(String value) => Uint8List.fromList(utf8.encode(value));
+
+Annotation mark(String id, {String comment = '', num? updated}) => Annotation(
+  id: id,
+  page: 1,
+  start: 33,
+  end: 39,
+  text: 'Dieser',
+  quote: 'Dieser',
+  kind: MarkKind.highlight,
+  color: HighlightColor.green,
+  comment: comment,
+  created: '2026-10-21T00:00:00.000Z',
+  updated: updated,
+);
 
 void main() {
   late Directory dir;
@@ -176,22 +191,9 @@ void main() {
   });
 
   group('notes', () {
-    Annotation mark(String id, {String comment = '', num? updated}) => Annotation(
-      id: id,
-      page: 1,
-      start: 33,
-      end: 39,
-      text: 'Dieser',
-      quote: 'Dieser',
-      kind: MarkKind.highlight,
-      color: HighlightColor.green,
-      comment: comment,
-      created: '2026-10-21T00:00:00.000Z',
-      updated: updated,
-    );
-
     test('reads the desktop’s marks, comments, general notes and removals, byte for byte its file', () async {
-      expect(await sync.exchangeNotes(docId), (changed: true, unreadable: 0));
+      final result = await sync.exchangeNotes(docId);
+      expect((result.changed, result.unreadable), (true, 0));
       final got = await notes.load(docId);
       expect(got.notes, 'General notes from the desktop, ä ö ü');
       expect((got.annotations.single.id, got.annotations.single.comment), ('a1', 'desktop comment'));
@@ -271,7 +273,8 @@ void main() {
     test('sends nothing when both sides already agree', () async {
       await sync.exchangeNotes(docId);
       store.puts.clear();
-      expect(await sync.exchangeNotes(docId), (changed: false, unreadable: 0));
+      final result = await sync.exchangeNotes(docId);
+      expect((result.changed, result.unreadable), (false, 0));
       expect(store.puts, isEmpty);
     });
 
@@ -279,14 +282,16 @@ void main() {
       await notes.save(docId, NotesFile(notes: '', annotations: [mark('p1', updated: 1)]));
       final path = RemotePath.notes(docId);
       final before = store.files[path] = await seal(newSyncKey(), path, text('{}'));
-      expect(await sync.exchangeNotes(docId), (changed: false, unreadable: 1));
+      final result = await sync.exchangeNotes(docId);
+      expect((result.changed, result.unreadable), (false, 1));
       expect(store.files[path], before);
       expect((await notes.load(docId)).annotations.single.id, 'p1');
     });
 
     test('writes nothing where there are no notes on either side', () async {
       store.files.remove(RemotePath.notes(docId));
-      expect(await sync.exchangeNotes(docId), (changed: false, unreadable: 0));
+      final result = await sync.exchangeNotes(docId);
+      expect((result.changed, result.unreadable), (false, 0));
       expect(store.puts, isEmpty);
     });
   });
@@ -320,4 +325,214 @@ void main() {
       );
     });
   });
+
+  group('change journals', () {
+    late SyncMemo memo;
+    late StoreSync journaled;
+    var clock = 1000;
+
+    Future<Journal?> readJournal(String device) async {
+      final path = RemotePath.journal(device);
+      final sealed = store.files[path];
+      return sealed == null ? null : parseJournal(jsonDecode(utf8.decode(await unseal(key, path, sealed))));
+    }
+
+    /// The desktop's side after it changed something: a part of the document, then its journal.
+    Future<void> desktopChanged(JournalDoc doc, {String? other}) async {
+      final path = RemotePath.journal(desktop);
+      final journal = Journal(
+        device: desktop,
+        name: 'Leos-MacBook',
+        updated: clock,
+        docs: {docId: doc, ?other: const JournalDoc(manifest: 5)},
+      );
+      store.files[path] = await seal(key, path, text(jsonEncode(journal.toJson())));
+      store.etags[path] = '"d${clock++}"';
+    }
+
+    Future<void> desktopNotes(String comment) async {
+      final path = RemotePath.notes(docId);
+      final remote = parseNotes(jsonDecode(utf8.decode(await unseal(key, path, store.files[path]!))))!;
+      final changed = NotesFile(
+        notes: remote.notes,
+        notesUpdated: remote.notesUpdated,
+        annotations: [
+          for (final a in remote.annotations)
+            a.id == 'a1' ? a.copyWith(comment: comment, updated: 1792600000000 + clock) : a,
+        ],
+        removed: remote.removed,
+      );
+      store.files[path] = await seal(key, path, text(encodeNotes(changed)));
+    }
+
+    setUp(() async {
+      memo = SyncMemo();
+      journaled = StoreSync(
+        store,
+        key,
+        library,
+        notes,
+        phone,
+        memo: memo,
+        name: 'Galaxy',
+        now: () => clock++,
+      );
+      await journaled.download((await journaled.documents()).documents.single, (_) {});
+      // The Mac has written a journal before: what the tests change is then a difference to it.
+      await desktopChanged(const JournalDoc(manifest: 1));
+      await journaled.sync((_) {});
+      store.forget();
+    });
+
+    test('writes this phone’s journal after the first sync, with its name', () async {
+      final journal = (await readJournal(phone))!;
+      expect(journal.name, 'Galaxy');
+      expect(journal.docs[docId], const JournalDoc());
+    });
+
+    test('costs one listing, and nothing else, when no one changed anything', () async {
+      final summary = await journaled.sync((_) {});
+      expect((summary.updated, summary.notesChanged, summary.unreadable), (0, 0, 0));
+      expect(store.lists, ['devices']);
+      expect(store.gets, isEmpty);
+      expect(store.puts, isEmpty);
+    });
+
+    test('fetches only the notes of the one document another device changed', () async {
+      await desktopNotes('edited on the Mac');
+      await desktopChanged(const JournalDoc(manifest: 1, notes: 7));
+      store.forget();
+      final summary = await journaled.sync((_) {});
+      expect(store.gets, [RemotePath.journal(desktop), RemotePath.notes(docId)]);
+      expect(summary.notesChanged, 1);
+      expect((await notes.load(docId)).annotations.single.comment, 'edited on the Mac');
+      // Merged to the same file: nothing is sent back, and the next poll is empty again.
+      expect(store.puts, isEmpty);
+      store.forget();
+      await journaled.sync((_) {});
+      expect(store.gets, isEmpty);
+    });
+
+    test('does not open a journal whose ETag it has seen', () async {
+      await desktopChanged(const JournalDoc(manifest: 1, notes: 7));
+      await journaled.sync((_) {});
+      store.forget();
+      await journaled.sync((_) {});
+      expect(store.gets, isEmpty);
+    });
+
+    test('sends a local change and says so in the journal, without reading the rest of the store', () async {
+      await notes.save(
+        docId,
+        NotesFile(notes: '', annotations: [(await notes.load(docId)).annotations.single, mark('p1')]),
+      );
+      await journaled.sync((_) {});
+      expect(store.gets, [RemotePath.notes(docId)]);
+      expect(store.puts, [RemotePath.notes(docId), RemotePath.journal(phone)]);
+      expect((await readJournal(phone))!.docs[docId]!.notes, greaterThan(0));
+      store.forget();
+      await journaled.sync((_) {});
+      expect(store.puts, isEmpty);
+    });
+
+    test('sends a new place once, and not again until it changes', () async {
+      File('${library.root.path}/$docId/state/$phone.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(
+          jsonEncode(
+            DeviceState(
+              device: phone,
+              name: 'Galaxy',
+              updated: 5,
+              page: 1,
+              offset: 0,
+              sentence: null,
+            ).toJson(),
+          ),
+        );
+      await journaled.sync((_) {});
+      expect(store.puts, [RemotePath.state(docId, phone), RemotePath.journal(phone)]);
+      store.forget();
+      await journaled.sync((_) {});
+      expect(store.puts, isEmpty);
+    });
+
+    test('downloads again when the journal says the desktop prepared the document again', () async {
+      final path = RemotePath.manifest(docId);
+      final manifest =
+          jsonDecode(utf8.decode(await unseal(key, path, store.files[path]!))) as Map<String, Object?>;
+      manifest['updated'] = (manifest['updated']! as num) + 1;
+      store.files[path] = await seal(key, path, text(jsonEncode(manifest)));
+      await desktopChanged(const JournalDoc(manifest: 9));
+      expect((await journaled.sync((_) {})).updated, 1);
+    });
+
+    test('tells of a document the phone does not hold, without listing the cloud', () async {
+      final other = '5' * 64;
+      await desktopChanged(const JournalDoc(manifest: 1), other: other);
+      store.forget();
+      final summary = await journaled.sync((_) {});
+      expect(summary.newInCloud, {other});
+      expect(store.lists, ['devices']);
+    });
+
+    test('does not see a change whose journal was lost until everything is walked', () async {
+      await desktopNotes('edited on the Mac');
+      await journaled.sync((_) {});
+      expect((await notes.load(docId)).annotations.single.comment, 'desktop comment');
+      final summary = await journaled.sync((_) {}, full: true);
+      expect(summary.notesChanged, 1);
+      expect((await notes.load(docId)).annotations.single.comment, 'edited on the Mac');
+    });
+
+    test('writes its own journal again after a full walk finds it lost', () async {
+      store.files.remove(RemotePath.journal(phone));
+      await journaled.sync((_) {});
+      expect(store.puts, isEmpty);
+      await journaled.sync((_) {}, full: true);
+      expect(await readJournal(phone), isNotNull);
+    });
+
+    test('walks everything when the memo is lost, but sends nothing it already sent', () async {
+      final again = StoreSync(store, key, library, notes, phone, memo: SyncMemo(), name: 'Galaxy');
+      await again.sync((_) {});
+      expect(store.puts, isEmpty);
+      expect(store.gets, contains(RemotePath.manifest(docId)));
+    });
+
+    test('counts a journal it cannot open and tries it again next time', () async {
+      final path = RemotePath.journal('c' * 32);
+      store.files[path] = await seal(newSyncKey(), path, text('{}'));
+      expect((await journaled.sync((_) {})).unreadable, 1);
+      expect((await journaled.sync((_) {})).unreadable, 1);
+    });
+
+    test('keeps the memo as it was when a sync fails, so the change is found next time', () async {
+      await desktopNotes('edited on the Mac');
+      await desktopChanged(const JournalDoc(manifest: 1, notes: 7));
+      final before = jsonEncode(memo.toJson());
+      final failing = _FailingPuts(store);
+      final broken = StoreSync(failing, key, library, notes, phone, memo: memo, name: 'Galaxy');
+      await notes.save(docId, NotesFile(notes: '', annotations: [mark('p1', updated: 1792600000999)]));
+      await expectLater(broken.sync((_) {}), throwsA(isA<StateError>()));
+      expect(jsonEncode(memo.toJson()), before);
+      await journaled.sync((_) {});
+      expect(store.puts, contains(RemotePath.journal(phone)));
+    });
+  });
+}
+
+class _FailingPuts implements SyncStore {
+  _FailingPuts(this.inner);
+
+  final SyncStore inner;
+
+  @override
+  Future<List<RemoteEntry>> list(String dir) => inner.list(dir);
+
+  @override
+  Future<Uint8List?> get(String path) => inner.get(path);
+
+  @override
+  Future<void> put(String path, Uint8List bytes) => throw StateError('offline');
 }

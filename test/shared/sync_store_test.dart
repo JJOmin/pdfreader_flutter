@@ -195,4 +195,77 @@ void main() {
       }
     });
   });
+
+  group('change journal', () {
+    final journalGolden =
+        jsonDecode(File('test/golden/journal.json').readAsStringSync()) as Map<String, Object?>;
+    final docA = '3' * 64, docB = '4' * 64;
+    Journal journal(Map<String, (int, int, int)> docs) => Journal(
+      device: 'd' * 32,
+      name: 'Mac',
+      updated: 1,
+      docs: {
+        for (final MapEntry(:key, :value) in docs.entries)
+          key: JournalDoc(manifest: value.$1, notes: value.$2, state: value.$3),
+      },
+    );
+
+    test('opens the desktop\'s golden file and writes the very same bytes', () async {
+      final key = parseSyncKey(journalGolden['key']! as String)!;
+      final path = journalGolden['path']! as String;
+      final sealed = base64Decode(journalGolden['sealedBase64']! as String);
+      final plain = utf8.decode(await unseal(key, path, sealed));
+      expect(plain, journalGolden['plain']);
+      expect(path, RemotePath.journal('d' * 32));
+      final read = parseJournal(jsonDecode(plain))!;
+      expect(read.name, 'Leos-MacBook');
+      expect(read.docs.keys, [docA, docB]);
+      expect(jsonEncode(read.toJson()), plain);
+      final iv = Uint8List.fromList([
+        for (var i = 0; i < 24; i += 2)
+          int.parse((journalGolden['iv']! as String).substring(i, i + 2), radix: 16),
+      ]);
+      expect(
+        await seal(key, path, Uint8List.fromList(utf8.encode(jsonEncode(read.toJson()))), iv: iv),
+        sealed,
+      );
+    });
+
+    test('refuses a journal without a device or a time, and drops a document it cannot read', () {
+      expect(parseJournal(null), isNull);
+      expect(parseJournal({'device': 'x', 'updated': 1, 'docs': <String, Object?>{}}), isNull);
+      expect(parseJournal({'device': 'd' * 32, 'docs': <String, Object?>{}}), isNull);
+      final read = parseJournal({
+        'device': 'd' * 32,
+        'updated': 1,
+        'docs': {
+          docA: {'manifest': 1, 'notes': 2, 'state': 3},
+          docB: {'manifest': 1},
+          'short': {'manifest': 1, 'notes': 1, 'state': 1},
+        },
+      })!;
+      expect(read.docs.keys, [docA]);
+      expect(read.name, '');
+    });
+
+    test('finds nothing when nothing changed', () {
+      expect(changedParts(journal({docA: (1, 2, 3)}), journal({docA: (1, 2, 3)})), isEmpty);
+    });
+
+    test('names the part that changed, whichever way the clock moved', () {
+      final before = journal({docA: (1, 2, 3)});
+      expect(changedParts(before, journal({docA: (1, 9, 3)})), {
+        docA: [JournalPart.notes],
+      });
+      expect(changedParts(before, journal({docA: (1, 2, 0)})), {
+        docA: [JournalPart.state],
+      });
+    });
+
+    test('reports a new document with all its parts, and everything for a journal never read', () {
+      final now = journal({docA: (1, 2, 3), docB: (4, 0, 0)});
+      expect(changedParts(journal({docA: (1, 2, 3)}), now), {docB: JournalPart.values});
+      expect(changedParts(null, now).keys, [docA, docB]);
+    });
+  });
 }

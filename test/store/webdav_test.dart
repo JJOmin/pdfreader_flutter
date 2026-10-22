@@ -44,6 +44,13 @@ void main() {
       });
     }
 
+    test('reads the ETag a server gives, which a journal poll compares', () {
+      const xml =
+          '<d:multistatus><d:response><d:href>/remote.php/dav/files/alice/PDF%20Reader/devices/x.json</d:href><d:propstat><d:prop><d:getetag>&quot;5f3a&quot;</d:getetag></d:prop></d:propstat></d:response></d:multistatus>';
+      expect(parsePropfind(xml, dir).single.etag, '&quot;5f3a&quot;');
+      expect(parsePropfind(xml.replaceAll('getetag', 'getlastmodified'), dir).single.etag, isNull);
+    });
+
     test('reads a full address in the href', () {
       const full =
           '<d:multistatus><d:response><d:href>https://cloud.example.com/remote.php/dav/files/alice/PDF%20Reader/x.pack</d:href><d:getcontentlength>7</d:getcontentlength></d:response></d:multistatus>';

@@ -9,11 +9,14 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 
 class RemoteEntry {
-  const RemoteEntry(this.name, {required this.folder, required this.size});
+  const RemoteEntry(this.name, {required this.folder, required this.size, this.etag});
 
   final String name;
   final bool folder;
   final int size;
+
+  /// Changes whenever the file does, when the store says so (WebDAV's ETag).
+  final String? etag;
 }
 
 /// A place that keeps files and knows nothing else: no logic runs on the other side. Paths are
@@ -51,6 +54,109 @@ abstract final class RemotePath {
 
   /// The document's marks and comments, merged per mark (desktop ADR 7 section 1).
   static String notes(String docId) => '$docId/notes.json';
+
+  /// Where every device's change journal lies (desktop ADR 10 section 2).
+  static const journals = 'devices';
+  static String journal(String device) => 'devices/$device.json';
+}
+
+enum JournalPart { manifest, notes, state }
+
+/// When each part of a document last changed on the device that wrote the journal.
+class JournalDoc {
+  const JournalDoc({this.manifest = 0, this.notes = 0, this.state = 0});
+
+  final int manifest;
+  final int notes;
+  final int state;
+
+  int at(JournalPart part) => switch (part) {
+    JournalPart.manifest => manifest,
+    JournalPart.notes => notes,
+    JournalPart.state => state,
+  };
+
+  JournalDoc withPart(JournalPart part, int t) => JournalDoc(
+    manifest: part == JournalPart.manifest ? t : manifest,
+    notes: part == JournalPart.notes ? t : notes,
+    state: part == JournalPart.state ? t : state,
+  );
+
+  Map<String, Object?> toJson() => {'manifest': manifest, 'notes': notes, 'state': state};
+
+  @override
+  bool operator ==(Object other) =>
+      other is JournalDoc && other.manifest == manifest && other.notes == notes && other.state == state;
+
+  @override
+  int get hashCode => Object.hash(manifest, notes, state);
+}
+
+/// One device's list of its latest changes, sealed in `devices/<device>.json`. Another device that
+/// has read it before can tell from the difference which documents and parts to fetch. It is a
+/// hint: a full walk of the store repairs whatever a lost journal missed.
+class Journal {
+  const Journal({required this.device, required this.name, required this.updated, required this.docs});
+
+  final String device;
+  final String name;
+  final int updated;
+  final Map<String, JournalDoc> docs;
+
+  /// The desktop's bytes for the same journal: the keys in this order.
+  Map<String, Object?> toJson() => {
+    'device': device,
+    'name': name,
+    'updated': updated,
+    'docs': {for (final MapEntry(:key, :value) in docs.entries) key: value.toJson()},
+  };
+}
+
+final _journalDevice = RegExp(r'^[0-9a-f]{32}$');
+final _journalDoc = RegExp(r'^[0-9a-f]{64}$');
+
+int? _time(Object? value) => value is num && value.isFinite && value >= 0 ? value.toInt() : null;
+
+/// Reads a journal; documents with a bad id or time are dropped, a bad device id makes it null.
+Journal? parseJournal(Object? value) {
+  if (value is! Map<String, Object?>) return null;
+  final updated = _time(value['updated']);
+  final device = value['device'];
+  if (device is! String || !_journalDevice.hasMatch(device) || updated == null) return null;
+  final docs = <String, JournalDoc>{};
+  final raw = value['docs'];
+  if (raw is Map<String, Object?>) {
+    for (final MapEntry(:key, :value) in raw.entries) {
+      if (!_journalDoc.hasMatch(key) || value is! Map<String, Object?>) continue;
+      final manifest = _time(value['manifest']), notes = _time(value['notes']), state = _time(value['state']);
+      if (manifest != null && notes != null && state != null) {
+        docs[key] = JournalDoc(manifest: manifest, notes: notes, state: state);
+      }
+    }
+  }
+  final name = value['name'];
+  return Journal(
+    device: device,
+    name: name is String && name.length <= 256 ? name : '',
+    updated: updated,
+    docs: docs,
+  );
+}
+
+/// The documents, and which of their parts, that differ between the journal as it was last read
+/// and now. Times are compared for difference, not order, so a device with a wrong clock still
+/// gets its changes noticed. Without an earlier journal everything in it is new.
+Map<String, List<JournalPart>> changedParts(Journal? seen, Journal now) {
+  final changed = <String, List<JournalPart>>{};
+  for (final MapEntry(key: docId, value: doc) in now.docs.entries) {
+    final before = seen?.docs[docId];
+    final parts = [
+      for (final part in JournalPart.values)
+        if (before == null || before.at(part) != doc.at(part)) part,
+    ];
+    if (parts.isNotEmpty) changed[docId] = parts;
+  }
+  return changed;
 }
 
 /// One audio file of a pack: the sentence's key and its Ogg Opus bytes.
