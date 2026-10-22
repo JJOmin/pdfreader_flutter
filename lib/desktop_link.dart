@@ -263,7 +263,7 @@ Future<bool> isMetered() async {
 
 /// Pairs with the desktop at `host`. The certificate must match the typed code before anything is
 /// sent; then the desktop asks its user, and the phone waits for the answer.
-Future<PairedDesktop> pair(DesktopStore store, String host, int port, String code) async {
+Future<PairedDesktop> pair(DesktopStore store, String host, int port, String code, {String? secret}) async {
   if (normalizeCode(code) == null) throw const DesktopException('The code has 12 letters and digits.');
   final client = DesktopClient(host, port, (fingerprint) => codeMatches(fingerprint, code));
   try {
@@ -277,7 +277,7 @@ Future<PairedDesktop> pair(DesktopStore store, String host, int port, String cod
     final answer = await client.json(
       'POST',
       '/v1/pair',
-      body: {'device': store.device, 'name': await phoneName()},
+      body: {'device': store.device, 'name': await phoneName(), 'secret': ?secret},
     );
     final token = (answer as Map<String, Object?>)['token'];
     if (token is! String || !RegExp(r'^[0-9a-f]{64}$').hasMatch(token)) {
@@ -295,6 +295,31 @@ Future<PairedDesktop> pair(DesktopStore store, String host, int port, String cod
   } finally {
     client.close();
   }
+}
+
+/// Pairs with the desktop whose screen the camera read (desktop ADR 10 section 5). The addresses are in
+/// the picture, so nothing is listened for; the first that answers is used. The secret proves the
+/// phone saw the screen, so the desktop does not ask its user.
+Future<PairedDesktop> pairFromQr(DesktopStore store, PairingUrl url) async {
+  Object? unreachable;
+  for (final address in url.addresses) {
+    try {
+      return await pair(store, address.host, address.port, url.code, secret: url.secret);
+    } on DesktopException catch (error) {
+      // The desktop answered: another address would say the same.
+      if (error.message == 'The desktop declined.') {
+        throw const DesktopException('The picture on the desktop has changed. Scan it again.');
+      }
+      rethrow;
+    } on Exception catch (error) {
+      unreachable = error;
+    }
+  }
+  throw DesktopException(
+    'Could not reach ${url.name}. Phone and computer must be on the same Wi-Fi, without a VPN. '
+            '${unreachable ?? ''}'
+        .trim(),
+  );
 }
 
 class SyncProgress {

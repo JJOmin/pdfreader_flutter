@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'desktop_link.dart';
 import 'library.dart';
 import 'notes_store.dart';
+import 'scan_page.dart';
 import 'shared/pairing.dart';
 
 /// Computers on the network and the ones this phone paired with (PLAN steps 5.3 and 5.4), on the
@@ -60,6 +61,20 @@ class _DesktopsSectionState extends State<DesktopsSection> {
     setState(() => _status = 'Accept on $name to pair');
     try {
       final desktop = await pair(widget.store, host, port, code);
+      if (mounted) setState(() => _status = 'Paired with ${desktop.name}');
+    } catch (error) {
+      if (mounted) setState(() => _status = '$error');
+    }
+  }
+
+  /// Scans the QR code in the desktop's Phone dialog: no typing, and no Accept click on the desktop.
+  Future<void> _scan() async {
+    final url = await Navigator.of(context)
+        .push<PairingUrl>(MaterialPageRoute(builder: (_) => const ScanPage()));
+    if (url == null || !mounted) return;
+    setState(() => _status = 'Pairing with ${url.name}…');
+    try {
+      final desktop = await pairFromQr(widget.store, url);
       if (mounted) setState(() => _status = 'Paired with ${desktop.name}');
     } catch (error) {
       if (mounted) setState(() => _status = '$error');
@@ -168,6 +183,12 @@ class _DesktopsSectionState extends State<DesktopsSection> {
             subtitle: Text('${found.host}:${found.port}'),
             onTap: () => _pair(found.host, found.port, found.name),
           ),
+        FilledButton.tonalIcon(
+          key: const Key('scan'),
+          icon: const Icon(Icons.qr_code_scanner),
+          label: const Text('Scan to pair'),
+          onPressed: _scan,
+        ),
         TextButton.icon(
           icon: const Icon(Icons.edit),
           label: const Text('Type an address'),

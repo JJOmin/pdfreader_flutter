@@ -67,3 +67,41 @@ Announcement? parseAnnouncement(List<int> bytes) {
     return null;
   }
 }
+
+/// What the QR code on the desktop's screen holds (desktop ADR 10 section 5): where to connect, the code
+/// that pins the certificate, and the one-time secret that proves the phone saw this screen just now.
+class PairingUrl {
+  const PairingUrl({required this.name, required this.addresses, required this.code, required this.secret});
+
+  final String name;
+  final List<({String host, int port})> addresses;
+  final String code;
+  final String secret;
+}
+
+final _address = RegExp(r'^(\d{1,3}(?:\.\d{1,3}){3}):(\d{1,5})$');
+final _secret = RegExp(r'^[0-9a-f]{32}$');
+
+/// Reads what a scanned QR code holds, or null when it is not a pairing code of this app.
+PairingUrl? parsePairingUrl(String text) {
+  final Uri url;
+  try {
+    url = Uri.parse(text);
+  } on FormatException {
+    return null;
+  }
+  if (url.scheme != 'pdfreader' || url.host != 'pair') return null;
+  final query = url.queryParameters;
+  final name = query['name'], code = query['code'], secret = query['secret'];
+  if (query['v'] != '1' || name == null || name.isEmpty || name.length > 64) return null;
+  if (code == null || normalizeCode(code) == null) return null;
+  if (secret == null || !_secret.hasMatch(secret)) return null;
+  final addresses = <({String host, int port})>[];
+  for (final entry in (query['addr'] ?? '').split(',')) {
+    final match = _address.firstMatch(entry);
+    final port = int.tryParse(match?.group(2) ?? '');
+    if (match == null || port == null || port < 1 || port > 65535) return null;
+    addresses.add((host: match.group(1)!, port: port));
+  }
+  return addresses.isEmpty ? null : PairingUrl(name: name, addresses: addresses, code: code, secret: secret);
+}

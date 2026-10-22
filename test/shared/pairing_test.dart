@@ -70,4 +70,39 @@ void main() {
       );
     });
   });
+
+  group('parsePairingUrl', () {
+    final secret = '0123456789abcdef' * 2;
+    // The very string the desktop's tests/unit/pairing.test.ts makes.
+    final golden =
+        'pdfreader://pair?v=1&name=Leos%20MacBook&addr=192.168.1.20:47613,10.0.0.5:47613&code=ABCD-EFGH-JKMN&secret=$secret';
+
+    test('reads what the desktop wrote', () {
+      final url = parsePairingUrl(golden)!;
+      expect((url.name, url.code, url.secret), ('Leos MacBook', 'ABCD-EFGH-JKMN', secret));
+      expect(url.addresses, [(host: '192.168.1.20', port: 47613), (host: '10.0.0.5', port: 47613)]);
+    });
+
+    test('reads a name with letters outside ASCII and punctuation', () {
+      final odd =
+          'pdfreader://pair?v=1&name=${Uri.encodeComponent('Léo & “Mac”, 15%')}&addr=10.0.0.5:47613&code=ABCD-EFGH-JKMN&secret=$secret';
+      expect(parsePairingUrl(odd)!.name, 'Léo & “Mac”, 15%');
+    });
+
+    test('refuses anything that is not ours', () {
+      for (final bad in [
+        '',
+        'https://pair?v=1',
+        golden.replaceFirst('v=1', 'v=2'),
+        golden.replaceFirst('pdfreader://pair', 'pdfreader://other'),
+        golden.replaceFirst('192.168.1.20:47613,10.0.0.5:47613', 'evil.example.com:47613'),
+        golden.replaceFirst('47613,10', '99999,10'),
+        golden.replaceFirst('ABCD-EFGH-JKMN', 'ABCD'),
+        golden.replaceFirst(secret, 'short'),
+        golden.replaceFirst(RegExp('&addr=[^&]*'), ''),
+      ]) {
+        expect(parsePairingUrl(bad), isNull, reason: bad);
+      }
+    });
+  });
 }

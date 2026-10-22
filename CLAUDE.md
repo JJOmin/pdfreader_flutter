@@ -50,7 +50,7 @@ and do not add a feature to one view only.
 
 - Follow `docs/PLAN.md` step by step. Each step has a "done when": show that it holds. Stop for
   review at the end of each milestone.
-- Smallest change that fully solves the task. Only the packages approved in ADR 1, 2 and 3. Ask before
+- Smallest change that fully solves the task. Only the packages approved in ADR 1, 2, 3 and 4. Ask before
   adding any other.
 - New logic goes in `lib/shared/` with a test written first. A bug gets a failing test before
   the fix.
