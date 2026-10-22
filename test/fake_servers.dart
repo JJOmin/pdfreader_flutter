@@ -6,8 +6,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
-
 Future<Uint8List> _body(HttpRequest request) async {
   final out = BytesBuilder();
   await for (final chunk in request) {
@@ -121,119 +119,6 @@ class FakeNextcloud {
       }
     });
     fake = FakeNextcloud._(server);
-    return fake;
-  }
-}
-
-class FakeDropbox {
-  FakeDropbox._(this._server);
-
-  final HttpServer _server;
-  final files = <String, Uint8List>{};
-  final _codes = <String, ({String challenge, String redirect})>{};
-  Set<String> _valid = {};
-  int tokensIssued = 0;
-
-  /// How many calls are still to be refused with 429, and how many were.
-  int throttleRemaining = 0;
-  int throttleRefused = 0;
-
-  String get host => _origin(_server);
-
-  /// Makes every token issued so far invalid, as an expiry would.
-  void expireTokens() => _valid = {};
-
-  /// What the browser does at the authorize address: approves, and returns where Dropbox sends the user.
-  String approve(String authorizeUrl) {
-    final url = Uri.parse(authorizeUrl);
-    final code = 'code-${_codes.length + 1}';
-    _codes[code] = (
-      challenge: url.queryParameters['code_challenge']!,
-      redirect: url.queryParameters['redirect_uri']!,
-    );
-    return Uri.parse(url.queryParameters['redirect_uri']!)
-        .replace(queryParameters: {'code': code, 'state': url.queryParameters['state']!})
-        .toString();
-  }
-
-  Future<void> close() => _server.close(force: true);
-
-  static Future<FakeDropbox> start() async {
-    late final FakeDropbox fake;
-    final server = await _listen((req) async {
-      final path = req.uri.path;
-      final raw = await _body(req);
-      if (path == '/oauth2/token') {
-        final form = Uri.splitQueryString(utf8.decode(raw));
-        if (form['grant_type'] == 'authorization_code') {
-          final granted = fake._codes[form['code'] ?? ''];
-          final challenge = base64Url
-              .encode(sha256.convert(utf8.encode(form['code_verifier'] ?? '')).bytes)
-              .replaceAll('=', '');
-          if (granted == null || granted.challenge != challenge || granted.redirect != form['redirect_uri']) {
-            return _reply(req, 400, json: {'error': 'invalid_grant'});
-          }
-        } else if (form['refresh_token'] != 'refresh-1') {
-          return _reply(req, 400, json: {'error': 'invalid_grant'});
-        }
-        final access = 'access-${++fake.tokensIssued}';
-        fake._valid.add(access);
-        return _reply(
-          req,
-          200,
-          json: {'access_token': access, 'expires_in': 14400, 'refresh_token': 'refresh-1'},
-        );
-      }
-      if (!fake._valid.contains((req.headers.value('authorization') ?? '').replaceFirst('Bearer ', ''))) {
-        return _reply(req, 401, json: {'error_summary': 'expired_access_token/'});
-      }
-      if (fake.throttleRemaining > 0) {
-        fake.throttleRemaining--;
-        fake.throttleRefused++;
-        return _reply(req, 429, bytes: utf8.encode('too_many_requests'), headers: {'retry-after': '0'});
-      }
-      final argHeader = req.headers.value('dropbox-api-arg');
-      final arg = argHeader == null ? null : jsonDecode(argHeader) as Map<String, Object?>;
-      if (path == '/2/files/upload') {
-        fake.files[arg!['path']! as String] = raw;
-        return _reply(req, 200, json: {'name': arg['path']});
-      }
-      if (path == '/2/files/download') {
-        final file = fake.files[arg!['path']! as String];
-        if (file == null) return _reply(req, 409, json: {'error_summary': 'path/not_found/..'});
-        return _reply(req, 200, bytes: file);
-      }
-      if (path == '/2/files/list_folder' || path == '/2/files/list_folder/continue') {
-        final request = jsonDecode(utf8.decode(raw)) as Map<String, Object?>;
-        // Two entries a page, so the continuation is exercised.
-        final cursor = request['cursor'] as String?;
-        final dir = cursor != null ? cursor.split('|')[0] : (request['path'] as String? ?? '');
-        final from = cursor != null ? int.parse(cursor.split('|')[1]) : 0;
-        final names = <String, ({bool folder, int size})>{};
-        for (final MapEntry(key: file, value: bytes) in fake.files.entries) {
-          if (!file.startsWith('$dir/')) continue;
-          final rest = file.substring(dir.length + 1).split('/');
-          names[rest.first] = rest.length > 1 ? (folder: true, size: 0) : (folder: false, size: bytes.length);
-        }
-        if (names.isEmpty && dir != '') return _reply(req, 409, json: {'error_summary': 'path/not_found/'});
-        final all = names.entries.toList();
-        final slice = all.skip(from).take(2);
-        return _reply(
-          req,
-          200,
-          json: {
-            'entries': [
-              for (final e in slice)
-                {'.tag': e.value.folder ? 'folder' : 'file', 'name': e.key, 'size': e.value.size},
-            ],
-            'cursor': '$dir|${from + 2}',
-            'has_more': from + 2 < all.length,
-          },
-        );
-      }
-      return _reply(req, 404);
-    });
-    fake = FakeDropbox._(server);
     return fake;
   }
 }

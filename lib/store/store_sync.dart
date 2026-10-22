@@ -1,6 +1,6 @@
 // The phone's half of the store (phone ADR 3 section 1, desktop ADR 8): it reads what the desktop
 // sent, writes its own place, and merges its notes. Everything goes through a [SyncStore], which
-// knows files and nothing else, so the same code serves Nextcloud and Dropbox and is tested
+// knows files and nothing else, so the same code could serve another service, and is tested
 // against a store in memory that the desktop's own engine filled.
 import 'dart:convert';
 import 'dart:io';

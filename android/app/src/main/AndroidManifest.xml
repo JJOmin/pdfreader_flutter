@@ -33,14 +33,6 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Where Dropbox's sign-in returns to the app (ADR 3 section 4): the app's own scheme,
-                 registered as a redirect address in the Dropbox app's settings. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="io.github.jjomin.pdfreader" android:path="/oauth"/>
-            </intent-filter>
         </activity>
         <service android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"

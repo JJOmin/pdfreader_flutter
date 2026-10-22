@@ -12,9 +12,11 @@ import 'package:pdfreader/shared/marks.dart';
 import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfrx_engine/pdfrx_engine.dart';
 
-const files = {
-  'sample': '../pdfreader/tests/fixtures/sample.pdf',
-  'centric': '../pdfreader/docs/sample_pdfs/centric_2026_1_10_30003.pdf',
+import 'desktop_repo.dart';
+
+final files = {
+  'sample': '$desktopRepo/tests/fixtures/sample.pdf',
+  'centric': '$desktopRepo/docs/sample_pdfs/centric_2026_1_10_30003.pdf',
 };
 
 void main() {

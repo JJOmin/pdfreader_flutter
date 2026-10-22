@@ -2,7 +2,6 @@
 // tested without a phone.
 import 'dart:async';
 
-import 'package:pdfreader/platform_oauth.dart';
 import 'package:pdfreader/platform_secrets.dart';
 
 /// Records the addresses opened, and lets a test act as the user at the sign-in page.
@@ -29,14 +28,4 @@ class FakeSecretBox implements SecretBox {
     if (!sealed.startsWith('sealed:')) throw StateError('not sealed');
     return sealed.substring(7).split('').reversed.join();
   }
-}
-
-/// The app's own scheme, as the sign-in returns to it: a test pushes what the browser would send.
-class FakeRedirects implements OAuthRedirects {
-  final _uris = StreamController<Uri>.broadcast();
-
-  void add(Uri uri) => Future<void>.microtask(() => _uris.add(uri));
-
-  @override
-  Stream<Uri> get uris => _uris.stream;
 }

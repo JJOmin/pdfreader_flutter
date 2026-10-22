@@ -10,7 +10,7 @@ import 'store/cancellation.dart';
 import 'store/cloud_accounts.dart';
 import 'store/store_sync.dart';
 
-/// The user's own Nextcloud or Dropbox (ADR 3): sign in, the sync key, the documents the desktop
+/// The user's own Nextcloud (ADR 3): sign in, the sync key, the documents the desktop
 /// put there, and a sync of the ones on the phone.
 class CloudPage extends StatefulWidget {
   const CloudPage({
@@ -216,33 +216,19 @@ class _CloudPageState extends State<CloudPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                FilledButton(
-                  key: const Key('sign-in-nextcloud'),
-                  onPressed: _busy
-                      ? null
-                      : () => _signIn(
-                          (c) => widget.accounts.connectNextcloud(_server.text, c),
-                          'Approve this app in your browser…',
-                        ),
-                  child: const Text('Sign in to Nextcloud'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  key: const Key('sign-in-dropbox'),
-                  onPressed: _busy || !status.dropboxAvailable
-                      ? null
-                      : () => _signIn(widget.accounts.connectDropbox, 'Approve this app in your browser…'),
-                  child: const Text('Dropbox'),
-                ),
-              ],
-            ),
-            if (!status.dropboxAvailable)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('This build has no Dropbox app key.', style: theme.textTheme.bodySmall),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton(
+                key: const Key('sign-in-nextcloud'),
+                onPressed: _busy
+                    ? null
+                    : () => _signIn(
+                        (c) => widget.accounts.connectNextcloud(_server.text, c),
+                        'Approve this app in your browser…',
+                      ),
+                child: const Text('Sign in to Nextcloud'),
               ),
+            ),
             if (_busy && _signingIn != null)
               TextButton(
                 key: const Key('cancel-sign-in'),

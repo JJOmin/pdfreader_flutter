@@ -28,7 +28,6 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : AudioServiceActivity() {
     private var pending: MethodChannel.Result? = null
     private var multicastLock: WifiManager.MulticastLock? = null
-    private var oauthChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -53,7 +52,7 @@ class MainActivity : AudioServiceActivity() {
                     result.error("secret", e.message, null)
                 }
             }
-        // Browser (ADR 3 section 4): the sign-in pages of Nextcloud and Dropbox open in the user's
+        // Browser (ADR 3 section 4): Nextcloud's sign-in page opens in the user's
         // own browser, never in the app, so the app never sees a password.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/browser")
             .setMethodCallHandler { call, result ->
@@ -70,7 +69,6 @@ class MainActivity : AudioServiceActivity() {
                     result.success(null)
                 }
             }
-        oauthChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/oauth")
         // Discovery (ADR 2 section 4): Android drops multicast unless the app holds this lock, so
         // it is held only while the Desktops screen listens for announcements.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/discovery")
@@ -98,15 +96,6 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
-    }
-
-    /** The browser sent the user back with an address of the app's own scheme: on to the sign-in code. */
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        val uri = intent.data
-        if (intent.action == Intent.ACTION_VIEW && uri != null && uri.scheme == "io.github.jjomin.pdfreader") {
-            oauthChannel?.invokeMethod("redirect", uri.toString())
-        }
     }
 
     private fun secretKey(): SecretKey {

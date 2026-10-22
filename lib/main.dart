@@ -13,7 +13,6 @@ import 'document_access.dart';
 import 'library.dart';
 import 'notes_store.dart';
 import 'places.dart';
-import 'platform_oauth.dart';
 import 'platform_secrets.dart';
 import 'playback.dart';
 import 'reader_page.dart';
@@ -36,7 +35,6 @@ Future<void> main() async {
         file: File('${(await getApplicationSupportDirectory()).path}/cloud.json'),
         box: KeystoreSecretBox(),
         browser: SystemBrowser(),
-        redirects: AndroidOAuthRedirects(),
       ),
     ),
   );

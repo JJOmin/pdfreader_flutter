@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfreader/shared/sync_store.dart';
 import 'package:pdfreader/store/cancellation.dart';
 import 'package:pdfreader/store/cloud_accounts.dart';
-import 'package:pdfreader/store/dropbox_store.dart';
+import 'package:pdfreader/store/webdav_store.dart';
 
 import '../fake_platform.dart';
 import '../fake_servers.dart';
@@ -17,38 +17,32 @@ void main() {
   late Directory dir;
   late File file;
   late FakeNextcloud nextcloud;
-  late FakeDropbox dropbox;
-  late FakeRedirects redirects;
 
-  CloudAccounts accounts({String appKey = 'app-key', FakeBrowser? browser}) => CloudAccounts(
+  CloudAccounts accounts({FakeBrowser? browser}) => CloudAccounts(
     file: file,
     box: FakeSecretBox(),
     browser: browser ?? FakeBrowser(onOpen: (url) => nextcloud.approve()),
-    redirects: redirects,
-    dropboxKey: appKey,
-    dropboxHosts: DropboxHosts(api: dropbox.host, content: dropbox.host, www: dropbox.host),
   );
 
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('cloud-');
     file = File('${dir.path}/cloud.json');
     nextcloud = await FakeNextcloud.start();
-    dropbox = await FakeDropbox.start();
-    redirects = FakeRedirects();
   });
   tearDown(() async {
     await nextcloud.close();
-    await dropbox.close();
     dir.deleteSync(recursive: true);
   });
 
-  test('starts signed out, without a key, and says whether Dropbox can be used', () async {
+  test('starts signed out and without a key', () async {
     final status = await accounts().status();
-    expect(
-      (status.backend, status.account, status.hasKey, status.dropboxAvailable),
-      (CloudBackend.none, '', false, true),
-    );
-    expect((await accounts(appKey: '').status()).dropboxAvailable, isFalse);
+    expect((status.backend, status.account, status.hasKey), (CloudBackend.none, '', false));
+  });
+
+  test('reads a file written while Dropbox was chosen as signed out (desktop ADR 10)', () async {
+    file.writeAsStringSync('{"backend":"dropbox","server":"","user":"","secrets":""}');
+    expect((await accounts().status()).backend, CloudBackend.none);
+    await expectLater(accounts().store(), throwsA(isA<StoreException>()));
   });
 
   group('Nextcloud', () {
@@ -88,27 +82,6 @@ void main() {
       );
       await expectLater(cloud.connectNextcloud(nextcloud.url, cancel), throwsA(isA<CancelledException>()));
       expect((await cloud.status()).backend, CloudBackend.none);
-    });
-  });
-
-  group('Dropbox', () {
-    FakeBrowser approving() =>
-        FakeBrowser(onOpen: (url) => redirects.add(Uri.parse(dropbox.approve(url.toString()))));
-
-    test('signs in with the redirect the browser brings, and opens the store', () async {
-      final cloud = accounts(browser: approving());
-      final status = await cloud.connectDropbox(Cancellation());
-      expect((status.backend, status.account), (CloudBackend.dropbox, 'Dropbox'));
-      expect(file.readAsStringSync(), isNot(contains('refresh-1')));
-      await (await cloud.store()).put('a.json', text('ok'));
-      expect(dropbox.files.containsKey('/a.json'), isTrue);
-    });
-
-    test('is off in a build without an app key', () async {
-      await expectLater(
-        accounts(appKey: '', browser: approving()).connectDropbox(Cancellation()),
-        throwsA(predicate((e) => '$e'.contains('no Dropbox app key'))),
-      );
     });
   });
 

@@ -15,7 +15,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pdfreader/cloud_page.dart';
 import 'package:pdfreader/library.dart';
 import 'package:pdfreader/notes_store.dart';
-import 'package:pdfreader/platform_oauth.dart';
 import 'package:pdfreader/platform_secrets.dart';
 import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/store/cloud_accounts.dart';
@@ -43,7 +42,6 @@ void main() {
       file: File('${temp.path}/cloud.json'),
       box: KeystoreSecretBox(),
       browser: browser,
-      redirects: AndroidOAuthRedirects(),
     );
     final library = Library(Directory('${temp.path}/library'));
     final notes = NotesStore(Directory('${temp.path}/notes'));

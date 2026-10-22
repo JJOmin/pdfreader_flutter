@@ -1,38 +1,29 @@
 // The sign-in and the secrets (phone ADR 3 sections 4 and 5), and the one place that turns "the user
-// chose Nextcloud" into a store. The secrets, an app password or a refresh token and the sync key,
-// are sealed with the Android Keystore; the file beside them says only which service and which user.
+// chose Nextcloud" into a store. The secrets, the app password and the sync key, are sealed with the
+// Android Keystore; the file beside them says only which service and which user. Dropbox was removed
+// for now (desktop ADR 10): a file that still names it reads as signed out.
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import '../platform_oauth.dart';
 import '../platform_secrets.dart';
 import '../shared/sync_store.dart';
 import 'cancellation.dart';
-import 'dropbox_store.dart';
 import 'nextcloud_login.dart';
 import 'webdav_store.dart';
 
-enum CloudBackend { none, nextcloud, dropbox }
+enum CloudBackend { none, nextcloud }
 
 class CloudStatus {
-  const CloudStatus({
-    required this.backend,
-    required this.account,
-    required this.hasKey,
-    required this.dropboxAvailable,
-  });
+  const CloudStatus({required this.backend, required this.account, required this.hasKey});
 
   final CloudBackend backend;
 
-  /// Who is signed in: `user at server` for Nextcloud, `Dropbox`, or empty when nothing is connected.
+  /// Who is signed in: `user at server`, or empty when nothing is connected.
   final String account;
 
   /// Whether a sync key is set. It is never shown back.
   final bool hasKey;
-
-  /// False when this build has no Dropbox app key.
-  final bool dropboxAvailable;
 }
 
 class _Config {
@@ -47,42 +38,27 @@ class _Config {
 }
 
 class _Secrets {
-  _Secrets({this.key, this.password, this.refresh});
+  _Secrets({this.key, this.password});
 
   String? key;
   String? password;
-  String? refresh;
 
-  Map<String, Object?> toJson() => {
-    if (key != null) 'key': key,
-    if (password != null) 'password': password,
-    if (refresh != null) 'refresh': refresh,
-  };
+  Map<String, Object?> toJson() => {if (key != null) 'key': key, if (password != null) 'password': password};
 
   static _Secrets from(Object? value) {
     final map = value is Map<String, Object?> ? value : const <String, Object?>{};
     String? text(String name) =>
         map[name] is String && (map[name]! as String).length <= 4096 ? map[name]! as String : null;
-    return _Secrets(key: text('key'), password: text('password'), refresh: text('refresh'));
+    return _Secrets(key: text('key'), password: text('password'));
   }
 }
 
 class CloudAccounts {
-  CloudAccounts({
-    required this.file,
-    required this.box,
-    required this.browser,
-    required this.redirects,
-    this.dropboxKey = dropboxAppKey,
-    this.dropboxHosts,
-  });
+  CloudAccounts({required this.file, required this.box, required this.browser});
 
   final File file;
   final SecretBox box;
   final Browser browser;
-  final OAuthRedirects redirects;
-  final String dropboxKey;
-  final DropboxHosts? dropboxHosts;
 
   Future<({_Config config, _Secrets secrets})> _load() async {
     var config = _Config();
@@ -135,11 +111,9 @@ class CloudAccounts {
     account: switch (config.backend) {
       CloudBackend.nextcloud =>
         '${config.user} at ${Uri.tryParse(config.server)?.authority ?? config.server}',
-      CloudBackend.dropbox => 'Dropbox',
       CloudBackend.none => '',
     },
     hasKey: secrets.key != null,
-    dropboxAvailable: dropboxKey.isNotEmpty,
   );
 
   Future<CloudStatus> status() async {
@@ -162,35 +136,7 @@ class CloudAccounts {
       ..backend = CloudBackend.nextcloud
       ..server = url.toString().replaceFirst(RegExp(r'/$'), '')
       ..user = login.user;
-    secrets
-      ..password = login.password
-      ..refresh = null;
-    await _save(config, secrets);
-    return _status(config, secrets);
-  }
-
-  Future<CloudStatus> connectDropbox(Cancellation cancel) async {
-    final refresh = await dropboxAuthorize(
-      dropboxKey,
-      browser,
-      redirects,
-      cancel,
-      hosts:
-          dropboxHosts ??
-          const DropboxHosts(
-            api: 'https://api.dropboxapi.com',
-            content: 'https://content.dropboxapi.com',
-            www: 'https://www.dropbox.com',
-          ),
-    );
-    final (:config, :secrets) = await _load();
-    config
-      ..backend = CloudBackend.dropbox
-      ..server = ''
-      ..user = '';
-    secrets
-      ..refresh = refresh
-      ..password = null;
+    secrets.password = login.password;
     await _save(config, secrets);
     return _status(config, secrets);
   }
@@ -203,9 +149,7 @@ class CloudAccounts {
       ..backend = CloudBackend.none
       ..server = ''
       ..user = '';
-    secrets
-      ..password = null
-      ..refresh = null;
+    secrets.password = null;
     await _save(config, secrets);
     return _status(config, secrets);
   }
@@ -232,20 +176,8 @@ class CloudAccounts {
     switch (config.backend) {
       case CloudBackend.nextcloud when secrets.password != null:
         return WebDavStore(nextcloudDavBase(config.server, config.user), config.user, secrets.password!);
-      case CloudBackend.dropbox when secrets.refresh != null:
-        return DropboxStore(
-          dropboxKey,
-          secrets.refresh!,
-          hosts:
-              dropboxHosts ??
-              const DropboxHosts(
-                api: 'https://api.dropboxapi.com',
-                content: 'https://content.dropboxapi.com',
-                www: 'https://www.dropbox.com',
-              ),
-        );
       default:
-        throw const StoreException('Sign in to Nextcloud or Dropbox first.');
+        throw const StoreException('Sign in to Nextcloud first.');
     }
   }
 }

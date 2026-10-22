@@ -9,6 +9,10 @@ store, its formats and the desktop's side are in the desktop's ADR 8
 (`../pdfreader/docs/adr/0008-sync-through-a-store.md`, accepted, desktop half built). This ADR is
 the phone's half that ADR 8 asks for.
 
+
+**Dropbox removed 2026-10-22 (desktop ADR 10 section 1, PLAN step 7.1).** What follows about
+Dropbox, its sign-in and the redirect channel describes the code before the commit "7.1: remove
+Dropbox"; that commit's parent has it.
 ## Context
 
 Over Wi-Fi (ADR 2) the phone can sync only while it and the desktop are on the same network. ADR 8

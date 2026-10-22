@@ -19,8 +19,9 @@ describes how we work, and it applies here too.
 | `flutter devices`, `adb devices`                | Is the phone connected and authorised?                          |
 | `powershell -File tool/push_models.ps1`         | Copies the speech models to the phone (621 MB, once).           |
 
-On the Mac, Flutter comes through FVM: prefix `flutter` and `dart` with `fvm`. The
-`tool/*.ps1` scripts need PowerShell (`pwsh`) there. The desktop checkout called `../pdfreader`
+On the Mac, Flutter comes through FVM: prefix `flutter` and `dart` with `fvm`, and run
+`tool/check.sh` instead of `tool/check.ps1`. It also points the PDFium tests at the library
+Flutter's build downloaded. The other `tool/*.ps1` scripts need PowerShell (`pwsh`) there. The desktop checkout called `../pdfreader`
 throughout these docs is `../pdfReaderWindows` on the Mac.
 
 Always pass `--no-uninstall` to `flutter test` on the phone. Without it Flutter uninstalls the
@@ -56,7 +57,7 @@ and do not add a feature to one view only.
 - No internet at runtime: no cloud voices, no external models or LLMs, no downloads. Speech is
   made on the user's desktop. For now the phone has no voice of its own and plays only prepared
   audio (ADR 2). The only network uses are sync with the user's paired desktop on the local network
-  (ADR 2), and with the user's own Nextcloud or Dropbox after they signed in, as encrypted files
+  (ADR 2), and with the user's own Nextcloud after they signed in, as encrypted files
   (ADR 3).
 - Comments explain why, not what. A known limit is marked `// shortcut: <limit>, <when to upgrade>`.
 - Do not claim something works on the phone without running it there. If no phone is connected,
