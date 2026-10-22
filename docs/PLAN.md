@@ -16,6 +16,8 @@ The owner moved to a MacBook Air M1, with Flutter through FVM and the Android ph
 
 1. **The desktop app on the Mac**, steps MAC0 to MAC5 in the desktop's `docs/SPEC.md`. Nothing new
    on the phone meanwhile, except that MAC4 runs the sync tests against the Mac.
+   **2026-10-22:** MAC4 done for Wi-Fi: `desktop_sync_test`, `reader_test` and `notes_sync_test`
+   pass against the Mac (with its VPN off; the desktop now warns about VPNs).
 2. **Then ask the owner how to continue.** The candidates, in their rough order:
    - Sync: 6.6 with a real Dropbox account (needs the owner's app key), and the Nextcloud
      tweaks. The owner checked the phone against their own Nextcloud on 2026-10-21. It works,

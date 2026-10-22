@@ -93,7 +93,8 @@ void main() {
       await tester.runAsync(
         () => page.addMarkFor(1, words[2].ranges.first, MarkKind.underline, HighlightColor.red),
       );
-      final mine = page.marks.where((a) => a.text == 'Dieser' || a.text == 'prüft,').toList();
+      // A mark holds the word without its punctuation: "prüft", not "prüft,".
+      final mine = page.marks.where((a) => a.text == words[0].text || a.text == words[2].text).toList();
       expect(mine, hasLength(2));
       page.setCommentFor(page.marks.firstWhere((a) => a.text == 'Dieser').id, 'comment from the phone');
       await tester.pump(const Duration(seconds: 1));
