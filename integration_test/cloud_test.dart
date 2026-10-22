@@ -12,12 +12,13 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:pdfreader/cloud_page.dart';
+import 'package:pdfreader/cloud_section.dart';
 import 'package:pdfreader/library.dart';
 import 'package:pdfreader/notes_store.dart';
 import 'package:pdfreader/platform_secrets.dart';
 import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/store/cloud_accounts.dart';
+import 'package:pdfreader/store/cloud_catalog.dart';
 import 'package:pdfreader/sync_controller.dart';
 
 const server = String.fromEnvironment('SERVER');
@@ -60,10 +61,19 @@ void main() {
       return line.evaluate().isEmpty ? '' : tester.widget<Text>(line).data!;
     }
 
+    final controller = SyncController(
+      accounts: accounts,
+      library: library,
+      notes: notes,
+      device: 'e0' * 16,
+      catalogFile: CloudCatalog(File('${temp.path}/cloud-catalog.json')),
+    );
+    // The Nextcloud part of the Sync screen on its own: the screen's other part listens for desktops,
+    // and the documents are listed on the home screen (tested in test/library_list_test.dart).
     await tester.pumpWidget(
       MaterialApp(
-        home: CloudPage(
-          sync: SyncController(accounts: accounts, library: library, notes: notes, device: 'e0' * 16),
+        home: Scaffold(
+          body: ListView(children: [CloudSection(sync: controller)]),
         ),
       ),
     );
@@ -81,16 +91,13 @@ void main() {
     // The key the desktop shows.
     await tester.enterText(find.byKey(const Key('cloud-key')), key);
     await tester.tap(find.byKey(const Key('save-key')));
-    await waitFor(
-      () => find.byKey(const Key('doc-sample.pdf')).evaluate().isNotEmpty,
-      reason: 'the document is listed',
-    );
-    expect(find.textContaining('2 pages'), findsOneWidget);
+    await waitFor(() => controller.cloud.isNotEmpty, reason: 'the document is listed: ${status()}');
+    expect(controller.cloud.single.name, 'sample.pdf');
+    expect(controller.cloud.single.pages, 2);
 
-    // Download it.
+    // Download it, as a tap on it in the library does.
     final watch = Stopwatch()..start();
-    await tester.tap(find.byKey(const Key('download-sample.pdf')));
-    await waitFor(() => find.text('On this phone').evaluate().isNotEmpty, reason: 'downloaded: ${status()}');
+    await tester.runAsync(() => controller.download(controller.cloud.single));
     // ignore: avoid_print
     print('DOWNLOAD took ${watch.elapsedMilliseconds} ms');
     final docs = await tester.runAsync(library.documents) ?? [];

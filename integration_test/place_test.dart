@@ -7,6 +7,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'finders.dart';
+
 import 'package:pdfreader/main.dart' as app;
 import 'package:pdfreader/reader.dart';
 import 'package:pdfreader/reader_page.dart';
@@ -41,8 +44,8 @@ void main() {
     }
 
     Future<void> sync() async {
-      await waitFor(() => find.byTooltip('Desktops').evaluate().isNotEmpty);
-      await tester.tap(find.byTooltip('Desktops'));
+      await waitFor(() => syncButton.evaluate().isNotEmpty);
+      await tester.tap(syncButton);
       final button = find.byKey(const Key('sync-$desktop'));
       await waitFor(() => button.evaluate().isNotEmpty);
       await tester.tap(button);

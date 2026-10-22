@@ -50,7 +50,7 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pump();
     expect(find.byKey(const Key('sync-off')), findsOneWidget);
-    expect(find.byTooltip('Cloud: not set up'), findsOneWidget);
+    expect(find.byTooltip('Sync: not set up'), findsOneWidget);
     // Nothing is signed in, so the pull ends at once and the screen stays usable.
     await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
     // The file reads of the pull are real I/O, which the test's clock does not wait for.

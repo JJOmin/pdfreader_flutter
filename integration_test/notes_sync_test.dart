@@ -12,6 +12,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'finders.dart';
+
 import 'package:pdfreader/main.dart' as app;
 import 'package:pdfreader/reader_page.dart';
 import 'package:pdfreader/shared/notes.dart';
@@ -45,8 +48,8 @@ void main() {
     }
 
     Future<String> sync() async {
-      await waitFor(() => find.byTooltip('Desktops').evaluate().isNotEmpty);
-      await tester.tap(find.byTooltip('Desktops'));
+      await waitFor(() => syncButton.evaluate().isNotEmpty);
+      await tester.tap(syncButton);
       final button = find.byKey(const Key('sync-$desktop'));
       await waitFor(() => button.evaluate().isNotEmpty);
       await tester.tap(button);
@@ -67,8 +70,8 @@ void main() {
     await app.main();
 
     if (phase == 'pair') {
-      await waitFor(() => find.byTooltip('Desktops').evaluate().isNotEmpty);
-      await tester.tap(find.byTooltip('Desktops'));
+      await waitFor(() => syncButton.evaluate().isNotEmpty);
+      await tester.tap(syncButton);
       await waitFor(() => find.byKey(const Key('found-$desktop')).evaluate().isNotEmpty);
       await tester.tap(find.byKey(const Key('found-$desktop')));
       await waitFor(() => find.byKey(const Key('code')).evaluate().isNotEmpty);
@@ -77,8 +80,8 @@ void main() {
       await tester.tap(find.byKey(const Key('pair')));
       await waitFor(() => find.textContaining('Paired with').evaluate().isNotEmpty, reason: 'paired');
     } else if (phase == 'forget') {
-      await waitFor(() => find.byTooltip('Desktops').evaluate().isNotEmpty);
-      await tester.tap(find.byTooltip('Desktops'));
+      await waitFor(() => syncButton.evaluate().isNotEmpty);
+      await tester.tap(syncButton);
       await waitFor(() => find.byTooltip('Forget $desktop').evaluate().isNotEmpty);
       await tester.tap(find.byTooltip('Forget $desktop'));
       await waitFor(() => find.byTooltip('Forget $desktop').evaluate().isEmpty);

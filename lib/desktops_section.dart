@@ -7,9 +7,10 @@ import 'library.dart';
 import 'notes_store.dart';
 import 'shared/pairing.dart';
 
-/// Desktops on the network and the ones this phone paired with (PLAN steps 5.3 and 5.4).
-class DesktopsPage extends StatefulWidget {
-  const DesktopsPage({super.key, required this.store, required this.library, this.notes});
+/// Computers on the network and the ones this phone paired with (PLAN steps 5.3 and 5.4), on the
+/// Sync screen.
+class DesktopsSection extends StatefulWidget {
+  const DesktopsSection({super.key, required this.store, required this.library, this.notes});
 
   final DesktopStore store;
   final Library library;
@@ -18,10 +19,10 @@ class DesktopsPage extends StatefulWidget {
   final NotesStore? notes;
 
   @override
-  State<DesktopsPage> createState() => _DesktopsPageState();
+  State<DesktopsSection> createState() => _DesktopsSectionState();
 }
 
-class _DesktopsPageState extends State<DesktopsPage> {
+class _DesktopsSectionState extends State<DesktopsSection> {
   final _found = <String, FoundDesktop>{};
   StreamSubscription<FoundDesktop>? _listening;
   String? _status;
@@ -120,62 +121,59 @@ class _DesktopsPageState extends State<DesktopsPage> {
     final pairedNames = {for (final d in paired) d.name};
     final unpaired = _found.values.where((f) => !pairedNames.contains(f.name)).toList();
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Desktops')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (_syncing) LinearProgressIndicator(value: _progress),
-          if (_status != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(_status!, key: const Key('desktop-status')),
-            ),
-          if (paired.isNotEmpty) Text('Paired', style: theme.textTheme.titleSmall),
-          for (final desktop in paired)
-            ListTile(
-              leading: const Icon(Icons.computer),
-              title: Text(desktop.name),
-              subtitle: Text('${_current(desktop).host}:${_current(desktop).port}'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: Key('sync-${desktop.name}'),
-                    icon: const Icon(Icons.sync),
-                    tooltip: 'Fetch what ${desktop.name} prepared',
-                    onPressed: _syncing ? null : () => _sync(desktop),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.link_off),
-                    tooltip: 'Forget ${desktop.name}',
-                    onPressed: _syncing ? null : () => _forget(desktop),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 16),
-          Text('On this network', style: theme.textTheme.titleSmall),
-          if (unpaired.isEmpty)
-            const ListTile(
-              leading: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-              title: Text('Looking for desktops with phone sync switched on'),
-            ),
-          for (final found in unpaired)
-            ListTile(
-              key: Key('found-${found.name}'),
-              leading: const Icon(Icons.computer_outlined),
-              title: Text(found.name),
-              subtitle: Text('${found.host}:${found.port}'),
-              onTap: () => _pair(found.host, found.port, found.name),
-            ),
-          TextButton.icon(
-            icon: const Icon(Icons.edit),
-            label: const Text('Type an address'),
-            onPressed: _typeAddress,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_syncing) LinearProgressIndicator(value: _progress),
+        if (_status != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(_status!, key: const Key('desktop-status')),
           ),
-        ],
-      ),
+        if (paired.isNotEmpty) Text('Paired', style: theme.textTheme.titleSmall),
+        for (final desktop in paired)
+          ListTile(
+            leading: const Icon(Icons.computer),
+            title: Text(desktop.name),
+            subtitle: Text('${_current(desktop).host}:${_current(desktop).port}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: Key('sync-${desktop.name}'),
+                  icon: const Icon(Icons.sync),
+                  tooltip: 'Fetch what ${desktop.name} prepared',
+                  onPressed: _syncing ? null : () => _sync(desktop),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.link_off),
+                  tooltip: 'Forget ${desktop.name}',
+                  onPressed: _syncing ? null : () => _forget(desktop),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        Text('On this network', style: theme.textTheme.titleSmall),
+        if (unpaired.isEmpty)
+          const ListTile(
+            leading: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            title: Text('Looking for desktops with phone sync switched on'),
+          ),
+        for (final found in unpaired)
+          ListTile(
+            key: Key('found-${found.name}'),
+            leading: const Icon(Icons.computer_outlined),
+            title: Text(found.name),
+            subtitle: Text('${found.host}:${found.port}'),
+            onTap: () => _pair(found.host, found.port, found.name),
+          ),
+        TextButton.icon(
+          icon: const Icon(Icons.edit),
+          label: const Text('Type an address'),
+          onPressed: _typeAddress,
+        ),
+      ],
     );
   }
 }

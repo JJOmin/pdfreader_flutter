@@ -7,6 +7,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'finders.dart';
+
 import 'package:pdfreader/library.dart';
 import 'package:pdfreader/main.dart' as app;
 
@@ -32,8 +35,8 @@ void main() {
     Future<String> status() async => tester.widget<Text>(find.byKey(const Key('desktop-status'))).data!;
 
     await app.main();
-    await waitFor(find.byTooltip('Desktops'));
-    await tester.tap(find.byTooltip('Desktops'));
+    await waitFor(syncButton);
+    await tester.tap(syncButton);
     final heard = Stopwatch()..start();
     await waitFor(find.byKey(const Key('found-$desktop')));
     // ignore: avoid_print

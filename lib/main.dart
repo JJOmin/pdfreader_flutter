@@ -7,9 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'package:path_provider/path_provider.dart';
 
-import 'cloud_page.dart';
 import 'desktop_link.dart';
-import 'desktops_page.dart';
 import 'document_access.dart';
 import 'library.dart';
 import 'library_list.dart';
@@ -25,6 +23,7 @@ import 'shared/sync_state.dart';
 import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
 import 'sync_controller.dart';
+import 'sync_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -220,23 +219,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  Future<void> _desktops() async {
-    final library = widget.library;
-    if (library == null) return;
-    final store = await DesktopStore.open();
+  /// Everything that connects the phone to others: Nextcloud, and the computers on Wi-Fi.
+  Future<void> _syncScreen() async {
+    final sync = widget.sync;
+    if (sync == null) return;
+    final desktops = await DesktopStore.open();
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => DesktopsPage(store: store, library: library, notes: widget.notesStore),
+        builder: (_) => SyncPage(sync: sync, desktops: desktops),
       ),
     );
-    _reload();
-  }
-
-  Future<void> _cloud() async {
-    final sync = widget.sync;
-    if (sync == null) return;
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CloudPage(sync: sync)));
     _reload();
   }
 
@@ -278,7 +271,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           tooltip: 'Look for prepared documents again',
           onPressed: _reload,
         ),
-        IconButton(icon: const Icon(Icons.computer), tooltip: 'Desktops', onPressed: _desktops),
         if (widget.sync case final sync?)
           ListenableBuilder(
             listenable: sync,
@@ -291,12 +283,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 SyncState.done => Icons.cloud_done_outlined,
               }),
               tooltip: switch (sync.state) {
-                SyncState.off => 'Cloud: not set up',
-                SyncState.pending => 'Cloud: waiting to sync',
-                SyncState.syncing => 'Cloud: syncing',
-                SyncState.done => 'Cloud: up to date',
+                SyncState.off => 'Sync: not set up',
+                SyncState.pending => 'Sync: waiting',
+                SyncState.syncing => 'Sync: syncing',
+                SyncState.done => 'Sync: up to date',
               },
-              onPressed: _cloud,
+              onPressed: _syncScreen,
             ),
           ),
       ],
@@ -323,8 +315,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 child: OutlinedButton.icon(
                   key: const Key('connect'),
                   icon: const Icon(Icons.computer),
-                  label: const Text('Connect to a desktop'),
-                  onPressed: widget.library == null ? null : _desktops,
+                  label: const Text('Set up sync'),
+                  onPressed: widget.sync == null ? null : _syncScreen,
                 ),
               ),
               ListenableBuilder(
@@ -342,7 +334,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             padding: EdgeInsets.all(16),
                             child: Text(
                               'Documents prepared on your computer appear here once it syncs with your '
-                              'Nextcloud, or when you connect to it over Wi-Fi.',
+                              'Nextcloud, or once you pair with it over Wi-Fi. Both are set up under Sync.',
                               textAlign: TextAlign.center,
                             ),
                           )
