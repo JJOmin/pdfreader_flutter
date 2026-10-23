@@ -59,6 +59,13 @@ class Places {
     _schedule();
   }
 
+  bool get stopAtReferences => _settings.stopAtReferences;
+
+  set stopAtReferences(bool value) {
+    _settings = normalizeSettings({..._settings.toJson(), 'stopAtReferences': value});
+    _schedule();
+  }
+
   ReadingSettings get reading => _settings.reading;
 
   set reading(ReadingSettings value) {

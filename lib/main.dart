@@ -274,6 +274,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             playback: widget.playback,
             places: widget.places,
             notesStore: widget.notesStore,
+            documents: widget.documents,
           ),
         ),
       );

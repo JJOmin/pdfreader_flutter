@@ -134,6 +134,37 @@ void main() {
     expect(host.errors, isEmpty);
   });
 
+  test('stops before the reference list when asked to, but reads it when started there', () async {
+    const references = PlannedSentence(
+      page: 3,
+      key: 'refs',
+      lang: Lang.en,
+      role: Role.heading,
+      words: [
+        Word('7', [(0, 1)]),
+        Word('References', [(2, 12)]),
+      ],
+      ranges: [(0, 12)],
+      timings: [WordTiming(0, 0.2), WordTiming(0.2, 1)],
+      duration: 1,
+    );
+    host = FakeHost([
+      [sentence(1, 'a')],
+      [references, sentence(2, 'r1')],
+    ]);
+    reader = Reader(host, audio, gap: Duration.zero, headingGap: Duration.zero)..stopAtReferences = true;
+    reader.toggle((page: 1, index: 0));
+    await settle();
+    audio.current.finish();
+    await settle();
+    expect(host.started, ['a']);
+    expect(reader.state, ReaderState.idle);
+
+    reader.toggle((page: 2, index: 0));
+    await settle();
+    expect(host.started, ['a', 'refs']);
+  });
+
   test('loads the two sentences ahead, and no more', () async {
     reader.toggle((page: 1, index: 0));
     await settle();

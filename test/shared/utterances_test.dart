@@ -95,4 +95,79 @@ void main() {
       expect(u.words.map((w) => w.text), ['This', 'was', 'shown', 'before', 'and', 'later']);
     });
   });
+
+  group('isReferenceHeading', () {
+    test('knows the reference list by its heading, numbered or not, in English and German', () {
+      for (final text in [
+        'References',
+        'REFERENCES',
+        '7 References',
+        'VII. References',
+        'Bibliography',
+        'Literatur',
+        '6.1 Literaturverzeichnis',
+        'Works Cited',
+        'Quellenverzeichnis',
+        'Literature',
+      ]) {
+        expect(isReferenceHeading(text), isTrue, reason: text);
+      }
+    });
+
+    test('is a sentence that is nothing but the heading, but not one that only mentions references', () {
+      expect(isReferenceHeading('REFERENCES'), isTrue);
+      expect(isReferenceHeading('See the references.'), isFalse);
+      for (final text in ['References to prior work', 'Related Work', 'Literature review']) {
+        expect(isReferenceHeading(text), isFalse, reason: text);
+      }
+    });
+  });
+
+  group('joinedPage (desktop ADR 12)', () {
+    Utterance u(int page, String text, [Role role = Role.main]) => Utterance(
+      page: page,
+      text: text,
+      spoken: text,
+      lang: Lang.en,
+      role: role,
+      words: [
+        for (final (i, w) in text.split(' ').indexed)
+          Word(w.replaceAll(RegExp('[.,]'), ''), [(i * 10, i * 10 + w.length)]),
+      ],
+      ranges: [(0, text.length)],
+    );
+    final page1 = [u(1, 'First sentence.'), u(1, 'This sentence runs over')];
+    final page2 = [u(2, 'the page break.'), u(2, 'Then another one.')];
+
+    test('joins the next page’s start onto a sentence that has no end, its words on their own page', () {
+      final joined = joinedPage(null, page1, page2);
+      expect(joined.map((s) => s.text), ['First sentence.', 'This sentence runs over the page break.']);
+      final last = joined[1];
+      expect(last.page, 1);
+      expect(last.next!.page, 2);
+      expect(last.next!.ranges, [(0, 15)]);
+      expect(last.words.map((w) => w.page), [null, null, null, null, 2, 2, 2]);
+      expect(last.words.last.text, 'break');
+      expect(last.words.last.ranges, [(20, 26)]);
+    });
+
+    test('leaves the joined start out of the next page', () {
+      expect(joinedPage(page1, page2, null).map((s) => s.text), ['Then another one.']);
+    });
+
+    test('joins nothing after a sentence end, a colon, or a heading on either side', () {
+      for (final ending in ['Ends here.', 'Asked?', 'As follows:', '“Quoted.”']) {
+        expect(joinedPage(null, [u(1, ending)], page2), hasLength(1), reason: ending);
+      }
+      expect(joinedPage(null, [u(1, '2 Methods', Role.heading)], page2), hasLength(1));
+      final beforeHeading = joinedPage(null, page1, [u(2, 'Results', Role.heading)]);
+      expect(beforeHeading, hasLength(2));
+      expect(beforeHeading[1].next, isNull);
+    });
+
+    test('is the page as it is on the last page, and for an empty one', () {
+      expect(joinedPage(null, page1, null).map((s) => s.text), page1.map((s) => s.text));
+      expect(joinedPage(null, [], page2), isEmpty);
+    });
+  });
 }

@@ -1,19 +1,24 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
+import 'annotated_pdf.dart';
+import 'document_access.dart';
 import 'document_text.dart';
 import 'library.dart';
 import 'notes_store.dart';
 import 'places.dart';
 import 'playback.dart';
 import 'reader.dart';
+import 'shared/mark_export.dart';
 import 'shared/marks.dart';
 import 'shared/notes.dart';
 import 'shared/notes_merge.dart';
+import 'shared/pdfium_text.dart' show rangeBoxes;
 import 'shared/read_plan.dart';
 import 'shared/search.dart';
 import 'shared/settings.dart';
@@ -51,6 +56,7 @@ class ReaderPage extends StatefulWidget {
     this.playback,
     this.places,
     this.notesStore,
+    this.documents,
   });
 
   final String name;
@@ -64,6 +70,9 @@ class ReaderPage extends StatefulWidget {
 
   /// Null in widget tests: nothing is marked.
   final NotesStore? notesStore;
+
+  /// The system's "save as", for the Markdown export and "Save PDF"; null in widget tests.
+  final DocumentAccess? documents;
 
   /// Null when the desktop has not prepared this PDF: it shows, but cannot be read aloud.
   final LibraryDocument? prepared;
@@ -164,7 +173,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     final prepared = widget.prepared;
     if (prepared == null) return;
     unawaited(_findOffer(prepared));
-    final reader = Reader(this, LibraryAudio(prepared))..speed = _speed;
+    final reader = Reader(this, LibraryAudio(prepared))
+      ..speed = _speed
+      ..stopAtReferences = widget.places?.stopAtReferences ?? false;
     setState(() => _reader = reader);
     final playback = widget.playback;
     if (playback != null) {
@@ -451,9 +462,12 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   void _revealSpoken({bool force = false}) {
     final sentence = this.sentence;
     if (sentence == null || (!force && DateTime.now().difference(_lastTouch) < _followPause)) return;
-    final ranges = word >= 0 && word < sentence.words.length ? sentence.words[word].ranges : sentence.ranges;
+    final current = word >= 0 && word < sentence.words.length ? sentence.words[word] : null;
+    final ranges = current?.ranges ?? sentence.ranges;
+    // A word of the sentence's continuation is on the next page (desktop ADR 12).
+    final page = current?.page ?? sentence.page;
     // After the frame, so the reading view has laid out the new highlight's paragraph.
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_view.reveal(sentence.page, ranges)));
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_view.reveal(page, ranges)));
   }
 
   /// What both views paint: the spoken sentence and word, and the search matches.
@@ -464,6 +478,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       for (final a in _notes.annotations)
         if (_markAt[a.id] case final at?) Highlight.mark(a.page, [at], a.kind, a.color, a.id),
       if (sentence != null) Highlight(sentence.page, sentence.ranges, HighlightKind.sentence),
+      // A sentence over a page break is tinted on both pages (desktop ADR 12).
+      if (sentence?.next case final next?) Highlight(next.page, next.ranges, HighlightKind.sentence),
       for (var i = 0; i < _matches.length; i++)
         Highlight(
           _matches[i].page,
@@ -471,7 +487,11 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
           i == _match ? HighlightKind.searchCurrent : HighlightKind.search,
         ),
       if (sentence != null && word >= 0 && word < sentence.words.length)
-        Highlight(sentence.page, sentence.words[word].ranges, HighlightKind.word),
+        Highlight(
+          sentence.words[word].page ?? sentence.page,
+          sentence.words[word].ranges,
+          HighlightKind.word,
+        ),
     ];
   }
 
@@ -557,12 +577,34 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   Future<void> _openReadingSettings() => showModalBottomSheet<void>(
     context: context,
-    builder: (_) => ReadingSettingsSheet(
-      settings: _readingSettings,
-      onChanged: (settings) {
-        setState(() => _readingSettings = settings);
-        widget.places?.reading = settings;
-      },
+    isScrollControlled: true,
+    builder: (_) => StatefulBuilder(
+      builder: (context, setSheet) => SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ReadingSettingsSheet(
+              settings: _readingSettings,
+              onChanged: (settings) {
+                setState(() => _readingSettings = settings);
+                widget.places?.reading = settings;
+              },
+            ),
+            SwitchListTile(
+              key: const Key('stop-at-references'),
+              title: const Text('Stop reading at the reference list'),
+              subtitle: const Text('“References”, “Literatur”'),
+              value: widget.places?.stopAtReferences ?? false,
+              onChanged: widget.places == null
+                  ? null
+                  : (on) => setSheet(() {
+                      widget.places!.stopAtReferences = on;
+                      _reader?.stopAtReferences = on;
+                    }),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 
@@ -665,8 +707,76 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
           tooltip: reading ? 'Show the pages' : 'Reading view',
           onPressed: _text == null ? null : _switchView,
         ),
+        if (widget.documents != null)
+          PopupMenuButton<String>(
+            key: const Key('reader-menu'),
+            enabled: _text != null,
+            onSelected: (choice) => unawaited(choice == 'markdown' ? _exportMarkdown() : _savePdf()),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'markdown', child: Text('Export notes as Markdown')),
+              PopupMenuItem(value: 'pdf', child: Text('Save PDF with marks')),
+            ],
+          ),
       ],
     );
+  }
+
+  /// The file's name without `.pdf`, for the names the exports propose.
+  String get _baseName => widget.name.replaceFirst(RegExp(r'\.pdf$', caseSensitive: false), '');
+
+  void _tell(String message) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// The marks and comments as Markdown, as the desktop exports them (PLAN 4.2).
+  Future<void> _exportMarkdown() async {
+    try {
+      final markdown = toMarkdown(widget.name, _notes);
+      final saved = await widget.documents!.saveAs(
+        '$_baseName.notes.md',
+        'text/markdown',
+        Uint8List.fromList(utf8.encode(markdown)),
+      );
+      if (saved) _tell('Notes exported.');
+    } catch (error) {
+      _tell('Could not export: $error');
+    }
+  }
+
+  /// A copy of the PDF with every mark and its comment as an annotation, and the notes as a sticky
+  /// note on page one (PLAN 4.4). The PDF itself is never changed.
+  Future<void> _savePdf() async {
+    final text = _text;
+    if (text == null) return;
+    try {
+      final marks = <ExportMark>[];
+      var unplaced = 0;
+      for (final a in _notes.annotations) {
+        final at = _markAt[a.id];
+        if (at == null) {
+          unplaced++;
+          continue;
+        }
+        final page = await text.page(a.page);
+        final boxes = rangeBoxes(
+          [at],
+          page.text.charIndex,
+          [for (final r in page.charRects) (left: r.left, bottom: r.bottom, right: r.right, top: r.top)],
+        );
+        marks.add(ExportMark(page: a.page, kind: a.kind, color: a.color, comment: a.comment, boxes: boxes));
+      }
+      final pdf = await annotatedPdf(widget.data, marks, _notes.notes);
+      final saved = await widget.documents!.saveAs('$_baseName.annotated.pdf', 'application/pdf', pdf);
+      if (saved) {
+        _tell(
+          unplaced == 0
+              ? 'PDF saved with ${marks.length} marks.'
+              : 'PDF saved; $unplaced marks could not be placed.',
+        );
+      }
+    } catch (error) {
+      _tell('Could not save the PDF: $error');
+    }
   }
 
   @override

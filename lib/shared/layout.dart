@@ -129,7 +129,42 @@ void _appendLine(StringBuffer block, List<int> raw, _Line line) {
   raw.addAll(lineRaw);
 }
 
-/// Turns one page's text runs into paragraphs and headings, dropping running headers and footers.
+/// A figure's or table's caption, which is read although it is set small (desktop backlog 1).
+final _caption = RegExp(
+  r'^(fig(ure|\.)?|table|tab\.|abb(ildung|\.)|tabelle)\s*[\dIVX]',
+  caseSensitive: false,
+  unicode: true,
+);
+
+/// Text this much smaller than the body, without a sentence's end, is a label inside a figure.
+const _figureSize = 0.88;
+
+/// Below this share of letters among the visible characters a block is a table row or a formula.
+const _symbolic = 0.5;
+final _mathOperator = RegExp(r'[=<>≤≥≈≠∑Σ∏∫∂√∞∈∉±×÷^]', unicode: true);
+
+/// A word of three letters or more. A formula has at most two, such as "max" and "log".
+final _proseWord = RegExp(r'\p{L}{3,}', unicode: true);
+final _letter = RegExp(r'\p{L}', unicode: true);
+final _space = RegExp(r'\s', unicode: true);
+
+/// Text that is not read (desktop backlog 1 and 2): a label inside a figure (smaller than the body, no
+/// sentence end, short), a table row (mostly digits and symbols), or a displayed formula (a math operator
+/// and hardly a word of prose). Fonts are not asked: PDF.js and PDFium name them differently, and both
+/// apps must leave out the same text.
+bool _notProse(String text, double size, double bodySize, bool unterminated) {
+  final visible = text.replaceAll(_space, '');
+  // Letters by code point and the length in UTF-16 units, as the desktop's JavaScript counts them.
+  final letters = _letter.allMatches(visible).length;
+  final symbolic = visible.length >= 3 && letters / visible.length < _symbolic;
+  final label = unterminated && text.length <= 80 && size <= bodySize * _figureSize;
+  final formula =
+      text.length <= 150 && _mathOperator.hasMatch(text) && _proseWord.allMatches(text).length <= 2;
+  return symbolic || label || formula;
+}
+
+/// Turns one page's text runs into paragraphs and headings, dropping running headers and footers, and
+/// figure labels, table rows and displayed formulas.
 List<Block> layoutPage(List<RawItem> items, double pageHeight) {
   final lines = _toLines(items);
   final bodySize = _dominant(lines.map((l) => (l.size, l.text.length))) ?? 0;
@@ -173,7 +208,12 @@ List<Block> layoutPage(List<RawItem> items, double pageHeight) {
     final numbered = group.length == 1 && text.length <= 100 && _numberedHeading.hasMatch(text);
     final titleLike =
         group.length == 1 && first.font != bodyFont && text.length <= 60 && _upperStart.hasMatch(text);
-    blocks.add(Block(text, raw, heading: short && unterminated && (larger || numbered || titleLike)));
+    final heading = short && unterminated && (larger || numbered || titleLike);
+    // A numbered section heading in small capitals is smaller than the body, but no figure label.
+    // `heading` is not asked: it depends on font names, which PDF.js sees differently.
+    final kept = larger || _caption.hasMatch(text) || _numberedHeading.hasMatch(text);
+    if (!kept && _notProse(text, first.size, bodySize, unterminated)) continue;
+    blocks.add(Block(text, raw, heading: heading));
   }
   return blocks;
 }

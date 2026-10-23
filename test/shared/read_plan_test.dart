@@ -108,4 +108,24 @@ void main() {
     expect(plan.sentences, isEmpty);
     expect(plan.skipped, 2);
   });
+
+  test(
+    'tints a sentence over the page break on both pages, and puts its words on theirs (desktop ADR 12)',
+    () {
+      final page1 = buildUtterances([block('This sentence runs over', 0)], 1, Lang.en);
+      final page2 = buildUtterances([block('the page break. Next one.', 0)], 2, Lang.en);
+      final joined = joinedPage(null, page1, page2);
+      final plan = planPage(
+        joined,
+        index(joined, [sentence('This sentence runs over the page break.', 0, 7)]),
+      );
+      final s = plan.sentences.single;
+      expect(texts(s), ['This', 'sentence', 'runs', 'over', 'the', 'page', 'break']);
+      expect(s.page, 1);
+      expect(s.ranges, [(0, 23)]);
+      expect(s.next!.page, 2);
+      expect(s.next!.ranges, [(0, 14)]);
+      expect(s.words.last.page, 2);
+    },
+  );
 }

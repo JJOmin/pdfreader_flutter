@@ -30,11 +30,18 @@ class RawItem {
 typedef RawRange = (int, int);
 
 class Word {
-  const Word(this.text, this.ranges);
+  const Word(this.text, this.ranges, {this.page});
 
   final String text;
   final List<RawRange> ranges;
+
+  /// Set for a word of a sentence's continuation on the next page (desktop ADR 12); else the
+  /// utterance's page.
+  final int? page;
 }
+
+/// The part of a sentence that runs over the page break, on the next page (desktop ADR 12).
+typedef PagePart = ({int page, List<RawRange> ranges});
 
 /// One unit handed to the speech engine: a sentence or a heading.
 class Utterance {
@@ -46,6 +53,7 @@ class Utterance {
     required this.role,
     required this.words,
     required this.ranges,
+    this.next,
   });
 
   final int page;
@@ -59,6 +67,7 @@ class Utterance {
   final Role role;
   final List<Word> words;
   final List<RawRange> ranges;
+  final PagePart? next;
 }
 
 class WordTiming {

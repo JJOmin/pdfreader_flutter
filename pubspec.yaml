@@ -31,11 +31,14 @@ dependencies:
   audio_service: ^0.18.19
   crypto: ^3.0.7
   cryptography: ^2.9.0
+  # Both come with pdfrx; declared to write marks into a PDF through PDFium (ADR 4, PLAN 4.3).
+  ffi: ^2.2.0
   flutter:
     sdk: flutter
   just_audio: ^0.10.6
   mobile_scanner: ^7.4.2
   path_provider: ^2.1.6
+  pdfium_dart: ^0.3.1
   pdfrx: ^2.6.5
   pdfrx_engine: ^0.6.1
   sherpa_onnx: 1.13.8

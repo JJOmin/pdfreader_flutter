@@ -28,6 +28,7 @@ class DocumentText {
   final PdfDocument document;
   final _pages = <int, Future<LoadedPage>>{};
   final _utterances = <int, Future<List<Utterance>>>{};
+  final _ownCache = <int, Future<List<Utterance>>>{};
   Future<Lang>? _lang;
 
   int get pageCount => document.pages.length;
@@ -47,8 +48,17 @@ class DocumentText {
     return guessLang(blocks.map((b) => b.text).join(' ')).lang;
   }();
 
-  Future<List<Utterance>> utterances(int number) => _utterances[number] ??= () async {
+  /// A page's sentences as layout finds them, before page breaks are undone.
+  Future<List<Utterance>> _own(int number) => _ownCache[number] ??= () async {
     final blocks = (await page(number)).blocks;
     return buildUtterances(blocks, number, await lang);
+  }();
+
+  /// A page's sentences, a sentence over the page break whole on the page it starts on (desktop
+  /// ADR 12), as the desktop's are: so the next page is read too, and the previous one.
+  Future<List<Utterance>> utterances(int number) => _utterances[number] ??= () async {
+    final previous = number > 1 ? await _own(number - 1) : null;
+    final next = number < pageCount ? await _own(number + 1) : null;
+    return joinedPage(previous, await _own(number), next);
   }();
 }

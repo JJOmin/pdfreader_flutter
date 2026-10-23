@@ -63,6 +63,14 @@ void main() {
     });
   });
 
+  group('stopAtReferences', () {
+    test('is off unless switched on', () {
+      expect(defaultSettings().stopAtReferences, false);
+      expect(normalizeSettings({'stopAtReferences': true}).stopAtReferences, true);
+      expect(normalizeSettings({'stopAtReferences': 'yes'}).stopAtReferences, false);
+    });
+  });
+
   group('polish', () {
     test('is off by default and keeps only a real boolean', () {
       expect(defaultSettings().polish, false);

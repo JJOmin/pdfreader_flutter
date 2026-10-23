@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'shared/read_plan.dart';
+import 'shared/utterances.dart';
 import 'shared/types.dart';
 
 enum ReaderState { idle, playing, paused }
@@ -56,6 +57,9 @@ class Reader {
   ReaderState state = ReaderState.idle;
   Cursor? cursor;
   double _speed = 1;
+
+  /// Reading ends at the reference list's heading, unless it was started there.
+  bool stopAtReferences = false;
 
   /// Bumped whenever playback is redirected, so a superseded loop notices and exits.
   int _run = 0;
@@ -191,6 +195,8 @@ class Reader {
       while (at != null && run == _run) {
         cursor = at;
         final sentence = (await host.sentences(at.page))[at.index];
+        final text = sentence.words.map((w) => w.text).join(' ');
+        if (previous != null && stopAtReferences && isReferenceHeading(text)) break;
         host.onChange(state, sentence, -1);
         final pending = _prepare(at, sentence);
         unawaited(_prefetch(at));

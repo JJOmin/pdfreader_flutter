@@ -98,3 +98,52 @@ List<Utterance> buildUtterances(List<Block> blocks, int page, Lang documentLang)
   }
   return utterances;
 }
+
+/// The heading of a reference list, numbered or not: where reading may stop (desktop backlog 5). Layout
+/// does not always see it as a heading (IEEE's "REFERENCES" is set in body size), so a sentence that is
+/// nothing but the heading counts too.
+final _referenceHeading = RegExp(
+  r'^(?:(?:\d+(?:\.\d+)*|[IVX]+)\.?\s+)?(?:references|bibliography|literature|works cited|literatur|literaturverzeichnis|quellen|quellenverzeichnis)$',
+  caseSensitive: false,
+  unicode: true,
+);
+
+bool isReferenceHeading(String text) => _referenceHeading.hasMatch(text.trim());
+
+/// A sentence's end: what a sentence cut by a page break lacks.
+final _sentenceEnd = RegExp(r'[.!?…:]["”’»)\]]*$', unicode: true);
+
+/// Whether `first`, the next page's first sentence, goes on `last`, this page's last (desktop ADR 12).
+bool continuesOver(Utterance? last, Utterance? first) =>
+    last != null &&
+    first != null &&
+    last.role != Role.heading &&
+    first.role != Role.heading &&
+    !_sentenceEnd.hasMatch(last.text);
+
+/// Port of the desktop's `joinedPage`: a page's sentences with page breaks undone (desktop ADR 12, the
+/// owner's rule of 2026-10-22). A sentence that starts on this page belongs to it whole, so the next
+/// page's first sentence is joined on when this page's last one has no end, and this page's first
+/// sentence is left out when it was joined onto the page before. The words of the continuation keep
+/// their own page, so every raw range stays on the page it is on.
+/// // shortcut: a word hyphenated over the page break is read as two. Upgrade if it is heard often.
+List<Utterance> joinedPage(List<Utterance>? previous, List<Utterance> own, List<Utterance>? next) {
+  final list = continuesOver(previous?.lastOrNull, own.firstOrNull) ? own.sublist(1) : [...own];
+  final last = list.lastOrNull;
+  final first = next?.firstOrNull;
+  if (last == null || first == null || !continuesOver(last, first)) return list;
+  list[list.length - 1] = Utterance(
+    page: last.page,
+    text: '${last.text} ${first.text}',
+    spoken: '${last.spoken} ${first.spoken}',
+    lang: last.lang,
+    role: last.role,
+    words: [
+      ...last.words,
+      for (final w in first.words) Word(w.text, w.ranges, page: first.page),
+    ],
+    ranges: last.ranges,
+    next: (page: first.page, ranges: first.ranges),
+  );
+  return list;
+}

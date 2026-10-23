@@ -64,6 +64,7 @@ class Settings {
     required this.reading,
     required this.focusMode,
     required this.polish,
+    this.stopAtReferences = false,
   });
 
   /// Multiplier applied on top of every voice.
@@ -77,6 +78,9 @@ class Settings {
   /// Fade each sentence in and out and cut rumble below the voice, when it is played.
   final bool polish;
 
+  /// Reading aloud ends at the reference list's heading (desktop backlog 5).
+  final bool stopAtReferences;
+
   Map<String, Object?> toJson() => {
     'speed': speed,
     'voices': {
@@ -86,6 +90,7 @@ class Settings {
     'reading': reading.toJson(),
     'focusMode': focusMode,
     'polish': polish,
+    'stopAtReferences': stopAtReferences,
   };
 }
 
@@ -160,6 +165,9 @@ Settings normalizeSettings(Object? value) {
     ),
     focusMode: input['focusMode'] is bool ? input['focusMode']! as bool : defaults.focusMode,
     polish: input['polish'] is bool ? input['polish']! as bool : defaults.polish,
+    stopAtReferences: input['stopAtReferences'] is bool
+        ? input['stopAtReferences']! as bool
+        : defaults.stopAtReferences,
   );
 }
 

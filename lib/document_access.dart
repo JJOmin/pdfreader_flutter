@@ -10,7 +10,7 @@ class OpenedDocument {
   final Uint8List data;
 }
 
-/// The platform side of opening and, later, saving documents: MainActivity.kt on Android.
+/// The platform side of opening and saving documents: MainActivity.kt on Android.
 class DocumentAccess {
   static const _channel = MethodChannel('pdfreader/documents');
 
@@ -24,4 +24,8 @@ class DocumentAccess {
       data: result['data']! as Uint8List,
     );
   }
+
+  /// The system's "save as" with `name` proposed. True once written, false when the user cancels.
+  Future<bool> saveAs(String name, String mime, Uint8List data) async =>
+      await _channel.invokeMethod<bool>('saveAs', {'name': name, 'mime': mime, 'data': data}) ?? false;
 }

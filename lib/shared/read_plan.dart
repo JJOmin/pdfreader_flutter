@@ -16,6 +16,7 @@ class PlannedSentence {
     required this.ranges,
     required this.timings,
     required this.duration,
+    this.next,
   });
 
   final int page;
@@ -28,6 +29,9 @@ class PlannedSentence {
   /// The phone's own words, with their raw ranges.
   final List<Word> words;
   final List<RawRange> ranges;
+
+  /// The part on the next page, for a sentence over the page break (desktop ADR 12).
+  final PagePart? next;
 
   /// One per word, in seconds of the audio.
   final List<WordTiming> timings;
@@ -77,6 +81,47 @@ List<RawRange> _sentenceRanges(List<Word> words, List<Utterance> phone) {
   return out;
 }
 
+/// A prepared sentence on the phone's words. The words of a continuation on the next page (desktop
+/// ADR 12) are tinted there, as their own part.
+PlannedSentence _planned(List<Utterance> phone, List<Word> words, LibrarySentence s, Role role) {
+  final here = [
+    for (final w in words)
+      if (w.page == null) w,
+  ];
+  final over = [
+    for (final w in words)
+      if (w.page != null) w,
+  ];
+  final next = [for (final u in phone) ?u.next].firstOrNull;
+  return PlannedSentence(
+    page: phone.first.page,
+    key: s.key,
+    lang: s.lang,
+    role: role,
+    words: words,
+    ranges: here.isEmpty ? const [] : _sentenceRanges(here, phone),
+    next: over.isEmpty || next == null ? null : (page: next.page, ranges: _joined(over, next.ranges)),
+    timings: _seconds(s.words),
+    duration: s.ms / 1000,
+  );
+}
+
+/// The words' ranges, a gap filled where the continuation's own sentence covers it.
+List<RawRange> _joined(List<Word> words, List<RawRange> covered) {
+  final out = <RawRange>[];
+  for (final range in words.expand((w) => w.ranges)) {
+    if (out.isNotEmpty) {
+      final (start, end) = out.last;
+      if (end <= range.$1 && covered.any((c) => c.$1 <= end && range.$1 <= c.$2)) {
+        out.last = (start, range.$2);
+        continue;
+      }
+    }
+    out.add(range);
+  }
+  return out;
+}
+
 /// Places a page's prepared sentences on the phone's sentences of the same page. `index` is null
 /// when the page has none.
 PagePlan planPage(List<Utterance> phone, PageIndex? index) {
@@ -90,16 +135,7 @@ PagePlan planPage(List<Utterance> phone, PageIndex? index) {
     ];
     return PagePlan([
       for (final s in index.sentences)
-        PlannedSentence(
-          page: phone.first.page,
-          key: s.key,
-          lang: s.lang,
-          role: roles[s.from],
-          words: flat.sublist(s.from, s.from + s.words.length),
-          ranges: _sentenceRanges(flat.sublist(s.from, s.from + s.words.length), phone),
-          timings: _seconds(s.words),
-          duration: s.ms / 1000,
-        ),
+        _planned(phone, flat.sublist(s.from, s.from + s.words.length), s, roles[s.from]),
     ], 0);
   }
 
@@ -121,6 +157,7 @@ PagePlan planPage(List<Utterance> phone, PageIndex? index) {
         role: u.role,
         words: u.words,
         ranges: u.ranges,
+        next: u.next,
         timings: s.words.length == u.words.length
             ? _seconds(s.words)
             : estimateTimings([for (final w in u.words) w.text], duration),

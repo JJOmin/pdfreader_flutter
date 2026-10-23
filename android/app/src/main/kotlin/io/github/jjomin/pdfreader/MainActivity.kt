@@ -28,6 +28,8 @@ import io.flutter.plugin.common.MethodChannel
  */
 class MainActivity : AudioServiceActivity() {
     private var pending: MethodChannel.Result? = null
+    /** A file the user is choosing a place for, with the answer to give once it is written. */
+    private var saving: Pair<ByteArray, MethodChannel.Result>? = null
     private var multicastLock: WifiManager.MulticastLock? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -36,6 +38,12 @@ class MainActivity : AudioServiceActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "pickPdf" -> pickPdf(result)
+                    "saveAs" -> saveAs(
+                        call.argument<String>("name")!!,
+                        call.argument<String>("mime")!!,
+                        call.argument<ByteArray>("data")!!,
+                        result,
+                    )
                     else -> result.notImplemented()
                 }
             }
@@ -145,10 +153,48 @@ class MainActivity : AudioServiceActivity() {
         startActivityForResult(intent, PICK_PDF)
     }
 
+    /**
+     * The system's "save as": the user picks the folder and the name, and only that one file can be
+     * written (Markdown export and "Save PDF", PLAN 4.2 and 4.4). Answers true once written, false
+     * when the user cancelled.
+     */
+    private fun saveAs(name: String, mime: String, data: ByteArray, result: MethodChannel.Result) {
+        if (saving != null) {
+            result.error("busy", "A file is already being saved", null)
+            return
+        }
+        saving = data to result
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType(mime)
+            .putExtra(Intent.EXTRA_TITLE, name)
+        @Suppress("DEPRECATION")
+        startActivityForResult(intent, SAVE_AS)
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == SAVE_AS) {
+            val (bytes, answer) = saving ?: return
+            saving = null
+            val uri = data?.data
+            if (resultCode != Activity.RESULT_OK || uri == null) {
+                answer.success(false)
+                return
+            }
+            Thread {
+                try {
+                    contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                        ?: throw IllegalStateException("The file could not be written")
+                    runOnUiThread { answer.success(true) }
+                } catch (e: Exception) {
+                    runOnUiThread { answer.error("write", e.message, null) }
+                }
+            }.start()
+            return
+        }
         if (requestCode != PICK_PDF) return
         val result = pending ?: return
         pending = null
@@ -179,6 +225,7 @@ class MainActivity : AudioServiceActivity() {
 
     private companion object {
         const val PICK_PDF = 1
+        const val SAVE_AS = 2
         const val KEY_ALIAS = "pdfreader-secrets"
         const val IV_BYTES = 12
     }

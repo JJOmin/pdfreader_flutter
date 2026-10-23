@@ -35,3 +35,6 @@ the user opens "Scan to pair", not at start. A refusal leaves the typed code, wh
 - **Audio page by page (desktop ADR 11).** A document can be on the phone before any of its audio:
   the manifest of version 2 names the pages that have it, and a download fetches only the pages the
   phone lacks. The reader reads those pages and shows the others as a plain PDF.
+- **PDFium for "Save PDF" (2026-10-23).** `pdfium_dart` and `ffi` came with pdfrx already; they are
+  declared now, since `lib/annotated_pdf.dart` calls PDFium's annotation API directly, while pdfrx's
+  own PDFium worker waits (`useNativeDocumentHandle`). No new package.
