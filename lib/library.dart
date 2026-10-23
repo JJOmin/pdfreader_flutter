@@ -9,10 +9,13 @@ import 'package:path_provider/path_provider.dart';
 import 'shared/sync.dart';
 
 class LibraryDocument {
-  LibraryDocument(this.dir, this.manifest);
+  LibraryDocument(this.dir, this.manifest, {DateTime? arrived}) : arrived = arrived ?? DateTime(0);
 
   final Directory dir;
   final Manifest manifest;
+
+  /// When its PDF was written here, which happens once: a changed PDF is another document.
+  final DateTime arrived;
   final _indexes = <int, Future<PageIndex?>>{};
 
   File get pdf => File('${dir.path}/document.pdf');
@@ -64,7 +67,11 @@ class Library {
       final manifest = parseManifest(jsonDecode(await File('${dir.path}/manifest.json').readAsString()));
       // A folder renamed by hand must not pass for another document.
       if (manifest == null || !dir.path.endsWith(manifest.docId)) return null;
-      return LibraryDocument(dir, manifest);
+      return LibraryDocument(
+        dir,
+        manifest,
+        arrived: (await File('${dir.path}/document.pdf').stat()).modified,
+      );
     } on FileSystemException {
       return null;
     } on FormatException {

@@ -31,17 +31,14 @@ void main() {
     final play = find.byKey(const Key('play'));
     Future<ReaderPageState> openSample() async {
       await waitFor(() => find.text('sample.pdf').evaluate().isNotEmpty);
-      await tester.tap(find.text('sample.pdf'));
+      await tester.tap(sampleTile);
       await waitFor(() => play.evaluate().isNotEmpty && tester.widget<IconButton>(play).onPressed != null);
       // The saved place is shown after the first layout.
       await tester.pump(const Duration(seconds: 1));
       return tester.state<ReaderPageState>(find.byType(ReaderPage));
     }
 
-    Future<void> back() async {
-      await tester.pageBack();
-      await tester.pump(const Duration(seconds: 2));
-    }
+    Future<void> back() => closeDocument(tester);
 
     Future<void> sync() async {
       await waitFor(() => syncButton.evaluate().isNotEmpty);
@@ -54,7 +51,8 @@ void main() {
         seconds: 60,
         reason: 'sync',
       );
-      await back();
+      await tester.tap(homeTab);
+      await tester.pump(const Duration(seconds: 1));
     }
 
     await app.main();
@@ -71,7 +69,8 @@ void main() {
       await tester.tap(find.byTooltip('Next sentence'));
       await tester.pump(const Duration(seconds: 2));
       final key = page.sentence!.key;
-      await tester.tap(find.byTooltip('Stop reading'));
+      // Paused: Stop is gone from the reader (PLAN 9.4).
+      await tester.tap(play);
       await tester.pump(const Duration(milliseconds: 600));
       await back();
 
@@ -80,7 +79,8 @@ void main() {
       await tester.tap(play);
       await waitFor(() => page.sentence != null);
       expect(page.sentence!.key, key, reason: 'Play continues at the sentence read last');
-      await tester.tap(find.byTooltip('Stop reading'));
+      // Paused: Stop is gone from the reader (PLAN 9.4).
+      await tester.tap(play);
       await tester.pump(const Duration(milliseconds: 600));
       await back();
       await sync();

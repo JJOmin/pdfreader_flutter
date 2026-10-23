@@ -39,12 +39,20 @@ class PlannedSentence {
 }
 
 class PagePlan {
-  const PagePlan(this.sentences, this.skipped);
+  const PagePlan(this.sentences, this.skipped, [this.skippedBefore = const []]);
 
   final List<PlannedSentence> sentences;
 
   /// The phone's sentences that have no audio and are not read.
   final int skipped;
+
+  /// How many of them come right before each planned sentence; missing entries are 0. The rest
+  /// are at the end of the page.
+  final List<int> skippedBefore;
+
+  int _before(int index) => index < skippedBefore.length ? skippedBefore[index] : 0;
+
+  int get _atEnd => skipped - skippedBefore.fold(0, (a, b) => a + b);
 }
 
 List<WordTiming> _seconds(List<(int, int)> words) => [
@@ -145,9 +153,16 @@ PagePlan planPage(List<Utterance> phone, PageIndex? index) {
     byKey.putIfAbsent(s.key, () => s);
   }
   final sentences = <PlannedSentence>[];
+  final skippedBefore = <int>[];
+  var missed = 0;
   for (final u in phone) {
     final s = byKey[syncKey(u.text)];
-    if (s == null) continue;
+    if (s == null) {
+      missed++;
+      continue;
+    }
+    skippedBefore.add(missed);
+    missed = 0;
     final duration = s.ms / 1000;
     sentences.add(
       PlannedSentence(
@@ -165,5 +180,31 @@ PagePlan planPage(List<Utterance> phone, PageIndex? index) {
       ),
     );
   }
-  return PagePlan(sentences, phone.length - sentences.length);
+  return PagePlan(sentences, phone.length - sentences.length, skippedBefore);
+}
+
+/// Where "Read from here" starts on a page, as the desktop's `readFrom`: the first sentence with a
+/// range ending after `offset`, or -1 when the offset is past the last one (the next page then).
+int readFromIndex(List<List<RawRange>> sentences, int offset) =>
+    sentences.indexWhere((ranges) => ranges.any((r) => r.$2 > offset));
+
+/// How many sentences without audio the voice passed over going on from [from] to [to]: 0 unless
+/// [to] is the very next sentence read, or a page on the way is not planned yet.
+int skippedBetween(
+  ({int page, int index}) from,
+  ({int page, int index}) to,
+  PagePlan? Function(int page) plan,
+) {
+  final start = plan(from.page);
+  final end = plan(to.page);
+  if (start == null || end == null) return 0;
+  if (to.page == from.page) return to.index == from.index + 1 ? end._before(to.index) : 0;
+  if (to.page < from.page || to.index != 0 || from.index != start.sentences.length - 1) return 0;
+  var count = start._atEnd + end._before(0);
+  for (var page = from.page + 1; page < to.page; page++) {
+    final between = plan(page);
+    if (between == null || between.sentences.isNotEmpty) return 0;
+    count += between.skipped;
+  }
+  return count;
 }

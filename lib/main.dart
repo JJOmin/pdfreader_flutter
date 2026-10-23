@@ -9,8 +9,12 @@ import 'package:path_provider/path_provider.dart';
 
 import 'desktop_link.dart';
 import 'document_access.dart';
+import 'favourites_store.dart';
+import 'favourites_tab.dart';
 import 'library.dart';
 import 'library_list.dart';
+import 'now_playing.dart';
+import 'shared/home_lists.dart';
 import 'shared/inbox.dart' show PendingOffer;
 import 'shared/library_view.dart';
 import 'notes_store.dart';
@@ -25,7 +29,7 @@ import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
 import 'store/offer_file.dart';
 import 'sync_controller.dart';
-import 'sync_page.dart';
+import 'settings_tab.dart';
 import 'wifi_sync.dart';
 
 Future<void> main() async {
@@ -80,6 +84,7 @@ Future<void> main() async {
   );
   sync.offerFile = OfferFile(File('$support/offers.json'));
   await sync.offerFile.load();
+  final favourites = await FavouritesStore.load(File('$support/favourites.json'));
   // What the user changes is sent soon; what a sync brings in is not sent back.
   notesStore.onSaved = sync.ownChanged;
   places.onStateWritten = () => sync.ownChanged(place: true);
@@ -91,6 +96,7 @@ Future<void> main() async {
       notesStore: notesStore,
       cloud: cloud,
       sync: sync,
+      favourites: favourites,
     ),
   );
 }
@@ -105,6 +111,7 @@ class PdfReaderApp extends StatelessWidget {
     this.notesStore,
     this.cloud,
     this.sync,
+    this.favourites,
   });
 
   /// Replaced in widget tests, which have no platform side.
@@ -115,11 +122,15 @@ class PdfReaderApp extends StatelessWidget {
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
   final SyncController? sync;
+  final FavouritesStore? favourites;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'PDF Reader',
     theme: ThemeData(colorSchemeSeed: Colors.indigo),
+    darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
+    // Follows the system's light or dark setting (PLAN 9.11).
+    themeMode: ThemeMode.system,
     home: HomePage(
       documents: documents ?? DocumentAccess(),
       library: library,
@@ -128,11 +139,13 @@ class PdfReaderApp extends StatelessWidget {
       notesStore: notesStore,
       cloud: cloud,
       sync: sync,
+      favourites: favourites,
     ),
   );
 }
 
-/// The documents the desktop prepared, and the picker for any other PDF.
+/// The app's frame (PLAN 9.2 to 9.4): the tabs Home, Favourites and Settings, the Now Playing bar
+/// above them, and the open document's reader, which stays alive while it is hidden.
 class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
@@ -143,6 +156,7 @@ class HomePage extends StatefulWidget {
     this.notesStore,
     this.cloud,
     this.sync,
+    this.favourites,
   });
 
   final DocumentAccess documents;
@@ -152,6 +166,7 @@ class HomePage extends StatefulWidget {
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
   final SyncController? sync;
+  final FavouritesStore? favourites;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -161,6 +176,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late Future<List<LibraryDocument>> _prepared = widget.library?.documents() ?? Future.value(const []);
 
   var _syncsSeen = 0;
+
+  /// 0 Home, 1 Favourites, 2 Settings.
+  var _tab = 0;
+
+  /// The open document, and whether its reader is shown or only the bar.
+  ReadingSession? _session;
+  var _expanded = false;
+
+  late final FavouritesStore _favourites = widget.favourites ?? FavouritesStore.inMemory();
 
   /// What the list listens to where there is no sync (widget tests).
   static final _never = ChangeNotifier();
@@ -245,7 +269,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final fresh = sync.offers.where(
       (p) => !_asked.contains(p.offer.key) && !sync.offerFile.alwaysFrom.contains(p.from),
     );
-    if (fresh.isNotEmpty && mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
+    if (fresh.isNotEmpty && mounted && !_expanded && (ModalRoute.of(context)?.isCurrent ?? false)) {
       unawaited(_ask(fresh.first));
     }
     if (sync.syncs == _syncsSeen) return;
@@ -263,21 +287,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (mounted) _reload();
   }
 
-  void _show(String name, Uint8List data, String placeKey, LibraryDocument? prepared) =>
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ReaderPage(
-            name: name,
-            data: data,
-            placeKey: placeKey,
-            prepared: prepared,
-            playback: widget.playback,
-            places: widget.places,
-            notesStore: widget.notesStore,
-            documents: widget.documents,
-          ),
-        ),
-      );
+  /// Opens the reader; another document ends the session before, as only one voice reads.
+  void _show(String name, Uint8List data, String placeKey, LibraryDocument? prepared) => setState(() {
+    if (_session?.placeKey != placeKey) {
+      _session = ReadingSession(name: name, data: data, placeKey: placeKey, prepared: prepared);
+    }
+    _expanded = true;
+  });
+
+  void _collapse() => setState(() => _expanded = false);
+
+  void _endSession() => setState(() {
+    _session = null;
+    _expanded = false;
+  });
 
   Future<void> _open() async {
     try {
@@ -306,19 +329,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  /// Everything that connects the phone to others: Nextcloud, and the computers on Wi-Fi.
-  Future<void> _syncScreen() async {
-    final sync = widget.sync;
-    if (sync == null) return;
-    final desktops = sync.desktopStore ?? await DesktopStore.open();
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SyncPage(sync: sync, desktops: desktops),
-      ),
-    );
-    _reload();
-  }
+  /// Everything that connects the phone to others is on the Settings tab.
+  void _syncScreen() => setState(() => _tab = 2);
 
   /// A tap on a document that is not here, or on Download: always, whatever the network.
   Future<void> _download(Manifest manifest) async {
@@ -348,65 +360,147 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _reload();
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('PDF Reader'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          tooltip: 'Look for prepared documents again',
-          onPressed: _reload,
-        ),
-        if (widget.sync case final sync?)
-          ListenableBuilder(
-            listenable: sync,
-            builder: (context, _) => IconButton(
-              key: Key('sync-${sync.state.name}'),
-              icon: Icon(switch (sync.state) {
-                SyncState.off => Icons.cloud_off_outlined,
-                SyncState.pending => Icons.cloud_upload_outlined,
-                SyncState.syncing => Icons.sync,
-                SyncState.done => Icons.cloud_done_outlined,
-              }),
-              tooltip: switch (sync.state) {
-                SyncState.off => 'Sync: not set up',
-                SyncState.pending => 'Sync: waiting',
-                SyncState.syncing => 'Sync: syncing',
-                SyncState.done => 'Sync: up to date',
-              },
-              onPressed: _syncScreen,
-            ),
+  LibraryDocument? _held(List<LibraryDocument> prepared, LibraryEntry e) =>
+      prepared.where((d) => d.manifest.docId == e.manifest.docId).firstOrNull;
+
+  /// Home: the documents read last and those new on the phone, then every document (PLAN 9.2).
+  Widget _home(List<LibraryDocument> prepared, List<LibraryEntry> entries, bool loaded) {
+    final byId = {for (final d in prepared) d.manifest.docId: d};
+    final lastRead = widget.places?.lastRead ?? const <String, num>{};
+    final recent = [for (final id in continueReading(lastRead)) ?byId[id]];
+    final fresh = [
+      for (final id in newOnPhone({
+        for (final d in prepared) d.manifest.docId: d.arrived.millisecondsSinceEpoch,
+      }, lastRead.keys.toSet()))
+        byId[id]!,
+    ];
+    Widget section(String title, List<LibraryDocument> docs, String Function(LibraryDocument) subtitle) =>
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text(title, style: Theme.of(context).textTheme.titleSmall),
+            for (final d in docs)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.description_outlined),
+                title: Text(d.manifest.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(subtitle(d)),
+                onTap: () => _openPrepared(d),
+              ),
+          ],
+        );
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('PDF Reader'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Look for prepared documents again',
+            onPressed: _reload,
           ),
-      ],
+          if (widget.sync case final sync?)
+            ListenableBuilder(
+              listenable: sync,
+              builder: (context, _) => IconButton(
+                key: Key('sync-${sync.state.name}'),
+                icon: Icon(switch (sync.state) {
+                  SyncState.off => Icons.cloud_off_outlined,
+                  SyncState.pending => Icons.cloud_upload_outlined,
+                  SyncState.syncing => Icons.sync,
+                  SyncState.done => Icons.cloud_done_outlined,
+                }),
+                tooltip: switch (sync.state) {
+                  SyncState.off => 'Sync: not set up',
+                  SyncState.pending => 'Sync: waiting',
+                  SyncState.syncing => 'Sync: syncing',
+                  SyncState.done => 'Sync: up to date',
+                },
+                onPressed: _syncScreen,
+              ),
+            ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _pull,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            Center(
+              child: FilledButton.icon(
+                icon: const Icon(Icons.folder_open),
+                label: const Text('Open a PDF'),
+                onPressed: _open,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: OutlinedButton.icon(
+                key: const Key('connect'),
+                icon: const Icon(Icons.computer),
+                label: const Text('Set up sync'),
+                onPressed: widget.sync == null ? null : _syncScreen,
+              ),
+            ),
+            if (recent.isNotEmpty)
+              section('Continue reading', recent, (d) {
+                final page = widget.places?.progress('library:${d.manifest.docId}')?.progress.page;
+                return page == null ? '' : 'Page $page of ${d.manifest.pages}';
+              }),
+            if (fresh.isNotEmpty) section('New on this phone', fresh, (d) => formatBytes(d.manifest.bytes)),
+            if (entries.isEmpty)
+              loaded
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Documents prepared on your computer appear here once it syncs with your '
+                        'Nextcloud, or once you pair with it over Wi-Fi. Both are set up in Settings.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : const SizedBox.shrink()
+            else ...[
+              const SizedBox(height: 16),
+              Text('All documents', style: Theme.of(context).textTheme.titleSmall),
+              _list(prepared, entries),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _list(List<LibraryDocument> prepared, List<LibraryEntry> entries) => ValueListenableBuilder(
+    valueListenable: _favourites,
+    builder: (context, favourites, _) => LibraryList(
+      entries: entries,
+      onOpen: (e) => _openPrepared(_held(prepared, e)!),
+      onDownload: (e) => _download(e.manifest),
+      onOffer: (e) => _ask(e.offer!),
+      onRemove: (e) => _remove(_held(prepared, e)!),
+      isLiked: (e) => favourites.isLiked(e.manifest.docId),
+      onLike: (e) => _favourites.change((f) => f.toggleLike(e.manifest.docId)),
+      onFolders: (e) => chooseFolders(context, _favourites, e.manifest.docId),
     ),
-    body: FutureBuilder(
-      future: _prepared,
-      builder: (context, snapshot) {
-        final prepared = snapshot.data ?? const <LibraryDocument>[];
-        return RefreshIndicator(
-          onRefresh: _pull,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            children: [
-              Center(
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('Open a PDF'),
-                  onPressed: _open,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: OutlinedButton.icon(
-                  key: const Key('connect'),
-                  icon: const Icon(Icons.computer),
-                  label: const Text('Set up sync'),
-                  onPressed: widget.sync == null ? null : _syncScreen,
-                ),
-              ),
-              ListenableBuilder(
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final session = _session;
+    return PopScope(
+      // Back hides the reader; the voice goes on and the bar stays.
+      canPop: !_expanded,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _collapse();
+      },
+      child: Stack(
+        children: [
+          FutureBuilder(
+            future: _prepared,
+            builder: (context, snapshot) {
+              final prepared = snapshot.data ?? const <LibraryDocument>[];
+              return ListenableBuilder(
                 listenable: widget.sync ?? _never,
                 builder: (context, _) {
                   final sync = widget.sync;
@@ -416,36 +510,86 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     downloading: sync?.downloading ?? const {},
                     offers: sync?.offers ?? const [],
                   );
-                  if (entries.isEmpty) {
-                    return snapshot.connectionState == ConnectionState.done
-                        ? const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'Documents prepared on your computer appear here once it syncs with your '
-                              'Nextcloud, or once you pair with it over Wi-Fi. Both are set up under Sync.',
-                              textAlign: TextAlign.center,
-                            ),
+                  return Scaffold(
+                    body: IndexedStack(
+                      index: _tab,
+                      children: [
+                        _home(prepared, entries, snapshot.connectionState == ConnectionState.done),
+                        FavouritesTab(
+                          favourites: _favourites,
+                          entries: entries,
+                          onOpen: (e) => _openPrepared(_held(prepared, e)!),
+                          onDownload: (e) => _download(e.manifest),
+                          onOffer: (e) => _ask(e.offer!),
+                          onRemove: (e) => _remove(_held(prepared, e)!),
+                        ),
+                        // Built only while shown: it listens for computers on the network.
+                        if (_tab == 2)
+                          SettingsTab(sync: sync, desktops: sync?.desktopStore, places: widget.places)
+                        else
+                          const SizedBox.shrink(),
+                      ],
+                    ),
+                    floatingActionButton: _tab == 1
+                        ? FloatingActionButton(
+                            key: const Key('new-folder'),
+                            tooltip: 'New folder',
+                            onPressed: () => editFolder(context, _favourites),
+                            child: const Icon(Icons.add),
                           )
-                        : const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: LibraryList(
-                      entries: entries,
-                      onOpen: (e) =>
-                          _openPrepared(prepared.firstWhere((d) => d.manifest.docId == e.manifest.docId)),
-                      onDownload: (e) => _download(e.manifest),
-                      onOffer: (e) => _ask(e.offer!),
-                      onRemove: (e) =>
-                          _remove(prepared.firstWhere((d) => d.manifest.docId == e.manifest.docId)),
+                        : null,
+                    bottomNavigationBar: NavigationBarTheme(
+                      data: const NavigationBarThemeData(height: 56),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (session != null)
+                            NowPlayingBar(
+                              session: session,
+                              favourites: _favourites,
+                              onOpen: () => setState(() => _expanded = true),
+                              onClose: _endSession,
+                            ),
+                          NavigationBar(
+                            selectedIndex: _tab,
+                            onDestinationSelected: (tab) => setState(() => _tab = tab),
+                            destinations: const [
+                              NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
+                              NavigationDestination(icon: Icon(Icons.favorite_border), label: 'Favourites'),
+                              NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
-              ),
-            ],
+              );
+            },
           ),
-        );
-      },
-    ),
-  );
+          // The reader stays alive under the tabs while the bar shows, so the voice goes on.
+          if (session != null)
+            Offstage(
+              offstage: !_expanded,
+              child: TickerMode(
+                enabled: _expanded,
+                child: ReaderPage(
+                  key: ObjectKey(session),
+                  name: session.name,
+                  data: session.data,
+                  placeKey: session.placeKey,
+                  prepared: session.prepared,
+                  playback: widget.playback,
+                  places: widget.places,
+                  notesStore: widget.notesStore,
+                  documents: widget.documents,
+                  session: session,
+                  onCollapse: _collapse,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

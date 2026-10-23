@@ -69,6 +69,7 @@ class ReadingView extends StatefulWidget {
     this.onTouched,
     this.buildSelectionMenu,
     this.onMarkTapped,
+    this.onTapped,
   });
 
   final DocumentText text;
@@ -82,6 +83,9 @@ class ReadingView extends StatefulWidget {
   /// The menu shown over selected text, or null where nothing can be marked.
   final SelectionMenuBuilder? buildSelectionMenu;
   final MarkTapped? onMarkTapped;
+
+  /// A tap that is not on a mark: the reader shows or hides its top bar.
+  final VoidCallback? onTapped;
 
   @override
   State<ReadingView> createState() => _ReadingViewState();
@@ -325,7 +329,10 @@ class _ReadingViewState extends State<ReadingView> {
     final tapped = widget.onMarkTapped;
     final at = _lastPointer;
     final editable = _editable(_blockKeys[page - 1][index]);
-    if (tapped == null || at == null || editable == null) return;
+    if (tapped == null || at == null || editable == null) {
+      widget.onTapped?.call();
+      return;
+    }
     final offset = editable.getPositionForPoint(at).offset;
     final blocks = _pages[page - 1];
     String? found;
@@ -337,7 +344,11 @@ class _ReadingViewState extends State<ReadingView> {
         }
       }
     }
-    if (found != null) tapped(found);
+    if (found != null) {
+      tapped(found);
+    } else {
+      widget.onTapped?.call();
+    }
   }
 
   /// Where the last pointer went down, for finding what a tap landed on.
@@ -356,56 +367,60 @@ class _ReadingViewState extends State<ReadingView> {
     );
     final heading = base.copyWith(fontSize: settings.size * 1.25, fontWeight: FontWeight.bold);
     final scaler = MediaQuery.textScalerOf(context);
-    return ColoredBox(
-      color: background,
-      child: NotificationListener<ScrollStartNotification>(
-        onNotification: (n) {
-          if (n.dragDetails != null) widget.onTouched?.call();
-          return false;
-        },
-        child: Scrollbar(
-          controller: _scroll,
-          child: SingleChildScrollView(
+    return GestureDetector(
+      // Between the paragraphs; a tap on one is handled by its text.
+      onTap: widget.onTapped,
+      child: ColoredBox(
+        color: background,
+        child: NotificationListener<ScrollStartNotification>(
+          onNotification: (n) {
+            if (n.dragDetails != null) widget.onTouched?.call();
+            return false;
+          },
+          child: Scrollbar(
             controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-            child: Column(
-              key: _content,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var page = 1; page <= _pages.length; page++)
-                  Column(
-                    key: _pageKeys[page - 1],
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'Page $page',
-                          style: TextStyle(color: foreground.withValues(alpha: 0.5), fontSize: 12),
-                        ),
-                      ),
-                      for (var i = 0; i < _pages[page - 1].length; i++)
+            child: SingleChildScrollView(
+              controller: _scroll,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+              child: Column(
+                key: _content,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var page = 1; page <= _pages.length; page++)
+                    Column(
+                      key: _pageKeys[page - 1],
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Padding(
-                          padding: EdgeInsets.only(bottom: settings.size * 0.8),
-                          child: Listener(
-                            onPointerDown: (e) => _lastPointer = e.position,
-                            child: SelectableText.rich(
-                              _paragraph(
-                                page,
-                                i,
-                                _pages[page - 1][i],
-                                _pages[page - 1][i].heading ? heading : base,
-                              ),
-                              key: _blockKeys[page - 1][i],
-                              textScaler: scaler,
-                              onTap: () => _tapParagraph(page, i),
-                              contextMenuBuilder: (context, state) => _menu(page, i, context, state),
-                            ),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Page $page',
+                            style: TextStyle(color: foreground.withValues(alpha: 0.5), fontSize: 12),
                           ),
                         ),
-                    ],
-                  ),
-              ],
+                        for (var i = 0; i < _pages[page - 1].length; i++)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: settings.size * 0.8),
+                            child: Listener(
+                              onPointerDown: (e) => _lastPointer = e.position,
+                              child: SelectableText.rich(
+                                _paragraph(
+                                  page,
+                                  i,
+                                  _pages[page - 1][i],
+                                  _pages[page - 1][i].heading ? heading : base,
+                                ),
+                                key: _blockKeys[page - 1][i],
+                                textScaler: scaler,
+                                onTap: () => _tapParagraph(page, i),
+                                contextMenuBuilder: (context, state) => _menu(page, i, context, state),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         ),

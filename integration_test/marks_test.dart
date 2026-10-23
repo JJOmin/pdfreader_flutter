@@ -12,6 +12,8 @@ import 'package:pdfreader/main.dart' as app;
 import 'package:pdfreader/reader_page.dart';
 import 'package:pdfreader/shared/notes.dart';
 
+import 'finders.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,7 +41,7 @@ void main() {
 
     await app.main();
     await waitFor(() => find.text('sample.pdf').evaluate().isNotEmpty);
-    await tester.tap(find.text('sample.pdf'));
+    await tester.tap(sampleTile);
     await waitFor(() => find.byType(ReaderPage).evaluate().isNotEmpty);
     await tester.pump(const Duration(seconds: 3));
     final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
@@ -140,9 +142,8 @@ void main() {
 
     // 7. Come back later: the marks are still there.
     await tester.pump(const Duration(seconds: 1));
-    await tester.pageBack();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.tap(find.text('sample.pdf'));
+    await closeDocument(tester);
+    await tester.tap(sampleTile);
     await waitFor(() => find.byType(ReaderPage).evaluate().isNotEmpty);
     await tester.pump(const Duration(seconds: 3));
     final again = tester.state<ReaderPageState>(find.byType(ReaderPage));

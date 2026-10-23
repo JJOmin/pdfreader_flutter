@@ -114,6 +114,7 @@ class PdfPagesView extends StatefulWidget {
     this.onTouched,
     this.buildSelectionMenu,
     this.onMarkTapped,
+    this.onTapped,
   });
 
   final PdfDocumentRef document;
@@ -129,6 +130,9 @@ class PdfPagesView extends StatefulWidget {
   /// The menu shown over selected text, or null where nothing can be marked.
   final SelectionMenuBuilder? buildSelectionMenu;
   final MarkTapped? onMarkTapped;
+
+  /// A tap that is not on a mark: the reader shows or hides its top bar.
+  final VoidCallback? onTapped;
 
   @override
   State<PdfPagesView> createState() => _PdfPagesViewState();
@@ -246,13 +250,15 @@ class _PdfPagesViewState extends State<PdfPagesView> {
     PdfViewerController controller,
     PdfViewerGeneralTapHandlerDetails details,
   ) {
-    if (details.type != PdfViewerGeneralTapType.tap || widget.onMarkTapped == null) return false;
-    final hit = controller.getPdfPageHitTestResult(
-      details.documentPosition,
-      useDocumentLayoutCoordinates: true,
-    );
+    if (details.type != PdfViewerGeneralTapType.tap) return false;
+    final hit = widget.onMarkTapped == null
+        ? null
+        : controller.getPdfPageHitTestResult(details.documentPosition, useDocumentLayoutCoordinates: true);
     final id = hit == null ? null : _markAt(hit);
-    if (id == null) return false;
+    if (id == null) {
+      widget.onTapped?.call();
+      return false;
+    }
     widget.onMarkTapped!(id);
     return true;
   }
@@ -296,11 +302,18 @@ class _PdfPagesViewState extends State<PdfPagesView> {
     controller: widget.controller.viewer,
     initialPageNumber: widget.initialPage,
     params: PdfViewerParams(
+      backgroundColor: pagesBackdrop(Theme.of(context).brightness),
       onViewerReady: (_, _) => widget.onReady?.call(),
       onInteractionStart: (_) => widget.onTouched?.call(),
+      // The last page can be scrolled up out from under the reader's play bar.
+      boundaryMargin: const EdgeInsets.only(bottom: 120),
       pagePaintCallbacks: [_paint],
       onGeneralTap: _tapped,
       buildContextMenu: _menu,
     ),
   );
 }
+
+/// What lies around the pages: mid grey, and a dark grey in the dark theme, so a white page stands out.
+Color pagesBackdrop(Brightness brightness) =>
+    brightness == Brightness.dark ? const Color(0xFF2B2B2B) : Colors.grey;

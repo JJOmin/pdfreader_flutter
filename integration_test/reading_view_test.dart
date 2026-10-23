@@ -13,6 +13,8 @@ import 'package:pdfreader/reader.dart';
 import 'package:pdfreader/reader_page.dart';
 import 'package:pdfreader/views/reading_view.dart';
 
+import 'finders.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -40,7 +42,7 @@ void main() {
 
     await app.main();
     await waitFor(() => find.text('sample.pdf').evaluate().isNotEmpty);
-    await tester.tap(find.text('sample.pdf'));
+    await tester.tap(sampleTile);
     final play = find.byKey(const Key('play'));
     await waitFor(() => play.evaluate().isNotEmpty && tester.widget<IconButton>(play).onPressed != null);
     final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
@@ -64,13 +66,16 @@ void main() {
     await tester.tap(find.byKey(const Key('toggle-reading')));
     await tester.pump(const Duration(seconds: 1));
     expect(page.state, ReaderState.playing);
-    await tester.tap(find.byTooltip('Stop reading'));
+    await tester.tap(find.byKey(const Key('play')));
     await tester.pump(const Duration(milliseconds: 500));
     // ignore: avoid_print
     print('spoke $key, then ${page.state}');
 
     // Search finds a word across a hyphenated line break, in the reading view and on the pages.
-    await tester.tap(find.byTooltip('Search'));
+    // Search and the text settings are in the menu (PLAN 9.7).
+    await tester.tap(find.byKey(const Key('reader-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Search'));
     await tester.pump();
     await tester.enterText(find.byKey(const Key('search')), 'Silbentrennung');
     await waitFor(() => count() == '1 / 1', seconds: 10, reason: 'one match across the line break');
@@ -85,7 +90,9 @@ void main() {
     await tester.pump();
 
     // Text settings: OpenDyslexic on dark, kept for the next document.
-    await tester.tap(find.byTooltip('Text settings'));
+    await tester.tap(find.byKey(const Key('reader-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Text settings'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('OpenDyslexic').last);
     await tester.tap(find.text('Dark'));
@@ -93,14 +100,13 @@ void main() {
     await tester.tapAt(const Offset(200, 150));
     await tester.pumpAndSettle();
     await shot('reading-view-opendyslexic-dark');
-    await tester.pageBack();
-    await tester.pump(const Duration(seconds: 2));
+    await closeDocument(tester);
 
     final settings = File('$support/settings.json').readAsStringSync();
     expect(settings, contains('"font":"OpenDyslexic"'));
     expect(settings, contains('"theme":"dark"'));
     // The reading view is remembered with the place.
-    await tester.tap(find.text('sample.pdf'));
+    await tester.tap(sampleTile);
     await waitFor(
       () => find.byType(ReadingView).evaluate().isNotEmpty,
       reason: 'reopens in the reading view',

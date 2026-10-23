@@ -36,16 +36,13 @@ void main() {
 
     Future<ReaderPageState> openSample() async {
       await waitFor(() => find.text('sample.pdf').evaluate().isNotEmpty);
-      await tester.tap(find.text('sample.pdf'));
+      await tester.tap(sampleTile);
       await waitFor(() => find.byType(ReaderPage).evaluate().isNotEmpty);
       await tester.pump(const Duration(seconds: 3));
       return tester.state<ReaderPageState>(find.byType(ReaderPage));
     }
 
-    Future<void> back() async {
-      await tester.pageBack();
-      await tester.pump(const Duration(seconds: 2));
-    }
+    Future<void> back() => closeDocument(tester);
 
     Future<String> sync() async {
       await waitFor(() => syncButton.evaluate().isNotEmpty);
@@ -63,7 +60,8 @@ void main() {
       }
       expect(synced(), isTrue, reason: 'sync');
       final status = tester.widget<Text>(find.byKey(const Key('desktop-status'))).data!;
-      await back();
+      await tester.tap(homeTab);
+      await tester.pump(const Duration(seconds: 1));
       return status;
     }
 

@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import 'library.dart';
+import 'shared/home_lists.dart';
 import 'shared/settings.dart';
 import 'shared/sync.dart';
 
@@ -74,6 +75,11 @@ class Places {
   }
 
   ({Progress progress, num updated})? progress(String key) => _store.documents[key];
+
+  /// When the place in each library document was last saved, by the document's id.
+  Map<String, num> get lastRead => {
+    for (final MapEntry(:key, :value) in _store.documents.entries) ?docIdOfPlace(key): value.updated,
+  };
 
   /// Remembers the place in a document. `state` is this phone's state for a prepared document.
   void remember(String key, Progress progress, {LibraryDocument? prepared, String? sentenceKey}) {

@@ -11,6 +11,7 @@ import 'document_access.dart';
 import 'document_text.dart';
 import 'library.dart';
 import 'notes_store.dart';
+import 'now_playing.dart';
 import 'places.dart';
 import 'playback.dart';
 import 'reader.dart';
@@ -25,6 +26,7 @@ import 'shared/settings.dart';
 import 'shared/sync.dart';
 import 'shared/types.dart';
 import 'views/mark_menu.dart';
+import 'views/marquee.dart';
 import 'views/notes_sheet.dart';
 import 'views/pdf_pages_view.dart';
 import 'views/reading_view.dart';
@@ -42,6 +44,9 @@ const _searchDelay = Duration(milliseconds: 200);
 /// The kind of mark made last, kept for the next one and across documents while the app runs.
 MarkKind _lastKind = MarkKind.highlight;
 
+/// The play bar hidden behind its notch for more page, kept across documents while the app runs.
+bool _barHidden = false;
+
 /// Marks are written once they have not changed for this long.
 const _notesDelay = Duration(milliseconds: 500);
 
@@ -57,6 +62,8 @@ class ReaderPage extends StatefulWidget {
     this.places,
     this.notesStore,
     this.documents,
+    this.session,
+    this.onCollapse,
   });
 
   final String name;
@@ -78,6 +85,12 @@ class ReaderPage extends StatefulWidget {
   final LibraryDocument? prepared;
   final ReadingHandler? playback;
 
+  /// The app's reading session, which the Now Playing bar controls while the reader is hidden.
+  final ReadingSession? session;
+
+  /// Back hides the reader and the voice goes on (PLAN 9.4); null where the reader is a route of its own.
+  final VoidCallback? onCollapse;
+
   @override
   State<ReaderPage> createState() => ReaderPageState();
 }
@@ -88,7 +101,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   DocumentText? _text;
   Reader? _reader;
   final _plans = <int, Future<PagePlan>>{};
-  int? _skipped;
+
+  /// Each page's plan once it is made, for counting what the voice passed over.
+  final _planned = <int, PagePlan>{};
 
   final _pdf = PdfPagesController();
   final _readingView = ReadingController();
@@ -177,6 +192,12 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       ..speed = _speed
       ..stopAtReferences = widget.places?.stopAtReferences ?? false;
     setState(() => _reader = reader);
+    final session = widget.session;
+    if (session != null) {
+      session.toggle = _toggle;
+      session.skip = (direction) => unawaited(reader.skip(direction));
+      session.update(state);
+    }
     final playback = widget.playback;
     if (playback != null) {
       playback.onPlay = playback.onPause = _toggle;
@@ -263,7 +284,22 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       await done();
       await _addMarks(selected, kind, color);
     },
+    onReadFrom: _reader == null
+        ? null
+        : () async {
+            final selected = await selection();
+            await done();
+            if (selected.isNotEmpty) await _readFrom(selected.first.page, selected.first.range.$1);
+          },
   );
+
+  /// Reads from the sentence the selection starts in, or the next page's first (as the desktop does).
+  Future<void> _readFrom(int page, int offset) async {
+    final sentences = (await _plan(page)).sentences;
+    final index = readFromIndex([for (final s in sentences) s.ranges], offset);
+    _lastTouch = DateTime(0);
+    _reader?.startAt(index < 0 ? (page: page + 1, index: 0) : (page: page, index: index));
+  }
 
   late final _actions = NotesActions(
     onNotes: (text) => _notesChanged(NotesFile(notes: text, annotations: _notes.annotations)),
@@ -406,19 +442,37 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     await _savePlace();
   }
 
-  /// The document says how many of its sentences have no audio (ADR 2 section 1).
+  /// The document says once how many of its sentences have no audio (ADR 2 section 1).
   Future<void> _countSkipped() async {
     var skipped = 0;
     for (var page = 1; page <= pageCount; page++) {
       skipped += (await _plan(page)).skipped;
     }
-    if (mounted) setState(() => _skipped = skipped);
+    // Pages the computer has not voiced yet are said in the status line instead.
+    final m = widget.prepared!.manifest;
+    if (skipped > 0 && m.voiced.length == m.pages) _toast('$skipped sentences have no audio and are skipped');
   }
 
   Future<PagePlan> _plan(int page) => _plans[page] ??= () async {
     final utterances = await _text!.utterances(page);
-    return planPage(utterances, await widget.prepared!.index(page));
+    return _planned[page] = planPage(utterances, await widget.prepared!.index(page));
   }();
+
+  /// A short note above the reader's buttons, only while the reader shows: hidden behind the tabs,
+  /// it would cover the Now Playing bar.
+  void _toast(String message) {
+    if (!mounted || !TickerMode.valuesOf(context).enabled) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          margin: EdgeInsets.fromLTRB(16, 0, 16, _barHidden ? 32 : 112),
+        ),
+      );
+  }
 
   @override
   int get pageCount => _text?.pageCount ?? 0;
@@ -442,10 +496,18 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       }
     });
     widget.playback?.show(state, widget.name, this.sentence?.page ?? _view.currentPage ?? 1);
+    widget.session?.update(state);
     if (changedSentence) {
       _resume = null;
       final at = _reader?.cursor;
       if (at != null) {
+        final from = _lastSentence;
+        final skipped = from == null ? 0 : skippedBetween(from, at, (page) => _planned[page]);
+        if (skipped > 0) {
+          _toast(
+            skipped == 1 ? 'Skipped a sentence without audio' : 'Skipped $skipped sentences without audio',
+          );
+        }
         _lastSentence = at;
         unawaited(_savePlace());
       }
@@ -608,6 +670,48 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     ),
   );
 
+  Future<void> _openSpeed() => showModalBottomSheet<void>(
+    context: context,
+    builder: (_) => StatefulBuilder(
+      builder: (context, setSheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          // Only as tall as the slider: a sheet otherwise takes half the screen.
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Speed', style: Theme.of(context).textTheme.titleMedium),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      key: const Key('speed-slider'),
+                      value: _speed,
+                      min: minSpeed,
+                      max: maxSpeed,
+                      divisions: ((maxSpeed - minSpeed) / 0.05).round(),
+                      label: '${_speed.toStringAsFixed(2)}×',
+                      onChanged: (value) {
+                        setSheet(() {});
+                        setState(() {
+                          _speed = value;
+                          _reader?.speed = value;
+                          widget.places?.speed = value;
+                        });
+                      },
+                    ),
+                  ),
+                  Text('${_speed.toStringAsFixed(2)}×'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
   @override
   void dispose() {
     _placeTimer?.cancel();
@@ -639,14 +743,16 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
           ? 'The audio is being made on the computer'
           : 'Audio for ${m.voiced.length} of ${m.pages} pages so far';
     }
-    final skipped = _skipped ?? 0;
-    if (skipped > 0) return '$skipped sentences have no audio and are skipped';
     return null;
   }
 
   PreferredSizeWidget _appBar() {
+    final (:bar, :onBar) = _barColors;
     if (_searching) {
       return AppBar(
+        backgroundColor: bar,
+        foregroundColor: onBar,
+        scrolledUnderElevation: 0,
         leading: IconButton(icon: const Icon(Icons.close), tooltip: 'Close search', onPressed: _closeSearch),
         title: TextField(
           key: const Key('search'),
@@ -682,43 +788,78 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       );
     }
     return AppBar(
+      backgroundColor: bar,
+      foregroundColor: onBar,
+      scrolledUnderElevation: 0,
+      leading: widget.onCollapse == null ? null : BackButton(onPressed: widget.onCollapse),
       title: Text(widget.name, overflow: TextOverflow.ellipsis),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.search),
-          tooltip: 'Search',
-          onPressed: _text == null ? null : () => setState(() => _searching = true),
-        ),
         IconButton(
           key: const Key('notes'),
           icon: const Icon(Icons.sticky_note_2_outlined),
           tooltip: 'Notes and marks',
           onPressed: _text == null ? null : _openNotes,
         ),
-        if (reading)
-          IconButton(
-            icon: const Icon(Icons.format_size),
-            tooltip: 'Text settings',
-            onPressed: _openReadingSettings,
-          ),
         IconButton(
           key: const Key('toggle-reading'),
           icon: Icon(reading ? Icons.picture_as_pdf : Icons.article),
           tooltip: reading ? 'Show the pages' : 'Reading view',
           onPressed: _text == null ? null : _switchView,
         ),
-        if (widget.documents != null)
-          PopupMenuButton<String>(
-            key: const Key('reader-menu'),
-            enabled: _text != null,
-            onSelected: (choice) => unawaited(choice == 'markdown' ? _exportMarkdown() : _savePdf()),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'markdown', child: Text('Export notes as Markdown')),
-              PopupMenuItem(value: 'pdf', child: Text('Save PDF with marks')),
+        PopupMenuButton<String>(
+          key: const Key('reader-menu'),
+          enabled: _text != null,
+          onSelected: (choice) => switch (choice) {
+            'search' => setState(() => _searching = true),
+            'text' => unawaited(_openReadingSettings()),
+            'markdown' => unawaited(_exportMarkdown()),
+            _ => unawaited(_savePdf()),
+          },
+          itemBuilder: (_) => [
+            const PopupMenuItem(
+              value: 'search',
+              child: ListTile(leading: Icon(Icons.search), title: Text('Search')),
+            ),
+            if (reading)
+              const PopupMenuItem(
+                value: 'text',
+                child: ListTile(leading: Icon(Icons.format_size), title: Text('Text settings')),
+              ),
+            if (widget.documents != null) ...[
+              const PopupMenuItem(
+                value: 'markdown',
+                child: ListTile(leading: Icon(Icons.notes), title: Text('Export notes as Markdown')),
+              ),
+              const PopupMenuItem(
+                value: 'pdf',
+                child: ListTile(leading: Icon(Icons.save_alt), title: Text('Save PDF with marks')),
+              ),
             ],
-          ),
+          ],
+        ),
       ],
     );
+  }
+
+  /// The bars take their colour from what lies behind them, a step towards its text, so they belong
+  /// to the page without vanishing in it.
+  ({Color bar, Color onBar}) get _barColors {
+    if (!reading) {
+      final backdrop = pagesBackdrop(Theme.of(context).brightness);
+      return Theme.of(context).brightness == Brightness.dark
+          ? (bar: Color.lerp(backdrop, Colors.white, 0.18)!, onBar: const Color(0xFFE2E2E2))
+          : (bar: Color.lerp(backdrop, Colors.white, 0.6)!, onBar: const Color(0xFF1F1F1F));
+    }
+    final (background, foreground) =
+        readingThemeColors[_readingSettings.theme] ?? readingThemeColors['sepia']!;
+    return (bar: Color.lerp(background, foreground, 0.14)!, onBar: foreground);
+  }
+
+  /// The top bar, hidden by a tap on the page as in a photo gallery; search keeps it.
+  bool _topHidden = false;
+
+  void _toggleTop() {
+    if (!_searching) setState(() => _topHidden = !_topHidden);
   }
 
   /// The file's name without `.pdf`, for the names the exports propose.
@@ -786,111 +927,184 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     final documentRef = _documentRef;
     final text = _text;
     final highlights = _highlights;
+    final (:bar, :onBar) = _barColors;
+    final topHidden = _topHidden && !_searching;
     return Scaffold(
-      appBar: _appBar(),
-      body: Column(
-        children: [
-          if (_offer case final offer?)
-            MaterialBanner(
-              key: const Key('place-offer'),
-              content: Text('Continue where you stopped on ${offer.name}, page ${offer.page}?'),
-              actions: [
-                TextButton(onPressed: () => setState(() => _offer = null), child: const Text('Stay here')),
-                TextButton(
-                  key: const Key('place-continue'),
-                  onPressed: () => _continueThere(offer),
-                  child: const Text('Continue there'),
-                ),
-              ],
-            ),
-          Expanded(
-            child: documentRef == null || text == null
-                ? const Center(child: CircularProgressIndicator())
-                // The pages stay built behind the reading view, so switching back keeps their place.
-                : Stack(
-                    children: [
-                      Offstage(
-                        offstage: reading,
-                        child: PdfPagesView(
-                          document: documentRef,
-                          text: text,
-                          controller: _pdf,
-                          highlights: reading ? const [] : highlights,
-                          initialPage: _saved?.page ?? 1,
-                          onReady: _pagesReady,
-                          onTouched: _touched,
-                          buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
-                          onMarkTapped: _openMark,
-                        ),
+      backgroundColor: reading
+          ? (readingThemeColors[_readingSettings.theme] ?? readingThemeColors['sepia']!).$1
+          : pagesBackdrop(Theme.of(context).brightness),
+      appBar: topHidden ? null : _appBar(),
+      body: SafeArea(
+        top: topHidden,
+        bottom: false,
+        child: Column(
+          children: [
+            if (_offer case final offer?)
+              MaterialBanner(
+                key: const Key('place-offer'),
+                content: Text('Continue where you stopped on ${offer.name}, page ${offer.page}?'),
+                actions: [
+                  TextButton(onPressed: () => setState(() => _offer = null), child: const Text('Stay here')),
+                  TextButton(
+                    key: const Key('place-continue'),
+                    onPressed: () => _continueThere(offer),
+                    child: const Text('Continue there'),
+                  ),
+                ],
+              ),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: documentRef == null || text == null
+                        ? const Center(child: CircularProgressIndicator())
+                        // The pages stay built behind the reading view, so switching back keeps their place.
+                        : Stack(
+                            children: [
+                              Offstage(
+                                offstage: reading,
+                                child: PdfPagesView(
+                                  document: documentRef,
+                                  text: text,
+                                  controller: _pdf,
+                                  highlights: reading ? const [] : highlights,
+                                  initialPage: _saved?.page ?? 1,
+                                  onReady: _pagesReady,
+                                  onTouched: _touched,
+                                  buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
+                                  onMarkTapped: _openMark,
+                                  onTapped: _toggleTop,
+                                ),
+                              ),
+                              if (reading)
+                                ReadingView(
+                                  text: text,
+                                  settings: _readingSettings,
+                                  controller: _readingView,
+                                  highlights: highlights,
+                                  onTouched: _touched,
+                                  buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
+                                  onMarkTapped: _openMark,
+                                  onTapped: _toggleTop,
+                                ),
+                            ],
+                          ),
+                  ),
+                  // Over the page, which runs on behind the bar (PLAN 9.8).
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: SafeArea(
+                      top: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Padding(padding: const EdgeInsets.only(right: 24), child: _barNotch(bar, onBar)),
+                          if (!_barHidden) _playBar(reader, status, bar, onBar),
+                        ],
                       ),
-                      if (reading)
-                        ReadingView(
-                          text: text,
-                          settings: _readingSettings,
-                          controller: _readingView,
-                          highlights: highlights,
-                          onTouched: _touched,
-                          buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
-                          onMarkTapped: _openMark,
-                        ),
-                    ],
+                    ),
                   ),
-          ),
-          if (status != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Text(status, key: const Key('status'), style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
             ),
-          SafeArea(
-            top: false,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.skip_previous),
-                  tooltip: 'Previous sentence',
-                  onPressed: reader == null ? null : () => reader.skip(-1),
-                ),
-                IconButton.filled(
-                  key: const Key('play'),
-                  icon: Icon(state == ReaderState.playing ? Icons.pause : Icons.play_arrow),
-                  tooltip: state == ReaderState.playing ? 'Pause' : 'Read aloud',
-                  onPressed: reader == null ? null : _toggle,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.skip_next),
-                  tooltip: 'Next sentence',
-                  onPressed: reader == null ? null : () => reader.skip(1),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.stop),
-                  tooltip: 'Stop reading',
-                  onPressed: reader == null || state == ReaderState.idle ? null : reader.stop,
-                ),
-                Expanded(
-                  child: Slider(
-                    value: _speed,
-                    min: minSpeed,
-                    max: maxSpeed,
-                    divisions: ((maxSpeed - minSpeed) / 0.05).round(),
-                    label: '${_speed.toStringAsFixed(2)}×',
-                    onChanged: reader == null
-                        ? null
-                        : (value) => setState(() {
-                            _speed = value;
-                            reader.speed = value;
-                            widget.places?.speed = value;
-                          }),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Text('${_speed.toStringAsFixed(2)}×'),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  /// Previous, play and next at the left, the title running through when it is long, the speed at the
+  /// right (PLAN 9.7), on a rounded bar a shade off the page.
+  Widget _playBar(Reader? reader, String? status, Color bar, Color onBar) => Padding(
+    // On the bottom edge: only the top corners are rounded.
+    padding: const EdgeInsets.symmetric(horizontal: 6),
+    child: Material(
+      color: bar,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: IconTheme.merge(
+        data: IconThemeData(color: onBar),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (status != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  child: Text(
+                    status,
+                    key: const Key('status'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: onBar),
+                  ),
+                ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous),
+                    tooltip: 'Previous sentence',
+                    onPressed: reader == null ? null : () => reader.skip(-1),
+                  ),
+                  IconButton.filled(
+                    key: const Key('play'),
+                    iconSize: 24,
+                    // Its own colour: the bar's icon colour is for the plain buttons.
+                    icon: Icon(
+                      state == ReaderState.playing ? Icons.pause : Icons.play_arrow,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    tooltip: state == ReaderState.playing ? 'Pause' : 'Read aloud',
+                    onPressed: reader == null ? null : _toggle,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next),
+                    tooltip: 'Next sentence',
+                    onPressed: reader == null ? null : () => reader.skip(1),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Marquee(
+                      widget.name,
+                      key: const Key('play-bar-title'),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: onBar),
+                    ),
+                  ),
+                  IconButton(
+                    key: const Key('speed'),
+                    icon: const Icon(Icons.speed),
+                    tooltip: 'Speed ${_speed.toStringAsFixed(2)}×',
+                    onPressed: reader == null ? null : _openSpeed,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /// A small tab above the play bar's right end that hides the bar and brings it back.
+  Widget _barNotch(Color bar, Color onBar) => Material(
+    color: bar,
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+    child: InkWell(
+      key: const Key('toggle-bar'),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      onTap: () => setState(() => _barHidden = !_barHidden),
+      child: Tooltip(
+        message: _barHidden ? 'Show the play bar' : 'Hide the play bar',
+        child: SizedBox(
+          width: 44,
+          height: 24,
+          child: Icon(
+            _barHidden ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+            size: 22,
+            color: onBar,
+          ),
+        ),
+      ),
+    ),
+  );
 }

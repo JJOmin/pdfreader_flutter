@@ -38,6 +38,7 @@ class MarkMenu extends StatefulWidget {
     required this.initialKind,
     required this.onKindChanged,
     required this.onMark,
+    this.onReadFrom,
   });
 
   /// Where the selection starts and ends on the screen, as the views report them.
@@ -48,6 +49,9 @@ class MarkMenu extends StatefulWidget {
   /// The kind was changed: kept for the next mark.
   final ValueChanged<MarkKind> onKindChanged;
   final void Function(MarkKind kind, HighlightColor color) onMark;
+
+  /// "Read from here", as on the desktop; null where the document cannot be read aloud.
+  final VoidCallback? onReadFrom;
 
   @override
   State<MarkMenu> createState() => _MarkMenuState();
@@ -85,6 +89,13 @@ class _MarkMenuState extends State<MarkMenu> {
   Widget _toolbar() => AdaptiveTextSelectionToolbar(
     anchors: TextSelectionToolbarAnchors(primaryAnchor: widget.anchorA, secondaryAnchor: widget.anchorB),
     children: [
+      if (widget.onReadFrom case final readFrom?)
+        _button(
+          key: const Key('read-from-here'),
+          tooltip: 'Read from here',
+          icon: const Icon(Icons.play_arrow),
+          onPressed: readFrom,
+        ),
       for (final k in MarkKind.values)
         _button(
           key: Key('kind-${k.name}'),

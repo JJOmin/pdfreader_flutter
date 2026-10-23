@@ -12,6 +12,8 @@ import 'package:pdfreader/reader_page.dart';
 import 'package:pdfreader/shared/types.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'finders.dart';
+
 bool inside(List<RawRange> inner, List<RawRange> outer) =>
     inner.every((r) => outer.any((o) => o.$1 <= r.$1 && r.$2 <= o.$2));
 
@@ -23,11 +25,10 @@ void main() {
     final saved = File('${(await getApplicationSupportDirectory()).path}/progress.json');
     if (await saved.exists()) await saved.delete();
     await app.main();
-    final prepared = find.text('sample.pdf');
-    for (var i = 0; i < 100 && prepared.evaluate().isEmpty; i++) {
+    for (var i = 0; i < 100 && find.text('sample.pdf').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    await tester.tap(prepared);
+    await tester.tap(sampleTile);
     final play = find.byKey(const Key('play'));
     bool ready() => play.evaluate().isNotEmpty && tester.widget<IconButton>(play).onPressed != null;
     for (var i = 0; i < 100 && !ready(); i++) {
@@ -99,8 +100,9 @@ void main() {
       expect(keys.length, greaterThanOrEqualTo(3));
     }
 
-    await tester.tap(find.byTooltip('Stop reading'));
+    // Paused: Stop is gone from the reader (PLAN 9.4).
+    await tester.tap(find.byKey(const Key('play')));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(page.state, ReaderState.idle);
+    expect(page.state, ReaderState.paused);
   });
 }

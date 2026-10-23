@@ -31,6 +31,9 @@ PageIndex index(List<Utterance> phone, List<Map<String, Object?>> sentences, {St
 List<String> texts(PlannedSentence s) => [for (final w in s.words) w.text];
 
 void main() {
+  readFromTests();
+  skippedBetweenTests();
+
   // "I. INTRODUCTION" at 0 to 15, a running header the reader leaves out at 15 to 20, then the body.
   final phone = buildUtterances(
     [block('I. INTRODUCTION', 0, heading: true), block('Tutorials help you.', 20)],
@@ -85,6 +88,7 @@ void main() {
         ['Tutorials', 'help', 'you'],
       ]);
       expect(plan.skipped, 1);
+      expect(plan.skippedBefore, [1], reason: 'the heading before it has no audio');
     });
 
     test('uses a matched sentence’s own words, estimating timings when the counts differ', () {
@@ -128,4 +132,72 @@ void main() {
       expect(s.words.last.page, 2);
     },
   );
+}
+
+void readFromTests() {
+  group('readFromIndex', () {
+    final ranges = [
+      [(0, 10)],
+      [(11, 20), (21, 30)],
+      [(31, 40)],
+    ];
+
+    test('starts at the sentence the offset lies in', () {
+      expect(readFromIndex(ranges, 0), 0);
+      expect(readFromIndex(ranges, 12), 1);
+      expect(readFromIndex(ranges, 25), 1);
+    });
+
+    test('a space between two sentences starts at the next one', () {
+      expect(readFromIndex(ranges, 10), 1);
+    });
+
+    test('after the last sentence there is none on this page', () {
+      expect(readFromIndex(ranges, 40), -1);
+      expect(readFromIndex(const [], 0), -1);
+    });
+  });
+}
+
+void skippedBetweenTests() {
+  group('skippedBetween', () {
+    PlannedSentence planned(int page) => PlannedSentence(
+      page: page,
+      key: 'k',
+      lang: Lang.en,
+      role: Role.main,
+      words: const [],
+      ranges: const [],
+      timings: const [],
+      duration: 1,
+    );
+    // Page 1: one without audio, two read, two without audio at the end. Page 2: none read, three
+    // without audio. Page 3: one without audio, then one read.
+    final plans = {
+      1: PagePlan([planned(1), planned(1)], 3, [1, 0]),
+      2: const PagePlan([], 3),
+      3: PagePlan([planned(3)], 1, [1]),
+    };
+    int between(int fromPage, int fromIndex, int toPage, int toIndex) =>
+        skippedBetween((page: fromPage, index: fromIndex), (page: toPage, index: toIndex), (p) => plans[p]);
+
+    test('counts nothing between two neighbours', () => expect(between(1, 0, 1, 1), 0));
+
+    test('counts what lies before the next sentence on the page', () {
+      final plan = {
+        1: PagePlan([planned(1), planned(1)], 1, [0, 1]),
+      };
+      expect(skippedBetween((page: 1, index: 0), (page: 1, index: 1), (p) => plan[p]), 1);
+    });
+
+    test('counts the end of the page, the pages without audio and the start of the next', () {
+      expect(between(1, 1, 3, 0), 2 + 3 + 1);
+    });
+
+    test('counts nothing when the voice was sent elsewhere', () {
+      expect(between(1, 0, 3, 0), 0, reason: 'not the last sentence of its page');
+      expect(between(1, 1, 1, 0), 0, reason: 'backwards');
+      expect(between(1, 1, 4, 0), 0, reason: 'a page that is not planned yet');
+    });
+  });
 }
