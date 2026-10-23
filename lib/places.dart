@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'library.dart';
@@ -18,10 +19,14 @@ const _writeDelay = Duration(seconds: 1);
 /// The phone as its state files name it.
 typedef PhoneIdentity = ({String device, String name});
 
-class Places {
+/// Told when the reading settings change, so that an open reader shows them at once.
+class Places extends ChangeNotifier {
   Places._(this._dir, this._store, this._settings, this.identity);
 
-  final Directory _dir;
+  /// Kept nowhere: for widget tests.
+  Places.inMemory() : this._(null, ProgressStore({}), defaultSettings(), null);
+
+  final Directory? _dir;
   final ProgressStore _store;
   Settings _settings;
 
@@ -72,6 +77,7 @@ class Places {
   set reading(ReadingSettings value) {
     _settings = normalizeSettings({..._settings.toJson(), 'reading': value.toJson()});
     _schedule();
+    notifyListeners();
   }
 
   ({Progress progress, num updated})? progress(String key) => _store.documents[key];
@@ -103,13 +109,17 @@ class Places {
     _schedule();
   }
 
-  void _schedule() => _timer ??= Timer(_writeDelay, () => unawaited(flush()));
+  void _schedule() {
+    if (_dir != null) _timer ??= Timer(_writeDelay, () => unawaited(flush()));
+  }
 
   Future<void> flush() async {
     _timer?.cancel();
     _timer = null;
-    await File('${_dir.path}/progress.json').writeAsString(jsonEncode(_store.toJson()));
-    await File('${_dir.path}/settings.json').writeAsString(jsonEncode(_settings.toJson()));
+    final dir = _dir;
+    if (dir == null) return;
+    await File('${dir.path}/progress.json').writeAsString(jsonEncode(_store.toJson()));
+    await File('${dir.path}/settings.json').writeAsString(jsonEncode(_settings.toJson()));
     for (final MapEntry(key: path, value: json) in _pendingStates.entries.toList()) {
       final file = File(path);
       await file.parent.create(recursive: true);

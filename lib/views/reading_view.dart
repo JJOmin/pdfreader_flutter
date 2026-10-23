@@ -11,32 +11,13 @@ import '../shared/settings.dart';
 import '../shared/types.dart';
 import 'mark_badge.dart';
 import 'mark_menu.dart';
+import '../shared/fonts.dart';
 import 'fast_scroll.dart';
 import 'text_view.dart';
 
 /// The fonts the phone can show. Verdana, Comic Sans MS, Arial and Georgia are Microsoft fonts
 /// that cannot be bundled (Phase 0 report, question 6), so the desktop's names map to the phone's
 /// own sans and serif. A settings file therefore means the same on both.
-const readingFontChoices = [
-  ('OpenDyslexic', 'OpenDyslexic'),
-  ('Lexend', 'Lexend'),
-  ('Verdana', 'Phone sans'),
-  ('Georgia', 'Phone serif'),
-];
-
-String? _fontFamily(String font) => switch (font) {
-  'OpenDyslexic' || 'Lexend' => font,
-  'Georgia' => 'serif',
-  _ => null,
-};
-
-/// Background and text colour of each theme.
-const readingThemeColors = {
-  'light': (Color(0xFFFFFFFF), Color(0xFF1F1F1F)),
-  'sepia': (Color(0xFFF4ECD8), Color(0xFF5B4636)),
-  'dark': (Color(0xFF1E1E1E), Color(0xFFE2E2E2)),
-};
-
 /// The reading view as a `TextView`: a paragraph's characters are its block's readable text, so a
 /// raw range becomes a stretch of a paragraph through `blockSpans`, as on the desktop.
 class ReadingController implements TextView {
@@ -376,16 +357,19 @@ class _ReadingViewState extends State<ReadingView> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.settings;
-    final (background, foreground) = readingThemeColors[settings.theme] ?? readingThemeColors['sepia']!;
+    // The page and the text take the app's colours (PLAN M15); only the type is the reading view's own.
+    final scheme = Theme.of(context).colorScheme;
+    final (background, foreground) = (scheme.surface, scheme.onSurface);
     final base = TextStyle(
-      fontFamily: _fontFamily(settings.font),
+      fontFamily: fontFamilyOf(settings.font),
       fontSize: settings.size,
       height: settings.lineHeight,
       letterSpacing: settings.letterSpacing * settings.size,
       color: foreground,
     );
     final heading = base.copyWith(fontSize: settings.size * 1.25, fontWeight: FontWeight.bold);
-    final scaler = MediaQuery.textScalerOf(context);
+    // The system's text size counts, the app's own text size does not: the reading view has its own.
+    final scaler = MediaQueryData.fromView(View.of(context)).textScaler;
     return GestureDetector(
       // Between the paragraphs; a tap on one is handled by its text.
       onTap: widget.onTapped,
@@ -545,11 +529,11 @@ class _ReadingSettingsSheetState extends State<ReadingSettingsSheet> {
           Wrap(
             spacing: 8,
             children: [
-              for (final (font, label) in readingFontChoices)
+              for (final (font, label) in fontChoices)
                 ChoiceChip(
-                  label: Text(label, style: TextStyle(fontFamily: _fontFamily(font))),
+                  label: Text(label, style: TextStyle(fontFamily: fontFamilyOf(font))),
                   selected:
-                      _settings.font == font || (_fontFamily(_settings.font) == null && font == 'Verdana'),
+                      _settings.font == font || (fontFamilyOf(_settings.font) == null && font == 'Verdana'),
                   onSelected: (_) => _set({'font': font}),
                 ),
             ],
@@ -566,15 +550,6 @@ class _ReadingSettingsSheetState extends State<ReadingSettingsSheet> {
             'letterSpacing',
             _settings.letterSpacing,
             _settings.letterSpacing.toStringAsFixed(2),
-          ),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'light', label: Text('Light')),
-              ButtonSegment(value: 'sepia', label: Text('Sepia')),
-              ButtonSegment(value: 'dark', label: Text('Dark')),
-            ],
-            selected: {_settings.theme},
-            onSelectionChanged: (s) => _set({'theme': s.first}),
           ),
         ],
       ),

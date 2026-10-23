@@ -69,7 +69,7 @@ void main() {
     expect(Theme.of(tester.element(find.byType(Scaffold).last)).brightness, Brightness.dark);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('Dark'), findsOneWidget, reason: 'the list names the choice');
+    expect(find.textContaining('Dark'), findsOneWidget, reason: 'the list names the choice');
 
     await tester.tap(find.text('Favourites'));
     await tester.pumpAndSettle();

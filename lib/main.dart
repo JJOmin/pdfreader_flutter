@@ -8,6 +8,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app_settings_store.dart';
+import 'app_theme.dart';
 import 'desktop_link.dart';
 import 'dictation.dart';
 import 'document_access.dart';
@@ -16,7 +17,6 @@ import 'favourites_tab.dart';
 import 'library.dart';
 import 'library_list.dart';
 import 'now_playing.dart';
-import 'shared/app_settings.dart';
 import 'shared/home_lists.dart';
 import 'shared/inbox.dart' show PendingOffer;
 import 'shared/library_view.dart';
@@ -154,30 +154,30 @@ class _PdfReaderAppState extends State<PdfReaderApp> {
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
     valueListenable: _appSettings,
-    builder: (context, choice, _) => MaterialApp(
-      title: 'PDF Reader',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo),
-      darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
-      // Light, dark, or the system's setting (PLAN 9.11, 9.12).
-      themeMode: switch (choice) {
-        ThemeChoice.system => ThemeMode.system,
-        ThemeChoice.light => ThemeMode.light,
-        ThemeChoice.dark => ThemeMode.dark,
-      },
-      home: HomePage(
-        documents: widget.documents ?? DocumentAccess(),
-        library: widget.library,
-        playback: widget.playback,
-        phoneVoice: widget.phoneVoice,
-        dictation: widget.dictation,
-        places: widget.places,
-        notesStore: widget.notesStore,
-        cloud: widget.cloud,
-        sync: widget.sync,
-        favourites: widget.favourites,
-        appSettings: _appSettings,
-      ),
-    ),
+    builder: (context, look, _) {
+      // The colours, the font and the text size of the whole app (PLAN M15).
+      final themes = appThemes(look);
+      return MaterialApp(
+        title: 'PDF Reader',
+        theme: themes.light,
+        darkTheme: themes.dark,
+        themeMode: themes.mode,
+        builder: (context, child) => scaleText(context, look, child),
+        home: HomePage(
+          documents: widget.documents ?? DocumentAccess(),
+          library: widget.library,
+          playback: widget.playback,
+          phoneVoice: widget.phoneVoice,
+          dictation: widget.dictation,
+          places: widget.places,
+          notesStore: widget.notesStore,
+          cloud: widget.cloud,
+          sync: widget.sync,
+          favourites: widget.favourites,
+          appSettings: _appSettings,
+        ),
+      );
+    },
   );
 }
 

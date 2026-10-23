@@ -207,7 +207,14 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   @override
   void initState() {
     super.initState();
+    // The reading settings can be changed under Settings while this reader is alive behind the tabs.
+    widget.places?.addListener(_placesChanged);
     unawaited(_open());
+  }
+
+  void _placesChanged() {
+    final settings = widget.places?.reading;
+    if (mounted && settings != null) setState(() => _readingSettings = settings);
   }
 
   Future<void> _open() async {
@@ -893,6 +900,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   @override
   void dispose() {
+    widget.places?.removeListener(_placesChanged);
     _placeTimer?.cancel();
     _searchTimer?.cancel();
     unawaited(_flushNotes());
@@ -1009,18 +1017,11 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     );
   }
 
-  /// The bars take their colour from what lies behind them, a step towards its text, so they belong
-  /// to the page without vanishing in it.
+  /// The bars take the app's page colour, a step towards its text, so they belong to the page
+  /// without vanishing in it.
   ({Color bar, Color onBar}) get _barColors {
-    if (!reading) {
-      final backdrop = pagesBackdrop(Theme.of(context).brightness);
-      return Theme.of(context).brightness == Brightness.dark
-          ? (bar: Color.lerp(backdrop, Colors.white, 0.18)!, onBar: const Color(0xFFE2E2E2))
-          : (bar: Color.lerp(backdrop, Colors.white, 0.6)!, onBar: const Color(0xFF1F1F1F));
-    }
-    final (background, foreground) =
-        readingThemeColors[_readingSettings.theme] ?? readingThemeColors['sepia']!;
-    return (bar: Color.lerp(background, foreground, 0.14)!, onBar: foreground);
+    final scheme = Theme.of(context).colorScheme;
+    return (bar: Color.lerp(scheme.surface, scheme.onSurface, 0.14)!, onBar: scheme.onSurface);
   }
 
   /// The top bar and the play bar, hidden by a tap on the page as in a photo gallery; search keeps them.
@@ -1097,7 +1098,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     final topHidden = _topHidden && !_searching;
     return Scaffold(
       backgroundColor: reading
-          ? (readingThemeColors[_readingSettings.theme] ?? readingThemeColors['sepia']!).$1
+          ? Theme.of(context).colorScheme.surface
           : pagesBackdrop(Theme.of(context).brightness),
       appBar: topHidden ? null : _appBar(),
       body: SafeArea(
