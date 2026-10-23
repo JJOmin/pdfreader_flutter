@@ -58,6 +58,19 @@ class MainActivity : AudioServiceActivity() {
         @Suppress("DEPRECATION")
         Intent.ACTION_SEND -> intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
         else -> null
+    }?.takeUnless { isOwnPrivateFile(it) }
+
+    /**
+     * A `file:` address that points into this app's own storage. Any app, or a web page, can send
+     * an intent with one, and the app would read its own private files for it; the system's pickers
+     * and other apps' shares use `content:` addresses, which name only what the sender may give.
+     */
+    private fun isOwnPrivateFile(uri: Uri): Boolean {
+        if (uri.scheme != "file") return false
+        val path = try { java.io.File(uri.path ?: return true).canonicalPath } catch (e: Exception) { return true }
+        return listOf(applicationInfo.dataDir, applicationInfo.deviceProtectedDataDir).any {
+            path == java.io.File(it).canonicalPath || path.startsWith(java.io.File(it).canonicalPath + "/")
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -284,7 +297,7 @@ class MainActivity : AudioServiceActivity() {
     private fun readDocument(uri: Uri, result: MethodChannel.Result) {
         Thread {
             try {
-                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                val bytes = contentResolver.openInputStream(uri)?.use { readCapped(it) }
                     ?: throw IllegalStateException("The document could not be opened")
                 val document = mapOf("uri" to uri.toString(), "name" to displayName(uri), "data" to bytes)
                 runOnUiThread { result.success(document) }
@@ -292,6 +305,19 @@ class MainActivity : AudioServiceActivity() {
                 runOnUiThread { result.error("read", e.message, null) }
             }
         }.start()
+    }
+
+    /** The whole document is held in memory, so one that is far larger than any PDF is refused. */
+    private fun readCapped(stream: java.io.InputStream): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val chunk = ByteArray(64 * 1024)
+        while (true) {
+            val n = stream.read(chunk)
+            if (n < 0) break
+            out.write(chunk, 0, n)
+            if (out.size() > MAX_DOCUMENT_BYTES) throw IllegalStateException("The document is larger than 300 MB")
+        }
+        return out.toByteArray()
     }
 
     private fun displayName(uri: Uri): String {
@@ -306,5 +332,6 @@ class MainActivity : AudioServiceActivity() {
         const val SAVE_AS = 2
         const val KEY_ALIAS = "pdfreader-secrets"
         const val IV_BYTES = 12
+        const val MAX_DOCUMENT_BYTES = 300 * 1024 * 1024
     }
 }

@@ -36,6 +36,13 @@ AppThemes appThemes(Appearance look) {
 /// towards the text, as the reader's bars always did, so cards and bars show against the page.
 ThemeData _painted(Color background, Color text, Color accent, String? family) {
   Color step(double t) => Color.lerp(background, text, t)!;
+  // Secondary text is the text colour faded towards the background, as far as it can go and still be
+  // read (4.5 to 1, WCAG AA) on the darkest surface a card or a bar has.
+  final darkest = step(0.14);
+  var fade = 0.25;
+  while (fade > 0 && _contrast(Color.lerp(text, background, fade)!, darkest) < 4.5) {
+    fade -= 0.05;
+  }
   final scheme =
       ColorScheme.fromSeed(
         seedColor: accent,
@@ -43,7 +50,7 @@ ThemeData _painted(Color background, Color text, Color accent, String? family) {
       ).copyWith(
         surface: background,
         onSurface: text,
-        onSurfaceVariant: Color.lerp(text, background, 0.25),
+        onSurfaceVariant: Color.lerp(text, background, fade < 0 ? 0 : fade),
         surfaceContainerLowest: background,
         surfaceContainerLow: step(0.03),
         surfaceContainer: step(0.06),
@@ -55,6 +62,11 @@ ThemeData _painted(Color background, Color text, Color accent, String? family) {
         onInverseSurface: background,
       );
   return ThemeData(colorScheme: scheme, fontFamily: family);
+}
+
+double _contrast(Color a, Color b) {
+  final (la, lb) = (a.computeLuminance(), b.computeLuminance());
+  return (la > lb ? la + 0.05 : lb + 0.05) / (la > lb ? lb + 0.05 : la + 0.05);
 }
 
 /// The text size the system gives, times the user's choice, so that the system's own setting still

@@ -7,10 +7,11 @@ import 'dart:typed_data';
 
 import '../shared/sync_store.dart';
 
-/// The folder in the user's files that holds everything this app syncs.
+/// The folder in the user's files that holds everything this app syncs. It keeps the app's old name,
+/// "PDF Reader", on both the phone and the desktop: renaming it would leave the synced documents behind.
 const nextcloudFolder = 'PDF Reader';
 const _timeout = Duration(minutes: 5);
-const userAgent = 'PDF Reader';
+const userAgent = 'Easy Reader';
 
 String _withSlash(String url) => url.endsWith('/') ? url : '$url/';
 

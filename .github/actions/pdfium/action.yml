@@ -1,0 +1,19 @@
+# `flutter test` finds no PDFium on Linux: on the Mac the one that app builds leave behind is used
+# (tool/check.sh). This fetches the release that pdfium_dart's build hook uses (_pdfiumRelease in its
+# hook/build.dart, chromium/7811), checks it against the checksum below, and points the tests at it
+# through PDFIUM_PATH. When pdfium_dart moves to another release, change the release and the checksum.
+name: PDFium for the tests
+description: Downloads PDFium for Linux, verifies it and sets PDFIUM_PATH.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        RELEASE: chromium%2F7811
+        SHA256: e76e0a37aefb843d56f04657475ce612157021b1ebc53d801f2fbfcc537ccf64
+      run: |
+        curl -fsSL -o "$RUNNER_TEMP/pdfium.tgz" \
+          "https://github.com/bblanchon/pdfium-binaries/releases/download/$RELEASE/pdfium-linux-x64.tgz"
+        echo "$SHA256  $RUNNER_TEMP/pdfium.tgz" | sha256sum --check
+        tar -xzf "$RUNNER_TEMP/pdfium.tgz" -C "$RUNNER_TEMP" lib/libpdfium.so
+        echo "PDFIUM_PATH=$RUNNER_TEMP/lib/libpdfium.so" >> "$GITHUB_ENV"

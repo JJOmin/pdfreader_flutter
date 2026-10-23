@@ -331,7 +331,18 @@ class _PdfPagesViewState extends State<PdfPagesView> {
           orientation: ScrollbarOrientation.right,
           thumbSize: scrollThumbSize,
           margin: 2,
-          thumbBuilder: (context, size, page, _) => scrollThumbLook(context, size, '${page ?? ''}'),
+          thumbBuilder: (context, size, page, controller) => scrollThumbLook(
+            context,
+            size,
+            '${page ?? ''}',
+            // A step is a page: that is what a swipe of a screen reader means in a document.
+            onIncrease: page == null
+                ? null
+                : () => unawaited(controller.goToPage(pageNumber: (page + 1).clamp(1, controller.pageCount))),
+            onDecrease: page == null
+                ? null
+                : () => unawaited(controller.goToPage(pageNumber: (page - 1).clamp(1, controller.pageCount))),
+          ),
         ),
       ],
     ),

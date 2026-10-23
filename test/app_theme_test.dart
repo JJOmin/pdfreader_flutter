@@ -92,4 +92,43 @@ void main() {
     );
     expect(seen, closeTo(18, 0.001));
   });
+
+  double ratio(Color a, Color b) {
+    final (la, lb) = (a.computeLuminance(), b.computeLuminance());
+    return (la > lb ? la + 0.05 : lb + 0.05) / (la > lb ? lb + 0.05 : la + 0.05);
+  }
+
+  test('every colour pair the custom theme offers is readable, on every surface the app draws', () {
+    for (final background in customBackgrounds) {
+      for (final text in customTexts) {
+        if (contrastRatio(text, background) < minContrast) continue;
+        final scheme = appThemes(Appearance(theme: ThemeChoice.custom, background: background, text: text))
+            .light
+            .colorScheme;
+        for (final surface in [
+          scheme.surface,
+          scheme.surfaceContainerLow,
+          scheme.surfaceContainer,
+          scheme.surfaceContainerHigh,
+          scheme.surfaceContainerHighest,
+        ]) {
+          for (final ink in [scheme.onSurface, scheme.onSurfaceVariant]) {
+            expect(
+              ratio(ink, surface),
+              greaterThanOrEqualTo(4.5),
+              reason: '${background.toRadixString(16)} / ${text.toRadixString(16)}',
+            );
+          }
+        }
+      }
+    }
+  });
+
+  test('sepia is readable in the same way', () {
+    final scheme = appThemes(const Appearance(theme: ThemeChoice.sepia)).light.colorScheme;
+    for (final surface in [scheme.surface, scheme.surfaceContainerHighest]) {
+      expect(ratio(scheme.onSurface, surface), greaterThanOrEqualTo(4.5));
+      expect(ratio(scheme.onSurfaceVariant, surface), greaterThanOrEqualTo(4.5));
+    }
+  });
 }

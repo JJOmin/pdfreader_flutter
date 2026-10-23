@@ -397,9 +397,14 @@ class _ReadingViewState extends State<ReadingView> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            'Page $page',
-                            style: TextStyle(color: foreground.withValues(alpha: 0.5), fontSize: 12),
+                          // A heading for a screen reader, which jumps from page to page by headings. The
+                          // app's secondary text colour, which keeps its contrast in every theme.
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              'Page $page',
+                              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+                            ),
                           ),
                         ),
                         for (var i = 0; i < _pages[page - 1].length; i++)
@@ -420,12 +425,16 @@ class _ReadingViewState extends State<ReadingView> {
                                     foregroundPainter: badges.isEmpty
                                         ? null
                                         : _BadgePainter(span, scaler, Directionality.of(context), badges),
-                                    child: SelectableText.rich(
-                                      span,
-                                      key: _blockKeys[page - 1][i],
-                                      textScaler: scaler,
-                                      onTap: () => _tapParagraph(page, i),
-                                      contextMenuBuilder: (context, state) => _menu(page, i, context, state),
+                                    child: Semantics(
+                                      header: _pages[page - 1][i].heading,
+                                      child: SelectableText.rich(
+                                        span,
+                                        key: _blockKeys[page - 1][i],
+                                        textScaler: scaler,
+                                        onTap: () => _tapParagraph(page, i),
+                                        contextMenuBuilder: (context, state) =>
+                                            _menu(page, i, context, state),
+                                      ),
                                     ),
                                   );
                                 },

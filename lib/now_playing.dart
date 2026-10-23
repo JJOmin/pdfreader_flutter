@@ -136,51 +136,56 @@ class NowPlayingBar extends StatelessWidget {
         color: surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          key: barKey,
-          onTap: onOpen,
-          child: ListenableBuilder(
-            listenable: session,
-            builder: (context, _) {
-              final playing = session.state == ReaderState.playing;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    IconButton(
-                      key: playKey,
-                      icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                      tooltip: playing ? 'Pause' : 'Read aloud',
-                      onPressed: session.toggle,
-                    ),
-                    Expanded(
-                      child: Text(
-                        session.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 13, color: onSurface),
+        // A screen reader has the title and the buttons, but no hint that the bar itself can be tapped.
+        child: Semantics(
+          container: true,
+          label: 'Open the player',
+          child: InkWell(
+            key: barKey,
+            onTap: onOpen,
+            child: ListenableBuilder(
+              listenable: session,
+              builder: (context, _) {
+                final playing = session.state == ReaderState.playing;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        key: playKey,
+                        icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+                        tooltip: playing ? 'Pause' : 'Read aloud',
+                        onPressed: session.toggle,
                       ),
-                    ),
-                    if (favourites case final favourites? when docId != null)
-                      ValueListenableBuilder(
-                        valueListenable: favourites,
-                        builder: (context, value, _) => IconButton(
-                          key: const Key('mini-like'),
-                          icon: Icon(value.isLiked(docId) ? Icons.favorite : Icons.favorite_border),
-                          tooltip: value.isLiked(docId) ? 'Unlike' : 'Like',
-                          onPressed: () => favourites.change((f) => f.toggleLike(docId)),
+                      Expanded(
+                        child: Text(
+                          session.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13, color: onSurface),
                         ),
                       ),
-                    IconButton(
-                      key: const Key('mini-next'),
-                      icon: const Icon(Icons.skip_next),
-                      tooltip: 'Next sentence',
-                      onPressed: session.skip == null ? null : () => session.skip!(1),
-                    ),
-                  ],
-                ),
-              );
-            },
+                      if (favourites case final favourites? when docId != null)
+                        ValueListenableBuilder(
+                          valueListenable: favourites,
+                          builder: (context, value, _) => IconButton(
+                            key: const Key('mini-like'),
+                            icon: Icon(value.isLiked(docId) ? Icons.favorite : Icons.favorite_border),
+                            tooltip: value.isLiked(docId) ? 'Unlike' : 'Like',
+                            onPressed: () => favourites.change((f) => f.toggleLike(docId)),
+                          ),
+                        ),
+                      IconButton(
+                        key: const Key('mini-next'),
+                        icon: const Icon(Icons.skip_next),
+                        tooltip: 'Next sentence',
+                        onPressed: session.skip == null ? null : () => session.skip!(1),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),

@@ -1,27 +1,50 @@
 import 'package:flutter/material.dart';
 
-/// The grip of the fast scroller on the right edge: a pill with the page the view is on. Wide enough
-/// to catch a thumb, translucent so the text shows through where it passes over it.
-Widget scrollThumbLook(BuildContext context, Size size, String label) {
+/// How big the grip's touch area is, as Android asks (48 dp); the pill drawn in it is smaller.
+const scrollThumbSize = Size(48, 48);
+
+/// The grip of the fast scroller on the right edge: a pill with the page the view is on, in the
+/// middle of a 48 dp touch area. Translucent so the text shows through where it passes over it. A
+/// screen reader names it and can step it with increase and decrease.
+Widget scrollThumbLook(
+  BuildContext context,
+  Size size,
+  String page, {
+  VoidCallback? onIncrease,
+  VoidCallback? onDecrease,
+}) {
   final scheme = Theme.of(context).colorScheme;
-  return DecoratedBox(
-    decoration: BoxDecoration(
-      color: scheme.surfaceContainerHighest.withValues(alpha: 0.92),
-      border: Border.all(color: scheme.outline.withValues(alpha: 0.5)),
-      borderRadius: BorderRadius.circular(size.height / 2),
-      boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3, offset: Offset(0, 1))],
-    ),
-    child: Center(
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onSurface),
+  return Semantics(
+    label: 'Scroll through the document',
+    value: 'page $page',
+    increasedValue: 'next',
+    decreasedValue: 'previous',
+    onIncrease: onIncrease,
+    onDecrease: onDecrease,
+    child: ExcludeSemantics(
+      child: Center(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.92),
+            border: Border.all(color: scheme.outline.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3, offset: Offset(0, 1))],
+          ),
+          child: SizedBox(
+            width: 40,
+            height: 32,
+            child: Center(
+              child: Text(
+                page,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onSurface),
+              ),
+            ),
+          ),
+        ),
       ),
     ),
   );
 }
-
-/// How big the grip is; the pages view and the reading view use the same.
-const scrollThumbSize = Size(40, 32);
 
 /// A grip on the right edge that scrolls a [ScrollController] by dragging, for a long document where
 /// flicking takes many tries: the whole height of the view is the whole length of the text. The pages
@@ -103,7 +126,16 @@ class _FastScrollThumbState extends State<FastScrollThumb> {
                           onVerticalDragUpdate: (details) => controller.jumpTo(
                             (controller.offset + details.delta.dy / travel * max).clamp(0.0, max),
                           ),
-                          child: scrollThumbLook(context, scrollThumbSize, widget.label()),
+                          child: scrollThumbLook(
+                            context,
+                            scrollThumbSize,
+                            widget.label(),
+                            // A tenth of the text a step, for a screen reader's swipe.
+                            onIncrease: () =>
+                                controller.jumpTo((controller.offset + max / 10).clamp(0.0, max)),
+                            onDecrease: () =>
+                                controller.jumpTo((controller.offset - max / 10).clamp(0.0, max)),
+                          ),
                         ),
                       ),
                     ],

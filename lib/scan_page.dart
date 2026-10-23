@@ -64,7 +64,7 @@ class _ScanPageState extends State<ScanPage> {
           padding: const EdgeInsets.all(16),
           child: Text(
             _foreign
-                ? 'That is not a pairing code from PDF Reader.'
+                ? 'That is not a pairing code from Easy Reader.'
                 : 'On the computer, open Phone, switch on Wi-Fi sync, and point the camera at the picture.',
             key: const Key('scan-hint'),
             textAlign: TextAlign.center,

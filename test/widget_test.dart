@@ -35,7 +35,7 @@ void main() {
     await tester.tap(find.byKey(const Key('open-pdf')));
     await tester.pumpAndSettle();
     expect(picker.calls, 1);
-    expect(find.text('PDF Reader'), findsOneWidget);
+    expect(find.text('Easy Reader'), findsOneWidget);
   });
 
   testWidgets('asks for a PDF another app opened it with, at the start and whenever one arrives', (

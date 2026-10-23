@@ -98,4 +98,11 @@ void main() {
       );
     }
   });
+
+  test('every colour on offer has a name for a screen reader', () {
+    for (final colour in [...customBackgrounds, ...customTexts, ...customAccents]) {
+      expect(colourNames, contains(colour), reason: colour.toRadixString(16));
+    }
+    expect(colourName(0xFF123456), 'ff123456');
+  });
 }

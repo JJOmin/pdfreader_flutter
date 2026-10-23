@@ -158,7 +158,7 @@ class _PdfReaderAppState extends State<PdfReaderApp> {
       // The colours, the font and the text size of the whole app (PLAN M15).
       final themes = appThemes(look);
       return MaterialApp(
-        title: 'PDF Reader',
+        title: 'Easy Reader',
         theme: themes.light,
         darkTheme: themes.dark,
         themeMode: themes.mode,
@@ -491,7 +491,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PDF Reader'),
+        title: const Text('Easy Reader'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -668,44 +668,52 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               );
             },
           ),
-          // The reader stays alive under the tabs while the bar shows, so the voice goes on.
+          // The reader stays alive under the tabs while the bar shows, so the voice goes on. While it
+          // is shown it covers the tabs, and a screen reader must not read them through it.
           if (session != null)
-            Offstage(
-              offstage: !_expanded,
-              child: TickerMode(
-                enabled: _expanded,
-                child: ReaderPage(
-                  key: ObjectKey(session),
-                  name: session.name,
-                  data: session.data,
-                  placeKey: session.placeKey,
-                  prepared: session.prepared,
-                  phoneVoice: widget.phoneVoice,
-                  phoneLangs: session.phoneLangs,
-                  dictation: widget.dictation,
-                  favourites: _favourites,
-                  onOpenPlayer: () => setState(() => _playerOpen = true),
-                  playback: widget.playback,
-                  places: widget.places,
-                  notesStore: widget.notesStore,
-                  documents: widget.documents,
-                  session: session,
-                  onCollapse: _collapse,
-                  startInReading: session.startInReading,
+            BlockSemantics(
+              blocking: _expanded,
+              child: Offstage(
+                offstage: !_expanded,
+                child: TickerMode(
+                  enabled: _expanded,
+                  child: ReaderPage(
+                    key: ObjectKey(session),
+                    name: session.name,
+                    data: session.data,
+                    placeKey: session.placeKey,
+                    prepared: session.prepared,
+                    phoneVoice: widget.phoneVoice,
+                    phoneLangs: session.phoneLangs,
+                    dictation: widget.dictation,
+                    favourites: _favourites,
+                    onOpenPlayer: () => setState(() => _playerOpen = true),
+                    playback: widget.playback,
+                    places: widget.places,
+                    notesStore: widget.notesStore,
+                    documents: widget.documents,
+                    session: session,
+                    onCollapse: _collapse,
+                    startInReading: session.startInReading,
+                  ),
                 ),
               ),
             ),
           // Over everything, the navigation bar too (PLAN 11).
           if (session != null)
             Positioned.fill(
-              child: PlayerLayer(
-                open: _playerOpen,
-                session: session,
-                onMinimize: () => setState(() => _playerOpen = false),
-                onOpenText: () => setState(() {
-                  _playerOpen = false;
-                  _expanded = true;
-                }),
+              // Blocks the tabs and the reader, which it covers, from a screen reader while it is open.
+              child: BlockSemantics(
+                blocking: _playerOpen,
+                child: PlayerLayer(
+                  open: _playerOpen,
+                  session: session,
+                  onMinimize: () => setState(() => _playerOpen = false),
+                  onOpenText: () => setState(() {
+                    _playerOpen = false;
+                    _expanded = true;
+                  }),
+                ),
               ),
             ),
         ],

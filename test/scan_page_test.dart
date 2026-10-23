@@ -50,7 +50,7 @@ void main() {
     await open(tester);
     read('https://example.com');
     await tester.pump();
-    expect(find.text('That is not a pairing code from PDF Reader.'), findsOneWidget);
+    expect(find.text('That is not a pairing code from Easy Reader.'), findsOneWidget);
     read(good);
     await tester.pumpAndSettle();
     expect(result, isNotNull);

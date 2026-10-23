@@ -1,0 +1,37 @@
+# Looks for known vulnerabilities in the packages of a pull request and for secrets that were committed
+# by mistake. Packages already in main are watched by Dependabot's alerts and its weekly update pull
+# requests (.github/dependabot.yml): switch "Dependabot alerts" on under Settings, Code security.
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: New packages with known vulnerabilities
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  secrets:
+    name: Committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

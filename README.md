@@ -1,4 +1,4 @@
-# PDF Reader for Android and iOS
+# Easy Reader for Android and iOS
 
 The Flutter port of the desktop app in `../pdfreader`. It shows PDFs, lets the user mark and
 comment, and reads the text aloud in German and English while highlighting the spoken sentence

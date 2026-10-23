@@ -303,3 +303,30 @@ whole app, with a font and a text size for the app, and the reading view keeps o
 
 Note: the reading settings still hold a `theme` field, the desktop's file format, but nothing reads it.
 The desktop app's colours are unchanged: it has its own settings.
+
+## M16: security, CI and accessibility (the owner, 2026-10-23, both repositories)
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 16.1 | **Done 2026-10-23.** A review of both apps (`SECURITY.md` here and in the desktop repository). Phone: backup off, `file:` access to the app's own storage refused, a size cap on a document, release signing from a key and not the debug key. Device: the new build installed over the old one, the `file:` intent did nothing, the backup flag is gone from the package. **Security review.** | Device: seen. |
+| 16.2 | **Done 2026-10-23, not yet run on GitHub.** `.github/workflows/`: `ci.yml` (analyze, format, tests, a release build on every pull request and push to main), `security.yml` (dependency review, secret scan), `release.yml` (a `v*` tag builds the signed app and attaches it to a release; it refuses without the owner's key). Dependabot for pub, Gradle and the actions. Features go on `feature/...` branches (CLAUDE.md). The files are valid YAML; they have not run, because nothing is pushed. **CI/CD.** | The first pull request shows green checks. |
+| 16.3 | **Done 2026-10-23.** `test/accessibility_test.dart` runs Flutter's guidelines (48 dp targets, a label on every control, text contrast of 4.5) on Home, Favourites, Settings, Appearance, Speed reader, a mark's card and the play bar in the light, dark, sepia and a custom theme. It found and fixed: swatches and the pencil under 48 dp, a search field 24 dp high, sepia text at 4.0 contrast. The fast-scroll grip has a 48 dp area and a name, and a screen reader steps it. The custom colours have names and are refused below contrast 4.5. The status line, the search count and the place offer are announced. 529 tests. Not on the device with TalkBack. **Accessibility.** | Widget tests; device: not checked with TalkBack. |
+
+Correction (M17): a screen reader can read the PDF pages. pdfrx builds a text layer for them; this note
+first said it could not, before anyone had looked.
+
+## M17: the name Easy Reader, and screen readers in the reader (the owner, 2026-10-23)
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 17.1 | **Done 2026-10-23.** The app is called Easy Reader: the launcher label (`AndroidManifest.xml`), the title in the app bar and in `MaterialApp`, the iOS display name, the scan page's message and the User-Agent. Unchanged on purpose: the application id `io.github.jjomin.pdfreader`, the package name, the `pdfreader://` pairing address, and the Nextcloud folder `PDF Reader` (it is the place the synced documents are in, on the desktop too). ADRs and old plan rows keep the name they were written under. **The name.** | Device: seen ("Easy Reader" in the app bar, and in the accessibility tree). |
+| 17.2 | **Done 2026-10-23.** What a screen reader sees was dumped from the phone (`uiautomator dump`): the PDF pages already give it the page number and each line of text (pdfrx), and the fast-scroll grip is a slider. Found: with a document open, the Home list and a second play bar were still in the tree, behind the reader. `BlockSemantics` on the reader and on the player now hides what they cover; the dump shows only the reader's own controls, and only the player's. The reading view marks headings and "Page N" as headings, so a screen reader can jump by them, and the page label's colour is the theme's secondary text colour (it was 50 % text colour, below contrast 4.5 in sepia). **Screen readers in the reader.** | Device: the accessibility tree seen in the reader and in the player. Not with TalkBack itself. |
+
+CI fix (2026-10-23, after the first run on GitHub): three test files failed in `setUpAll`, because `flutter test`
+finds no PDFium on Linux, and two of them read PDFs from the desktop's checkout, which a CI machine does not
+have. `.github/actions/pdfium` fetches the pinned PDFium (checksummed) and sets `PDFIUM_PATH`; the synthetic
+`sample.pdf` is copied into `test/fixtures/` (`test/fixtures_test.dart` fails when the desktop's differs);
+the tests on the real document `centric` are skipped where the desktop checkout is missing (`skipWithout`,
+or `DESKTOP_REPO=/nonexistent` to try it). Run as on the CI: 5 pass and 4 are skipped. Not yet seen green on
+GitHub.
+

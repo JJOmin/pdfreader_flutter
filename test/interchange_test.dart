@@ -15,7 +15,7 @@ import 'package:pdfrx_engine/pdfrx_engine.dart';
 import 'desktop_repo.dart';
 
 final files = {
-  'sample': '$desktopRepo/tests/fixtures/sample.pdf',
+  'sample': sampleFixture,
   'centric': '$desktopRepo/docs/sample_pdfs/centric_2026_1_10_30003.pdf',
 };
 
@@ -79,6 +79,6 @@ void main() {
         print('INTERCHANGE $name phone wrote ${marks.length} marks to ${out.path}');
         expect(parseNotes(jsonDecode(out.readAsStringSync()))!.annotations, hasLength(marks.length));
       }, skip: File(path).existsSync() ? false : 'needs $path');
-    });
+    }, skip: skipWithout(path));
   }
 }
