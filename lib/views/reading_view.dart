@@ -11,6 +11,7 @@ import '../shared/settings.dart';
 import '../shared/types.dart';
 import 'mark_badge.dart';
 import 'mark_menu.dart';
+import 'fast_scroll.dart';
 import 'text_view.dart';
 
 /// The fonts the phone can show. Verdana, Comic Sans MS, Arial and Georgia are Microsoft fonts
@@ -395,8 +396,9 @@ class _ReadingViewState extends State<ReadingView> {
             if (n.dragDetails != null) widget.onTouched?.call();
             return false;
           },
-          child: Scrollbar(
+          child: FastScrollThumb(
             controller: _scroll,
+            label: () => '${_anchor()?.page ?? 1}',
             child: SingleChildScrollView(
               controller: _scroll,
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),

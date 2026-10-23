@@ -10,6 +10,7 @@ import '../shared/marks.dart';
 import '../shared/notes.dart';
 import '../shared/pdfium_text.dart';
 import '../shared/types.dart';
+import 'fast_scroll.dart';
 import 'mark_badge.dart';
 import 'mark_menu.dart';
 import 'text_view.dart';
@@ -323,6 +324,16 @@ class _PdfPagesViewState extends State<PdfPagesView> {
       pagePaintCallbacks: [_paint],
       onGeneralTap: _tapped,
       buildContextMenu: _menu,
+      // A grip on the right edge to drag through a long document (the reading view has its own).
+      viewerOverlayBuilder: (context, size, handleLinkTap) => [
+        PdfViewerScrollThumb(
+          controller: widget.controller.viewer,
+          orientation: ScrollbarOrientation.right,
+          thumbSize: scrollThumbSize,
+          margin: 2,
+          thumbBuilder: (context, size, page, _) => scrollThumbLook(context, size, '${page ?? ''}'),
+        ),
+      ],
     ),
   );
 }

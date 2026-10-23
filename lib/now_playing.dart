@@ -106,6 +106,7 @@ class NowPlayingBar extends StatelessWidget {
     this.favourites,
     this.playKey = const Key('mini-play'),
     this.barKey = const Key('now-playing'),
+    this.colors,
   });
 
   final ReadingSession session;
@@ -117,15 +118,22 @@ class NowPlayingBar extends StatelessWidget {
   final Key playKey;
   final Key barKey;
 
+  /// The bar's colour and the colour of what is on it; null for the app's own surface colours. The
+  /// reader gives the colours of its top bar, so the two belong together.
+  final ({Color bar, Color onBar})? colors;
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final own = colors;
+    final surface = own?.bar ?? theme.colorScheme.surfaceContainerHigh;
+    final onSurface = own?.onBar ?? theme.colorScheme.onSurface;
     final docId = session.prepared?.manifest.docId;
     final bar = Padding(
       // Rounded like the reader's play bar, a little apart from the navigation bar.
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
       child: Material(
-        color: colors.surfaceContainerHigh,
+        color: surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -150,7 +158,7 @@ class NowPlayingBar extends StatelessWidget {
                         session.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: 13, color: onSurface),
                       ),
                     ),
                     if (favourites case final favourites? when docId != null)
@@ -178,8 +186,17 @@ class NowPlayingBar extends StatelessWidget {
       ),
     );
     final onClose = this.onClose;
-    return onClose == null
+    final dismissible = onClose == null
         ? bar
         : Dismissible(key: ObjectKey(session), onDismissed: (_) => onClose(), child: bar);
+    // The buttons take their colour from the theme, not from the text beside them.
+    return own == null
+        ? dismissible
+        : Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(onSurface: onSurface, onSurfaceVariant: onSurface),
+            ),
+            child: dismissible,
+          );
   }
 }

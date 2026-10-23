@@ -49,9 +49,6 @@ const _searchDelay = Duration(milliseconds: 200);
 /// The kind of mark made last, kept for the next one and across documents while the app runs.
 MarkKind _lastKind = MarkKind.highlight;
 
-/// The play bar hidden behind its notch for more page, kept across documents while the app runs.
-bool _barHidden = false;
-
 /// The audio the user chose in the full-screen player where both exist, kept across documents while
 /// the app runs.
 VoiceChoice _voiceChoice = VoiceChoice.prepared;
@@ -376,6 +373,14 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         annotations: [for (final a in _notes.annotations) a.id == id ? a.copyWith(comment: comment) : a],
       ),
     ),
+    onStyle: (id, kind, color) => _notesChanged(
+      NotesFile(
+        notes: _notes.notes,
+        annotations: [
+          for (final a in _notes.annotations) a.id == id ? a.copyWith(kind: kind, color: color) : a,
+        ],
+      ),
+    ),
     onDelete: (id) {
       setState(() => _markAt = {..._markAt}..remove(id));
       _notesChanged(
@@ -551,7 +556,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
           content: Text(message),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
-          margin: EdgeInsets.fromLTRB(16, 0, 16, _barHidden ? 32 : 112),
+          margin: EdgeInsets.fromLTRB(16, 0, 16, _topHidden ? 32 : 112),
         ),
       );
   }
@@ -1018,7 +1023,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     return (bar: Color.lerp(background, foreground, 0.14)!, onBar: foreground);
   }
 
-  /// The top bar, hidden by a tap on the page as in a photo gallery; search keeps it.
+  /// The top bar and the play bar, hidden by a tap on the page as in a photo gallery; search keeps them.
   bool _topHidden = false;
 
   void _toggleTop() {
@@ -1152,8 +1157,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                           ),
                   ),
                   // Over the page, which runs on behind the bar (PLAN 9.8). The same bar as in the menu
-                  // (PLAN 11); a tap on it opens the full-screen player.
-                  if (_hasAudio)
+                  // (PLAN 11); a tap on it opens the full-screen player. It goes with the top bar: a tap
+                  // on the page hides both, and brings both back.
+                  if (_hasAudio && !topHidden)
                     Positioned(
                       left: 0,
                       right: 0,
@@ -1161,24 +1167,17 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                       child: SafeArea(
                         top: false,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(right: 24),
-                              child: _barNotch(
-                                Theme.of(context).colorScheme.surfaceContainerHigh,
-                                Theme.of(context).colorScheme.onSurface,
-                              ),
+                            if (status != null) _statusLine(status),
+                            NowPlayingBar(
+                              colors: _barColors,
+                              session: _session,
+                              favourites: widget.favourites,
+                              playKey: const Key('play'),
+                              barKey: const Key('reader-bar'),
+                              onOpen: widget.onOpenPlayer ?? () {},
                             ),
-                            if (status != null && !_barHidden) _statusLine(status),
-                            if (!_barHidden)
-                              NowPlayingBar(
-                                session: _session,
-                                favourites: widget.favourites,
-                                playKey: const Key('play'),
-                                barKey: const Key('reader-bar'),
-                                onOpen: widget.onOpenPlayer ?? () {},
-                              ),
                           ],
                         ),
                       ),
@@ -1196,33 +1195,14 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   Widget _statusLine(String status) => Padding(
     padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
     child: Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      color: _barColors.bar,
       borderRadius: BorderRadius.circular(14),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Text(status, key: const Key('status'), style: Theme.of(context).textTheme.bodySmall),
-      ),
-    ),
-  );
-
-  /// A small tab above the play bar's right end that hides the bar and brings it back.
-  Widget _barNotch(Color bar, Color onBar) => Material(
-    color: bar,
-    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-    child: InkWell(
-      key: const Key('toggle-bar'),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      onTap: () => setState(() => _barHidden = !_barHidden),
-      child: Tooltip(
-        message: _barHidden ? 'Show the play bar' : 'Hide the play bar',
-        child: SizedBox(
-          width: 44,
-          height: 24,
-          child: Icon(
-            _barHidden ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-            size: 22,
-            color: onBar,
-          ),
+        child: Text(
+          status,
+          key: const Key('status'),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: _barColors.onBar),
         ),
       ),
     ),

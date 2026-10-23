@@ -8,12 +8,16 @@ class NotesActions {
   const NotesActions({
     required this.onNotes,
     required this.onComment,
+    required this.onStyle,
     required this.onDelete,
     required this.onJump,
   });
 
   final ValueChanged<String> onNotes;
   final void Function(String id, String comment) onComment;
+
+  /// A mark's kind or colour was changed on its card.
+  final void Function(String id, MarkKind kind, HighlightColor color) onStyle;
   final ValueChanged<String> onDelete;
 
   /// Closes the sheet and shows the mark in the document.
@@ -26,7 +30,14 @@ const _kindLabels = {
   MarkKind.strike: 'Strike',
 };
 
-/// One mark: its page and quote, an editable comment, and Delete.
+const _kindIcons = {
+  MarkKind.highlight: Icons.format_color_fill,
+  MarkKind.underline: Icons.format_underlined,
+  MarkKind.strike: Icons.format_strikethrough,
+};
+
+/// One mark: its page and quote and its comment. The pencil opens it for changes: the comment, the
+/// kind and the colour of the mark, and Delete. Closed, the card only shows.
 class MarkCard extends StatefulWidget {
   const MarkCard({super.key, required this.mark, required this.found, required this.actions, this.onDeleted});
 
@@ -43,11 +54,22 @@ class MarkCard extends StatefulWidget {
 
 class _MarkCardState extends State<MarkCard> {
   late final _comment = TextEditingController(text: widget.mark.comment);
+  late var _kind = widget.mark.kind;
+  late var _color = widget.mark.color;
+  bool _editing = false;
 
   @override
   void dispose() {
     _comment.dispose();
     super.dispose();
+  }
+
+  void _restyle({MarkKind? kind, HighlightColor? color}) {
+    setState(() {
+      _kind = kind ?? _kind;
+      _color = color ?? _color;
+    });
+    widget.actions.onStyle(widget.mark.id, _kind, _color);
   }
 
   @override
@@ -73,7 +95,7 @@ class _MarkCardState extends State<MarkCard> {
                     height: 44,
                     margin: const EdgeInsets.only(right: 10),
                     decoration: BoxDecoration(
-                      color: markLine[mark.color],
+                      color: markLine[_color],
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -82,12 +104,19 @@ class _MarkCardState extends State<MarkCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Page ${mark.page} · ${_kindLabels[mark.kind]}${widget.found ? '' : ' · not found on its page'}',
+                          'Page ${mark.page} · ${_kindLabels[_kind]}${widget.found ? '' : ' · not found on its page'}',
                           style: Theme.of(context).textTheme.labelSmall,
                         ),
                         Text(quote, maxLines: 3, overflow: TextOverflow.ellipsis),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    key: Key('edit-${mark.id}'),
+                    icon: Icon(_editing ? Icons.check : Icons.edit_outlined),
+                    tooltip: _editing ? 'Done' : 'Edit the comment and the mark',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => setState(() => _editing = !_editing),
                   ),
                 ],
               ),
@@ -95,22 +124,64 @@ class _MarkCardState extends State<MarkCard> {
             TextField(
               key: Key('comment-${mark.id}'),
               controller: _comment,
+              // Closed, the comment can be read and copied but not changed.
+              readOnly: !_editing,
               minLines: 1,
               maxLines: 5,
-              decoration: const InputDecoration(hintText: 'Comment', isDense: true),
+              decoration: InputDecoration(hintText: _editing ? 'Comment' : 'No comment', isDense: true),
               onChanged: (text) => widget.actions.onComment(mark.id, text),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete'),
-                onPressed: () {
-                  widget.actions.onDelete(mark.id);
-                  widget.onDeleted?.call();
-                },
+            if (_editing) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (final kind in MarkKind.values)
+                    IconButton.outlined(
+                      key: Key('kind-${kind.name}-${mark.id}'),
+                      isSelected: _kind == kind,
+                      icon: Icon(_kindIcons[kind]),
+                      tooltip: _kindLabels[kind],
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _restyle(kind: kind),
+                    ),
+                  for (final color in HighlightColor.values)
+                    InkResponse(
+                      key: Key('color-${color.name}-${mark.id}'),
+                      onTap: () => _restyle(color: color),
+                      child: Semantics(
+                        label: color.name,
+                        selected: _color == color,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: markLine[color],
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              width: _color == color ? 3 : 0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete'),
+                  onPressed: () {
+                    widget.actions.onDelete(mark.id);
+                    widget.onDeleted?.call();
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

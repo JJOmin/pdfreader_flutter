@@ -86,6 +86,9 @@ void main() {
     await tester.tapAt(at(0));
     final comment = find.byKey(Key('comment-${page.marks.first.id}'));
     await waitFor(() => comment.evaluate().isNotEmpty, reason: 'a tap on a mark opens its card');
+    // Closed, the card only shows; the pencil opens it for changes.
+    await tester.tap(find.byKey(Key('edit-${page.marks.first.id}')));
+    await tester.pump();
     await tester.enterText(comment, 'A comment, ä ö ü');
     await tester.pump(const Duration(seconds: 1));
     expect(page.marks.first.comment, 'A comment, ä ö ü');
