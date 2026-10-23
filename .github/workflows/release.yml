@@ -50,6 +50,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: The key opens, with these passwords and this alias
+        env:
+          KEYSTORE: ${{ runner.temp }}/release.jks
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: sh tool/check_release_key.sh
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
