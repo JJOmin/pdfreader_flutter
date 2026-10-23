@@ -14,15 +14,37 @@ class OpenedDocument {
 class DocumentAccess {
   static const _channel = MethodChannel('pdfreader/documents');
 
+  /// Told when another app hands this one a PDF while it runs ("Open with"); the PDF itself is
+  /// taken with [takeIncoming].
+  void Function()? onIncoming;
+
+  DocumentAccess() {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'incoming') onIncoming?.call();
+    });
+  }
+
+  /// The PDF another app opened this one with (or shared to it), once; null when there is none.
+  Future<OpenedDocument?> takeIncoming() async {
+    try {
+      return _opened(await _channel.invokeMapMethod<String, Object?>('takeIncoming'));
+    } on MissingPluginException {
+      // Widget tests have no platform side.
+      return null;
+    }
+  }
+
+  OpenedDocument? _opened(Map<String, Object?>? result) => result == null
+      ? null
+      : OpenedDocument(
+          uri: result['uri']! as String,
+          name: result['name']! as String,
+          data: result['data']! as Uint8List,
+        );
+
   /// Shows the system picker for PDFs. Null when the user cancels.
   Future<OpenedDocument?> pickPdf() async {
-    final result = await _channel.invokeMapMethod<String, Object?>('pickPdf');
-    if (result == null) return null;
-    return OpenedDocument(
-      uri: result['uri']! as String,
-      name: result['name']! as String,
-      data: result['data']! as Uint8List,
-    );
+    return _opened(await _channel.invokeMapMethod<String, Object?>('pickPdf'));
   }
 
   /// The system's "save as" with `name` proposed. True once written, false when the user cancels.

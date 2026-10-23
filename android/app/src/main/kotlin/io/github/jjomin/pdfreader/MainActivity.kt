@@ -14,6 +14,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import android.provider.OpenableColumns
 import com.ryanheise.audioservice.AudioServiceActivity
@@ -24,29 +25,54 @@ import io.flutter.plugin.common.MethodChannel
  * DocumentAccess (ADR 1): opens documents through the system picker and keeps their content URI,
  * so that later steps can write notes next to the PDF. A file picker package would copy the file
  * into the cache and lose where it came from. It extends audio_service's activity, which shares
- * the Flutter engine with the playback service, so reading goes on with the screen off.
+ * the Flutter engine with the playback service, so reading goes on with the screen off. A PDF that
+ * another app opens this one with ("Open with", "Share") is handed to Flutter the same way.
  */
 class MainActivity : AudioServiceActivity() {
     private var pending: MethodChannel.Result? = null
     /** A file the user is choosing a place for, with the answer to give once it is written. */
     private var saving: Pair<ByteArray, MethodChannel.Result>? = null
     private var multicastLock: WifiManager.MulticastLock? = null
+    /** The PDF another app opened this one with, until Flutter has taken it. */
+    private var incoming: Uri? = null
+    private var documents: MethodChannel? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Not after a restart of the activity: that would open the same PDF again.
+        if (savedInstanceState == null) incoming = incomingUri(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val uri = incomingUri(intent) ?: return
+        incoming = uri
+        documents?.invokeMethod("incoming", null)
+    }
+
+    private fun incomingUri(intent: Intent?): Uri? = when (intent?.action) {
+        Intent.ACTION_VIEW -> intent.data
+        @Suppress("DEPRECATION")
+        Intent.ACTION_SEND -> intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+        else -> null
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/documents")
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "pickPdf" -> pickPdf(result)
-                    "saveAs" -> saveAs(
-                        call.argument<String>("name")!!,
-                        call.argument<String>("mime")!!,
-                        call.argument<ByteArray>("data")!!,
-                        result,
-                    )
-                    else -> result.notImplemented()
-                }
+        documents = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/documents")
+        documents!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "pickPdf" -> pickPdf(result)
+                "takeIncoming" -> takeIncoming(result)
+                "saveAs" -> saveAs(
+                    call.argument<String>("name")!!,
+                    call.argument<String>("mime")!!,
+                    call.argument<ByteArray>("data")!!,
+                    result,
+                )
+                else -> result.notImplemented()
             }
+        }
         // SecretBox (ADR 3 section 5): the sign-in secrets and the sync key are encrypted with a key
         // in the Android Keystore, which never leaves the chip, as the desktop's safeStorage does.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/secrets")
@@ -140,6 +166,16 @@ class MainActivity : AudioServiceActivity() {
         return String(cipher.doFinal(bytes, IV_BYTES, bytes.size - IV_BYTES))
     }
 
+    private fun takeIncoming(result: MethodChannel.Result) {
+        val uri = incoming
+        incoming = null
+        if (uri == null) {
+            result.success(null)
+            return
+        }
+        readDocument(uri, result)
+    }
+
     private fun pickPdf(result: MethodChannel.Result) {
         if (pending != null) {
             result.error("busy", "The document picker is already open", null)
@@ -203,7 +239,11 @@ class MainActivity : AudioServiceActivity() {
             result.success(null)
             return
         }
-        // A large PDF takes a moment to read; keep it off the UI thread.
+        readDocument(uri, result)
+    }
+
+    /** A large PDF takes a moment to read; keep it off the UI thread. */
+    private fun readDocument(uri: Uri, result: MethodChannel.Result) {
         Thread {
             try {
                 val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }

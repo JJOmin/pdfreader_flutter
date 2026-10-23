@@ -52,7 +52,23 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
+    // Each topic has a page of its own.
+    expect(find.text('Appearance'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('settings-reading')));
+    await tester.pumpAndSettle();
     expect(find.text('Stop reading at the reference list'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
+    await tester.tap(find.byKey(const Key('settings-appearance')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('theme-dark')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.dark);
+    expect(Theme.of(tester.element(find.byType(Scaffold).last)).brightness, Brightness.dark);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Dark'), findsOneWidget, reason: 'the list names the choice');
 
     await tester.tap(find.text('Favourites'));
     await tester.pumpAndSettle();
@@ -134,5 +150,17 @@ void main() {
     await tester.drag(find.byKey(const Key('now-playing')), const Offset(-600, 0));
     await tester.pumpAndSettle();
     expect(closed, 1);
+  });
+
+  test('a document has audio only when the desktop prepared it and voiced a page', () {
+    ReadingSession session([LibraryDocument? prepared]) =>
+        ReadingSession(name: 'x.pdf', data: Uint8List(0), placeKey: 'k', prepared: prepared);
+    LibraryDocument doc(List<int> voiced) => LibraryDocument(
+      Directory('unused'),
+      Manifest(docId: docId, name: 'x.pdf', pages: 3, sentences: 1, bytes: 1, updated: 1, voiced: voiced),
+    );
+    expect(session().hasAudio, isFalse, reason: 'opened from elsewhere, not prepared');
+    expect(session(doc(const [])).hasAudio, isFalse, reason: 'the audio is still being made');
+    expect(session(doc(const [2])).hasAudio, isTrue);
   });
 }

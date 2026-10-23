@@ -13,6 +13,13 @@ import 'fake_platform.dart';
 
 class _CancelledPicker extends DocumentAccess {
   int calls = 0;
+  int incomingAsked = 0;
+
+  @override
+  Future<OpenedDocument?> takeIncoming() async {
+    incomingAsked++;
+    return null;
+  }
 
   @override
   Future<OpenedDocument?> pickPdf() async {
@@ -25,10 +32,22 @@ void main() {
   testWidgets('starts with an open button and stays empty when the picker is cancelled', (tester) async {
     final picker = _CancelledPicker();
     await tester.pumpWidget(PdfReaderApp(documents: picker));
-    await tester.tap(find.widgetWithText(FilledButton, 'Open a PDF'));
+    await tester.tap(find.byKey(const Key('open-pdf')));
     await tester.pumpAndSettle();
     expect(picker.calls, 1);
     expect(find.text('PDF Reader'), findsOneWidget);
+  });
+
+  testWidgets('asks for a PDF another app opened it with, at the start and whenever one arrives', (
+    tester,
+  ) async {
+    final picker = _CancelledPicker();
+    await tester.pumpWidget(PdfReaderApp(documents: picker));
+    await tester.pump();
+    expect(picker.incomingAsked, 1);
+    picker.onIncoming!();
+    await tester.pump();
+    expect(picker.incomingAsked, 2);
   });
 
   testWidgets('shows the sync icon in its state, and a pull to refresh asks for a full sync', (tester) async {
@@ -56,7 +75,7 @@ void main() {
     // The file reads of the pull are real I/O, which the test's clock does not wait for.
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Open a PDF'), findsOneWidget);
+    expect(find.byTooltip('Open a PDF'), findsOneWidget);
     // The poll's timer must be gone before the test ends.
     await tester.pumpWidget(const SizedBox());
     sync.dispose();

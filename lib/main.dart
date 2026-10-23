@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'app_settings_store.dart';
 import 'desktop_link.dart';
 import 'document_access.dart';
 import 'favourites_store.dart';
@@ -14,6 +15,7 @@ import 'favourites_tab.dart';
 import 'library.dart';
 import 'library_list.dart';
 import 'now_playing.dart';
+import 'shared/app_settings.dart';
 import 'shared/home_lists.dart';
 import 'shared/inbox.dart' show PendingOffer;
 import 'shared/library_view.dart';
@@ -85,6 +87,7 @@ Future<void> main() async {
   sync.offerFile = OfferFile(File('$support/offers.json'));
   await sync.offerFile.load();
   final favourites = await FavouritesStore.load(File('$support/favourites.json'));
+  final appSettings = await AppSettingsStore.load(File('$support/app-settings.json'));
   // What the user changes is sent soon; what a sync brings in is not sent back.
   notesStore.onSaved = sync.ownChanged;
   places.onStateWritten = () => sync.ownChanged(place: true);
@@ -97,11 +100,12 @@ Future<void> main() async {
       cloud: cloud,
       sync: sync,
       favourites: favourites,
+      appSettings: appSettings,
     ),
   );
 }
 
-class PdfReaderApp extends StatelessWidget {
+class PdfReaderApp extends StatefulWidget {
   const PdfReaderApp({
     super.key,
     this.documents,
@@ -112,6 +116,7 @@ class PdfReaderApp extends StatelessWidget {
     this.cloud,
     this.sync,
     this.favourites,
+    this.appSettings,
   });
 
   /// Replaced in widget tests, which have no platform side.
@@ -123,23 +128,39 @@ class PdfReaderApp extends StatelessWidget {
   final CloudAccounts? cloud;
   final SyncController? sync;
   final FavouritesStore? favourites;
+  final AppSettingsStore? appSettings;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'PDF Reader',
-    theme: ThemeData(colorSchemeSeed: Colors.indigo),
-    darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
-    // Follows the system's light or dark setting (PLAN 9.11).
-    themeMode: ThemeMode.system,
-    home: HomePage(
-      documents: documents ?? DocumentAccess(),
-      library: library,
-      playback: playback,
-      places: places,
-      notesStore: notesStore,
-      cloud: cloud,
-      sync: sync,
-      favourites: favourites,
+  State<PdfReaderApp> createState() => _PdfReaderAppState();
+}
+
+class _PdfReaderAppState extends State<PdfReaderApp> {
+  late final AppSettingsStore _appSettings = widget.appSettings ?? AppSettingsStore.inMemory();
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: _appSettings,
+    builder: (context, choice, _) => MaterialApp(
+      title: 'PDF Reader',
+      theme: ThemeData(colorSchemeSeed: Colors.indigo),
+      darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
+      // Light, dark, or the system's setting (PLAN 9.11, 9.12).
+      themeMode: switch (choice) {
+        ThemeChoice.system => ThemeMode.system,
+        ThemeChoice.light => ThemeMode.light,
+        ThemeChoice.dark => ThemeMode.dark,
+      },
+      home: HomePage(
+        documents: widget.documents ?? DocumentAccess(),
+        library: widget.library,
+        playback: widget.playback,
+        places: widget.places,
+        notesStore: widget.notesStore,
+        cloud: widget.cloud,
+        sync: widget.sync,
+        favourites: widget.favourites,
+        appSettings: _appSettings,
+      ),
     ),
   );
 }
@@ -157,6 +178,7 @@ class HomePage extends StatefulWidget {
     this.cloud,
     this.sync,
     this.favourites,
+    this.appSettings,
   });
 
   final DocumentAccess documents;
@@ -167,6 +189,7 @@ class HomePage extends StatefulWidget {
   final CloudAccounts? cloud;
   final SyncController? sync;
   final FavouritesStore? favourites;
+  final AppSettingsStore? appSettings;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -195,10 +218,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     widget.sync?.addListener(_onSync);
     widget.sync?.resume();
+    // A PDF another app opened this one with: now if it started us, later if we were running.
+    widget.documents.onIncoming = () => unawaited(_openIncoming());
+    unawaited(_openIncoming());
   }
 
   @override
   void dispose() {
+    widget.documents.onIncoming = null;
     widget.sync?.removeListener(_onSync);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -288,27 +315,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   /// Opens the reader; another document ends the session before, as only one voice reads.
-  void _show(String name, Uint8List data, String placeKey, LibraryDocument? prepared) => setState(() {
+  void _show(
+    String name,
+    Uint8List data,
+    String placeKey,
+    LibraryDocument? prepared, {
+    bool reading = false,
+  }) => setState(() {
     if (_session?.placeKey != placeKey) {
-      _session = ReadingSession(name: name, data: data, placeKey: placeKey, prepared: prepared);
+      _session = ReadingSession(
+        name: name,
+        data: data,
+        placeKey: placeKey,
+        prepared: prepared,
+        startInReading: reading,
+      );
     }
     _expanded = true;
   });
 
-  void _collapse() => setState(() => _expanded = false);
+  /// Back hides the reader, and a document with audio goes on in the Now Playing bar; one without has
+  /// nothing to play, so closing it ends it.
+  void _collapse() {
+    if (_session?.hasAudio ?? false) {
+      setState(() => _expanded = false);
+    } else {
+      _endSession();
+    }
+  }
 
   void _endSession() => setState(() {
     _session = null;
     _expanded = false;
   });
 
+  /// Shows a PDF that came from outside: the picker, or "Open with" in another app.
+  Future<void> _openOpened(OpenedDocument document, {bool reading = false}) async {
+    // A PDF the desktop prepared is found by its bytes, wherever it was opened from.
+    final prepared = await widget.library?.find(document.data);
+    if (mounted) _show(document.name, document.data, document.uri, prepared, reading: reading);
+  }
+
+  Future<void> _openIncoming() async {
+    try {
+      final document = await widget.documents.takeIncoming();
+      // Handed over by another app: straight into the reading view.
+      if (document != null) await _openOpened(document, reading: true);
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open: ${e.message}')));
+    }
+  }
+
   Future<void> _open() async {
     try {
       final document = await widget.documents.pickPdf();
-      if (document == null) return;
-      // A PDF the desktop prepared is found by its bytes, wherever it was opened from.
-      final prepared = await widget.library?.find(document.data);
-      if (mounted) _show(document.name, document.data, document.uri, prepared);
+      if (document != null) await _openOpened(document);
     } on PlatformException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open: ${e.message}')));
@@ -425,24 +487,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onRefresh: _pull,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          // Room under the last document for the button over the list's corner.
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
           children: [
-            Center(
-              child: FilledButton.icon(
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Open a PDF'),
-                onPressed: _open,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: OutlinedButton.icon(
-                key: const Key('connect'),
-                icon: const Icon(Icons.computer),
-                label: const Text('Set up sync'),
-                onPressed: widget.sync == null ? null : _syncScreen,
-              ),
-            ),
             if (recent.isNotEmpty)
               section('Continue reading', recent, (d) {
                 final page = widget.places?.progress('library:${d.manifest.docId}')?.progress.page;
@@ -525,25 +572,37 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         ),
                         // Built only while shown: it listens for computers on the network.
                         if (_tab == 2)
-                          SettingsTab(sync: sync, desktops: sync?.desktopStore, places: widget.places)
+                          SettingsTab(
+                            sync: sync,
+                            desktops: sync?.desktopStore,
+                            places: widget.places,
+                            appSettings: widget.appSettings ?? AppSettingsStore.inMemory(),
+                          )
                         else
                           const SizedBox.shrink(),
                       ],
                     ),
-                    floatingActionButton: _tab == 1
-                        ? FloatingActionButton(
-                            key: const Key('new-folder'),
-                            tooltip: 'New folder',
-                            onPressed: () => editFolder(context, _favourites),
-                            child: const Icon(Icons.add),
-                          )
-                        : null,
+                    floatingActionButton: switch (_tab) {
+                      0 => FloatingActionButton(
+                        key: const Key('open-pdf'),
+                        tooltip: 'Open a PDF',
+                        onPressed: _open,
+                        child: const Icon(Icons.file_open_outlined),
+                      ),
+                      1 => FloatingActionButton(
+                        key: const Key('new-folder'),
+                        tooltip: 'New folder',
+                        onPressed: () => editFolder(context, _favourites),
+                        child: const Icon(Icons.add),
+                      ),
+                      _ => null,
+                    },
                     bottomNavigationBar: NavigationBarTheme(
                       data: const NavigationBarThemeData(height: 56),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (session != null)
+                          if (session != null && session.hasAudio)
                             NowPlayingBar(
                               session: session,
                               favourites: _favourites,
@@ -585,6 +644,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   documents: widget.documents,
                   session: session,
                   onCollapse: _collapse,
+                  startInReading: session.startInReading,
                 ),
               ),
             ),

@@ -9,7 +9,16 @@ import 'library.dart';
 import 'reader.dart';
 
 class ReadingSession extends ChangeNotifier {
-  ReadingSession({required this.name, required this.data, required this.placeKey, this.prepared});
+  ReadingSession({
+    required this.name,
+    required this.data,
+    required this.placeKey,
+    this.prepared,
+    this.startInReading = false,
+  });
+
+  /// The PDF came from another app and opens in the reading view.
+  final bool startInReading;
 
   final String name;
   final Uint8List data;
@@ -17,6 +26,10 @@ class ReadingSession extends ChangeNotifier {
   final LibraryDocument? prepared;
 
   ReaderState state = ReaderState.idle;
+
+  /// False for a PDF the desktop has not prepared, or has voiced no page of yet: there is nothing to
+  /// play, so no player is shown for it.
+  bool get hasAudio => prepared != null && prepared!.manifest.voiced.isNotEmpty;
 
   /// Set by the reader once it can read aloud; null for a document the desktop has not prepared.
   VoidCallback? toggle;

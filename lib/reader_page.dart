@@ -64,6 +64,7 @@ class ReaderPage extends StatefulWidget {
     this.documents,
     this.session,
     this.onCollapse,
+    this.startInReading = false,
   });
 
   final String name;
@@ -91,6 +92,9 @@ class ReaderPage extends StatefulWidget {
   /// Back hides the reader and the voice goes on (PLAN 9.4); null where the reader is a route of its own.
   final VoidCallback? onCollapse;
 
+  /// Opens in the reading view whatever the saved place says: for a PDF another app handed over.
+  final bool startInReading;
+
   @override
   State<ReaderPage> createState() => ReaderPageState();
 }
@@ -109,7 +113,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   final _readingView = ReadingController();
 
   /// True while the reading view is shown instead of the pages.
-  late bool reading = _saved?.view == 'reading';
+  late bool reading = widget.startInReading || _saved?.view == 'reading';
+
+  /// Whether there is anything to play; without audio the player is not shown at all.
+  bool get _hasAudio => widget.prepared != null && widget.prepared!.manifest.voiced.isNotEmpty;
   TextView get _view => reading ? _readingView : _pdf;
 
   /// The sentence being read and its word.
@@ -284,7 +291,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       await done();
       await _addMarks(selected, kind, color);
     },
-    onReadFrom: _reader == null
+    onReadFrom: _reader == null || !_hasAudio
         ? null
         : () async {
             final selected = await selection();
@@ -991,21 +998,22 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                           ),
                   ),
                   // Over the page, which runs on behind the bar (PLAN 9.8).
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: SafeArea(
-                      top: false,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Padding(padding: const EdgeInsets.only(right: 24), child: _barNotch(bar, onBar)),
-                          if (!_barHidden) _playBar(reader, status, bar, onBar),
-                        ],
+                  if (_hasAudio)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: SafeArea(
+                        top: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Padding(padding: const EdgeInsets.only(right: 24), child: _barNotch(bar, onBar)),
+                            if (!_barHidden) _playBar(reader, status, bar, onBar),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
