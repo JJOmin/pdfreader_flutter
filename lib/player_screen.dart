@@ -105,32 +105,54 @@ class PlayerScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(BuildContext context) => Row(
-    children: [
-      IconButton(
-        key: const Key('player-minimize'),
-        iconSize: 32,
-        icon: const Icon(Icons.keyboard_arrow_down),
-        tooltip: 'Minimise',
-        onPressed: onMinimize,
-      ),
-      Expanded(
-        child: Text(
-          session.name,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall,
+  /// The title, and under it which page is read and by which audio, in words: an icon would look
+  /// like a button.
+  Widget _header(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final sentence = session.sentence;
+    final caption = switch (sentence?.source) {
+      SpeechSource.desktop => 'Page ${sentence!.page} · computer audio',
+      SpeechSource.phone => 'Page ${sentence!.page} · phone voice',
+      null => '',
+    };
+    return Row(
+      children: [
+        IconButton(
+          key: const Key('player-minimize'),
+          iconSize: 32,
+          icon: const Icon(Icons.keyboard_arrow_down),
+          tooltip: 'Minimise',
+          onPressed: onMinimize,
         ),
-      ),
-      IconButton(
-        key: const Key('player-open-text'),
-        icon: const Icon(Icons.article_outlined),
-        tooltip: 'Show the text',
-        onPressed: onOpenText,
-      ),
-    ],
-  );
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                session.name,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.bodySmall,
+              ),
+              Text(
+                caption,
+                key: const Key('player-source'),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: theme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          key: const Key('player-open-text'),
+          icon: const Icon(Icons.article_outlined),
+          tooltip: 'Show the text',
+          onPressed: onOpenText,
+        ),
+      ],
+    );
+  }
 
   Widget _preview(BuildContext context) {
     final sentence = session.sentence;
@@ -177,26 +199,36 @@ class PlayerScreen extends StatelessWidget {
     );
   }
 
-  /// Where the audio comes from, in words (an icon would look like a button), and the speed.
+  /// The choice between the computer's audio and the phone's voice, where there is one, and the speed.
   Widget _info(BuildContext context) {
-    final sentence = session.sentence;
-    final caption = switch (sentence?.source) {
-      SpeechSource.desktop => 'Page ${sentence!.page} · computer audio',
-      SpeechSource.phone => 'Page ${sentence!.page} · phone voice',
-      null => '',
-    };
     final setSpeed = session.setSpeed;
+    final setVoice = session.setVoice;
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            caption,
-            key: const Key('player-source'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
+        if (session.canSwitchVoice)
+          SegmentedButton<VoiceChoice>(
+            key: const Key('voice-switch'),
+            showSelectedIcon: false,
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10)),
+            ),
+            segments: const [
+              ButtonSegment(
+                value: VoiceChoice.prepared,
+                icon: Icon(Icons.computer, key: Key('voice-prepared')),
+                tooltip: 'Audio prepared on the computer',
+              ),
+              ButtonSegment(
+                value: VoiceChoice.phone,
+                icon: Icon(Icons.smartphone, key: Key('voice-phone')),
+                tooltip: 'This phone’s voice',
+              ),
+            ],
+            selected: {session.voice},
+            onSelectionChanged: setVoice == null ? null : (choice) => setVoice(choice.first),
           ),
-        ),
+        const Spacer(),
         IconButton(
           key: const Key('speed-down'),
           visualDensity: VisualDensity.compact,

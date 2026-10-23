@@ -193,4 +193,26 @@ void main() {
       reason: 'the computer has not voiced a page yet',
     );
   });
+
+  test('the voice can be chosen only where the computer voiced a page and the phone can speak too', () {
+    LibraryDocument doc(List<int> voiced) => LibraryDocument(
+      Directory('unused'),
+      Manifest(docId: docId, name: 'x.pdf', pages: 3, sentences: 1, bytes: 1, updated: 1, voiced: voiced),
+    );
+    ReadingSession session({LibraryDocument? prepared, Set<Lang> phone = const {}}) => ReadingSession(
+      name: 'x.pdf',
+      data: Uint8List(0),
+      placeKey: 'k',
+      prepared: prepared,
+      phoneLangs: phone,
+    );
+    expect(session(prepared: doc(const [1]), phone: const {Lang.de}).canSwitchVoice, isTrue);
+    expect(session(prepared: doc(const [1])).canSwitchVoice, isFalse, reason: 'no phone voice');
+    expect(session(phone: const {Lang.de}).canSwitchVoice, isFalse, reason: 'nothing prepared');
+    expect(
+      session(prepared: doc(const []), phone: const {Lang.de}).canSwitchVoice,
+      isFalse,
+      reason: 'no page voiced',
+    );
+  });
 }

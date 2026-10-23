@@ -1,13 +1,16 @@
 // The full-screen player (PLAN 11): its buttons, the speed-reader preview and the quick comment.
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfreader/dictation.dart';
+import 'package:pdfreader/library.dart';
 import 'package:pdfreader/now_playing.dart';
 import 'package:pdfreader/player_screen.dart';
 import 'package:pdfreader/reader.dart';
 import 'package:pdfreader/shared/read_plan.dart';
+import 'package:pdfreader/shared/sync.dart';
 import 'package:pdfreader/shared/types.dart';
 import 'package:pdfreader/views/quick_comment.dart';
 import 'package:pdfreader/views/speed_reader.dart';
@@ -150,6 +153,82 @@ void main() {
       expect(set.last, 2.0);
     });
 
+    testWidgets('offers the computer’s audio or the phone’s voice only where both exist', (tester) async {
+      final both = ReadingSession(
+        name: 'Paper.pdf',
+        data: Uint8List(0),
+        placeKey: 'k',
+        prepared: LibraryDocument(
+          Directory('unused'),
+          Manifest(
+            docId: 'a' * 64,
+            name: 'x.pdf',
+            pages: 3,
+            sentences: 1,
+            bytes: 1,
+            updated: 1,
+            voiced: const [1],
+          ),
+        ),
+        phoneLangs: const {Lang.en},
+      );
+      final chosen = <VoiceChoice>[];
+      both.setVoice = (choice) {
+        chosen.add(choice);
+        both.updateVoice(choice);
+      };
+      await pumpPlayer(tester, both);
+      expect(find.byKey(const Key('voice-switch')), findsOneWidget);
+      SegmentedButton<VoiceChoice> shown() =>
+          tester.widget<SegmentedButton<VoiceChoice>>(find.byKey(const Key('voice-switch')));
+      expect(shown().selected, {VoiceChoice.prepared}, reason: 'the computer’s audio is the default');
+
+      await tester.tap(find.byKey(const Key('voice-phone')));
+      await tester.pump();
+      expect(shown().selected, {VoiceChoice.phone});
+      await tester.tap(find.byKey(const Key('voice-prepared')));
+      await tester.pump();
+      expect(shown().selected, {VoiceChoice.prepared});
+      expect(chosen, [VoiceChoice.phone, VoiceChoice.prepared]);
+
+      // Only the phone's voice, or only prepared audio: there is nothing to choose.
+      await pumpPlayer(tester, session());
+      expect(find.byKey(const Key('voice-switch')), findsNothing);
+    });
+
+    testWidgets('fits a narrow phone with the voice switch, the speed and the long title', (tester) async {
+      tester.view.physicalSize = const Size(360, 740);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final s = ReadingSession(
+        name: 'A very long title of a paper that does not fit on one line of a phone at all.pdf',
+        data: Uint8List(0),
+        placeKey: 'k',
+        prepared: LibraryDocument(
+          Directory('unused'),
+          Manifest(
+            docId: 'a' * 64,
+            name: 'x.pdf',
+            pages: 3,
+            sentences: 1,
+            bytes: 1,
+            updated: 1,
+            voiced: const [1],
+          ),
+        ),
+        phoneLangs: const {Lang.en},
+        canDictate: true,
+      )..update(ReaderState.playing, sentence: sentence());
+      await pumpPlayer(tester, s);
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('voice-switch')), findsOneWidget);
+      expect(find.byKey(const Key('speed-up')), findsOneWidget);
+      expect(
+        tester.getRect(find.byKey(const Key('voice-switch'))).right,
+        lessThan(tester.getRect(find.byKey(const Key('speed-down'))).left),
+      );
+    });
+
     testWidgets('comments only on a sentence being read, and speaking only where the phone can listen', (
       tester,
     ) async {
@@ -257,21 +336,24 @@ void main() {
   });
 
   group('QuickCommentSheet', () {
-    Future<String?> open(WidgetTester tester, {Dictation? dictation, bool speak = false}) async {
-      String? result;
-      var done = false;
+    /// Opens the sheet; what it was closed with is in the returned holder.
+    Future<({QuickComment? Function() saved})> open(
+      WidgetTester tester, {
+      Dictation? dictation,
+      bool speak = false,
+    }) async {
+      QuickComment? result;
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () async {
-                result = await showModalBottomSheet<String>(
+                result = await showModalBottomSheet<QuickComment>(
                   context: context,
                   isScrollControlled: true,
                   builder: (_) =>
                       QuickCommentSheet(quote: 'The quick fox.', dictation: dictation, listenAtOnce: speak),
                 );
-                done = true;
               },
               child: const Text('open'),
             ),
@@ -280,35 +362,40 @@ void main() {
       );
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      addTearDown(() => expect(done || result == null, isTrue));
-      return result;
+      return (saved: () => result);
     }
 
-    testWidgets('saves what was typed', (tester) async {
-      String? saved;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => TextButton(
-                onPressed: () async => saved = await showModalBottomSheet<String>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => const QuickCommentSheet(quote: 'q'),
-                ),
-                child: const Text('open'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('dictate')), findsNothing, reason: 'no recogniser on this phone');
-      await tester.enterText(find.byKey(const Key('quick-comment')), '  A thought  ');
+    Future<void> save(WidgetTester tester) async {
       await tester.tap(find.byKey(const Key('save-comment')));
       await tester.pumpAndSettle();
-      expect(saved, 'A thought');
+    }
+
+    testWidgets('saves what was typed, not marked as spoken', (tester) async {
+      final sheet = await open(tester);
+      expect(find.byKey(const Key('dictate')), findsNothing, reason: 'no recogniser on this phone');
+      await tester.enterText(find.byKey(const Key('quick-comment')), '  A thought  ');
+      await save(tester);
+      expect(sheet.saved(), (text: 'A thought', dictated: false));
+    });
+
+    testWidgets('marks a comment that was spoken, and keeps the mark when it was corrected by hand', (
+      tester,
+    ) async {
+      final sheet = await open(tester, dictation: FakeDictation(const Dictated(text: 'spoken thought')));
+      await tester.tap(find.byKey(const Key('dictate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('quick-comment')), 'spoken thought, corrected');
+      await save(tester);
+      expect(sheet.saved(), (text: 'spoken thought, corrected', dictated: true));
+    });
+
+    testWidgets('does not mark a comment typed after nothing was heard', (tester) async {
+      final sheet = await open(tester, dictation: FakeDictation(const Dictated()));
+      await tester.tap(find.byKey(const Key('dictate')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('quick-comment')), 'typed instead');
+      await save(tester);
+      expect(sheet.saved(), (text: 'typed instead', dictated: false));
     });
 
     testWidgets('puts what was heard into the field as a draft', (tester) async {

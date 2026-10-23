@@ -48,6 +48,18 @@ recognition on the phone itself, and section 5 now describes that.
      `model.int8.onnx` and `tokens.txt` of the recogniser are read). Without it the sheet says so and
      typing works. `// shortcut: pushed with adb; an in-app import comes with ADR 1's import button.`
 
+6. **A spoken comment is told apart in the notes file** (PLAN M12): the mark gets `"via": "speech"`,
+   and a mark with a comment shows a note icon above its first line, or a microphone icon if the
+   comment was spoken, in both apps. The field is optional, sits between `created` and `updated`,
+   travels through the merge like the rest of the mark, and is ignored if it holds anything else.
+   The desktop reads and writes it (its `docs/SPEC.md`, "Comment badges").
+
+7. **The selection menu's Comment button** replaces its microphone: it always opens the comment sheet,
+   which has the keyboard and, where the phone can listen, the microphone (PLAN 13.1).
+8. **The voice can be chosen in the player** where both exist (PLAN 13.2): computer audio, the
+   default, or the phone's own voice for every sentence. See ADR 5, which says the computer's audio
+   is preferred; this is the user overriding that, per app run.
+
 ## Consequences
 
 - Playback can be run without looking: large targets, one screen, no menus.

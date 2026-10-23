@@ -200,6 +200,19 @@ void main() {
     expect(host.changes.where((c) => c.$2 == 'a').map((c) => c.$3), [-1, 1]);
   });
 
+  test('forgets what it loaded, so a sentence is made afresh after the voice changed', () async {
+    reader.toggle((page: 1, index: 0));
+    await settle();
+    expect(audio.keys, ['a', 'b', 'c']);
+    await reader.forget();
+    expect(reader.state, ReaderState.idle);
+    expect(audio.prepared.every((p) => p.disposed), isTrue);
+    reader.toggle((page: 1, index: 1));
+    await settle();
+    // "b" was loaded before; the old player is not reused.
+    expect(audio.keys.where((k) => k == 'b'), hasLength(2));
+  });
+
   test('a seek stops the sentence playing and reads on from the new place', () async {
     reader.toggle((page: 1, index: 0));
     await settle();

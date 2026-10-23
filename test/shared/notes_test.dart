@@ -16,6 +16,7 @@ Annotation annotation({
   MarkKind kind = MarkKind.highlight,
   HighlightColor color = HighlightColor.yellow,
   String comment = '',
+  String? via,
 }) => Annotation(
   id: id,
   page: page,
@@ -27,6 +28,7 @@ Annotation annotation({
   color: color,
   comment: comment,
   created: '2026-10-13T00:00:00.000Z',
+  via: via,
 );
 
 void main() {
@@ -147,6 +149,56 @@ void main() {
           '',
         ].join('\n'),
       );
+    });
+  });
+
+  group('how a comment was made (via)', () {
+    NotesFile read(Map<String, Object?> over) => parseNotes({
+      'version': 1,
+      'notes': '',
+      'annotations': [
+        {...annotation().toJson(), ...over},
+      ],
+    })!;
+
+    test('is read, and written between created and updated, where the desktop writes it', () {
+      final mark = read({'via': 'speech', 'updated': 5, 'comment': 'spoken'}).annotations.single;
+      expect(mark.via, 'speech');
+      expect(mark.toJson().keys.toList().sublist(9), ['created', 'via', 'updated']);
+    });
+
+    test('is left out of a mark that has none, so that a file written before reads and writes as it did', () {
+      expect(read({}).annotations.single.toJson().containsKey('via'), isFalse);
+    });
+
+    test('ignores a value this version does not know instead of refusing the file', () {
+      expect(read({'via': 'telepathy'}).annotations.single.via, isNull);
+      expect(read({'via': 3}).annotations.single.via, isNull);
+    });
+
+    test('stays with a mark when its comment is edited or its place is found again', () {
+      final spoken = annotation(comment: 'spoken', via: 'speech');
+      expect(spoken.copyWith(comment: 'edited').via, 'speech');
+      expect(spoken.copyWith(start: 10, end: 15).via, 'speech');
+      expect(spoken.unstamped.via, 'speech');
+    });
+
+    test('is the desktop’s file, byte for byte', () {
+      final golden = File('test/golden/notes-via.json').readAsStringSync();
+      expect(encodeNotes(parseNotes(jsonDecode(golden))!), golden);
+    });
+  });
+
+  group('markBadge', () {
+    test('shows nothing for a mark without a comment, however it was made', () {
+      expect(markBadge(annotation()), isNull);
+      expect(markBadge(annotation(comment: '  \n ')), isNull);
+      expect(markBadge(annotation(via: 'speech')), isNull);
+    });
+
+    test('shows a note for a written comment and a microphone for a spoken one', () {
+      expect(markBadge(annotation(comment: 'typed')), NoteBadge.note);
+      expect(markBadge(annotation(comment: 'spoken', via: 'speech')), NoteBadge.speech);
     });
   });
 

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/shared/notes_merge.dart';
 
-Annotation mark(String id, {String comment = '', num? updated}) => Annotation(
+Annotation mark(String id, {String comment = '', String? via, num? updated}) => Annotation(
   id: id,
   page: 1,
   start: 0,
@@ -17,6 +17,7 @@ Annotation mark(String id, {String comment = '', num? updated}) => Annotation(
   color: HighlightColor.yellow,
   comment: comment,
   created: '2026-10-13T00:00:00.000Z',
+  via: via,
   updated: updated,
 );
 
@@ -182,6 +183,27 @@ void main() {
     test('match the desktop byte for byte, in a file the desktop wrote with them', () {
       final golden = File('test/golden/notes-merged.json').readAsStringSync();
       expect(encodeNotes(parseNotes(jsonDecode(golden))!), golden);
+    });
+  });
+
+  group('how a comment was made (via)', () {
+    test('travels with the mark through a merge, so a spoken comment stays spoken on the other device', () {
+      final spoken = mark('a', comment: 'spoken', via: 'speech', updated: 200);
+      expect(mergeNotes(file([mark('a', updated: 100)]), file([spoken])).annotations.single.via, 'speech');
+      expect(mergeNotes(file([spoken]), file([mark('a', updated: 100)])).annotations.single.via, 'speech');
+    });
+
+    test('counts as a change: marking a comment as spoken re-stamps the mark', () {
+      final before = file([mark('a', comment: 'c', updated: 100)]);
+      final after = file([mark('a', comment: 'c', via: 'speech', updated: 100)]);
+      expect(stampChanges(before, after, 500).annotations.single.updated, 500);
+    });
+
+    test('is not lost when the mark is stamped again unchanged', () {
+      final before = file([mark('a', comment: 'c', via: 'speech', updated: 100)]);
+      final again = stampChanges(before, file([mark('a', comment: 'c', via: 'speech')]), 500);
+      expect(again.annotations.single.via, 'speech');
+      expect(again.annotations.single.updated, 100);
     });
   });
 }

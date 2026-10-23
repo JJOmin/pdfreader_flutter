@@ -9,6 +9,7 @@ import '../shared/layout.dart';
 import '../shared/notes.dart';
 import '../shared/settings.dart';
 import '../shared/types.dart';
+import 'mark_badge.dart';
 import 'mark_menu.dart';
 import 'text_view.dart';
 
@@ -266,6 +267,23 @@ class _ReadingViewState extends State<ReadingView> {
     );
   }
 
+  /// The comment icons of a paragraph: one per mark whose first stretch starts in it.
+  List<_Badge> _badges(int page, int index) {
+    final out = <_Badge>[];
+    for (final highlight in widget.highlights) {
+      if (highlight.badge == null || highlight.page != page || highlight.ranges.isEmpty) continue;
+      final first = blockSpans(
+        _pages[page - 1],
+        highlight.ranges.first.$1,
+        highlight.ranges.first.$2,
+      ).firstOrNull;
+      if (first != null && first.block == index) {
+        out.add((from: first.from, to: first.to, badge: highlight.badge!, color: highlight.color!));
+      }
+    }
+    return out;
+  }
+
   TextStyle _runStyle(List<Highlight> layers) {
     var fill = const Color(0x00000000);
     final decorations = <TextDecoration>[];
@@ -403,17 +421,28 @@ class _ReadingViewState extends State<ReadingView> {
                             padding: EdgeInsets.only(bottom: settings.size * 0.8),
                             child: Listener(
                               onPointerDown: (e) => _lastPointer = e.position,
-                              child: SelectableText.rich(
-                                _paragraph(
-                                  page,
-                                  i,
-                                  _pages[page - 1][i],
-                                  _pages[page - 1][i].heading ? heading : base,
-                                ),
-                                key: _blockKeys[page - 1][i],
-                                textScaler: scaler,
-                                onTap: () => _tapParagraph(page, i),
-                                contextMenuBuilder: (context, state) => _menu(page, i, context, state),
+                              child: Builder(
+                                builder: (context) {
+                                  final span = _paragraph(
+                                    page,
+                                    i,
+                                    _pages[page - 1][i],
+                                    _pages[page - 1][i].heading ? heading : base,
+                                  );
+                                  final badges = _badges(page, i);
+                                  return CustomPaint(
+                                    foregroundPainter: badges.isEmpty
+                                        ? null
+                                        : _BadgePainter(span, scaler, Directionality.of(context), badges),
+                                    child: SelectableText.rich(
+                                      span,
+                                      key: _blockKeys[page - 1][i],
+                                      textScaler: scaler,
+                                      onTap: () => _tapParagraph(page, i),
+                                      contextMenuBuilder: (context, state) => _menu(page, i, context, state),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ),
@@ -427,6 +456,39 @@ class _ReadingViewState extends State<ReadingView> {
       ),
     );
   }
+}
+
+/// A comment icon to paint in a paragraph: where the mark's first stretch starts and ends in the
+/// paragraph's text, and what to show.
+typedef _Badge = ({int from, int to, NoteBadge badge, HighlightColor color});
+
+/// Paints the comment icons over a paragraph. It lays the same text out at the same width as the
+/// selectable text does, to find the first line of each mark, so it needs nothing from that widget.
+class _BadgePainter extends CustomPainter {
+  _BadgePainter(this.span, this.scaler, this.direction, this.badges);
+
+  final TextSpan span;
+  final TextScaler scaler;
+  final TextDirection direction;
+  final List<_Badge> badges;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final text = TextPainter(text: span, textDirection: direction, textScaler: scaler)
+      ..layout(maxWidth: size.width);
+    for (final b in badges) {
+      final boxes = text.getBoxesForSelection(TextSelection(baseOffset: b.from, extentOffset: b.to));
+      if (boxes.isEmpty) continue;
+      final line = boxes.first.toRect();
+      // About the size of the text, so it follows the reader's font size; above the line.
+      final side = (line.height * 0.55).clamp(11.0, 20.0);
+      paintMarkBadge(canvas, Rect.fromLTWH(line.left, line.top - side * 0.85, side, side), b.badge, b.color);
+    }
+    text.dispose();
+  }
+
+  @override
+  bool shouldRepaint(_BadgePainter old) => true;
 }
 
 /// The reading view's text settings, changed in a sheet below the view.

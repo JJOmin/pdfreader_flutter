@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../document_text.dart';
+import '../shared/mark_badge.dart';
 import '../shared/marks.dart';
 import '../shared/notes.dart';
 import '../shared/pdfium_text.dart';
 import '../shared/types.dart';
+import 'mark_badge.dart';
 import 'mark_menu.dart';
 import 'text_view.dart';
 
@@ -187,10 +189,16 @@ class _PdfPagesViewState extends State<PdfPagesView> {
   void _paint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
     Rect place(CharBox b) =>
         PdfRect(b.left, b.top, b.right, b.bottom).toRectInDocument(page: page, pageRect: pageRect);
+    // The comment icons are painted last, over every mark and the voice.
+    final badges = <(Rect, NoteBadge, HighlightColor)>[];
     for (final highlight in widget.highlights) {
       if (highlight.page != page.pageNumber) continue;
       final kind = highlight.kind;
-      for (final b in _boxes(page.pageNumber, highlight.ranges) ?? const <CharBox>[]) {
+      final boxes = _boxes(page.pageNumber, highlight.ranges) ?? const <CharBox>[];
+      if (highlight.badge != null && boxes.isNotEmpty) {
+        badges.add((place(badgeBox(boxes.first)), highlight.badge!, highlight.color!));
+      }
+      for (final b in boxes) {
         final rect = place(b);
         if (kind != null) {
           final paint = Paint()..color = kind.color;
@@ -226,6 +234,9 @@ class _PdfPagesViewState extends State<PdfPagesView> {
         }
       }
     }
+    for (final (rect, badge, color) in badges) {
+      paintMarkBadge(canvas, rect, badge, color);
+    }
   }
 
   /// The mark under a tap, the last painted where several lie there.
@@ -233,7 +244,9 @@ class _PdfPagesViewState extends State<PdfPagesView> {
     String? found;
     for (final highlight in widget.highlights) {
       if (highlight.markId == null || highlight.page != hit.page.pageNumber) continue;
-      for (final b in _boxes(highlight.page, highlight.ranges) ?? const <CharBox>[]) {
+      final boxes = _boxes(highlight.page, highlight.ranges) ?? const <CharBox>[];
+      // The icon above the first line opens the comment too.
+      for (final b in [...boxes, if (highlight.badge != null && boxes.isNotEmpty) badgeBox(boxes.first)]) {
         if (hit.offset.x >= b.left &&
             hit.offset.x <= b.right &&
             hit.offset.y >= b.bottom &&

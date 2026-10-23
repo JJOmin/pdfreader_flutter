@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 
 import '../dictation.dart';
 
+/// What the sheet gives back: the comment, and whether any of it was spoken, which marks it with the
+/// microphone icon.
+typedef QuickComment = ({String text, bool dictated});
+
 class QuickCommentSheet extends StatefulWidget {
   const QuickCommentSheet({super.key, required this.quote, this.dictation, this.listenAtOnce = false});
 
@@ -22,6 +26,7 @@ class QuickCommentSheet extends StatefulWidget {
 class _QuickCommentSheetState extends State<QuickCommentSheet> {
   final _text = TextEditingController();
   bool _listening = false;
+  bool _dictated = false;
   String? _problem;
 
   @override
@@ -61,7 +66,10 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
     if (!mounted) return;
     setState(() {
       _listening = false;
-      if (heard.text != null) _put(base, heard.text!);
+      if (heard.text != null) {
+        _put(base, heard.text!);
+        _dictated = true;
+      }
       _problem = heard.error ?? (heard.text == null && _text.text.trim() == base ? 'Nothing heard' : null);
     });
   }
@@ -130,7 +138,11 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
               Expanded(
                 child: FilledButton(
                   key: const Key('save-comment'),
-                  onPressed: _listening ? null : () => Navigator.of(context).pop(_text.text.trim()),
+                  onPressed: _listening
+                      ? null
+                      : () =>
+                            Navigator.of(context)
+                                .pop<QuickComment>((text: _text.text.trim(), dictated: _dictated)),
                   child: const Text('Save'),
                 ),
               ),

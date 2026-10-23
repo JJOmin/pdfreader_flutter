@@ -52,6 +52,10 @@ MarkKind _lastKind = MarkKind.highlight;
 /// The play bar hidden behind its notch for more page, kept across documents while the app runs.
 bool _barHidden = false;
 
+/// The audio the user chose in the full-screen player where both exist, kept across documents while
+/// the app runs.
+VoiceChoice _voiceChoice = VoiceChoice.prepared;
+
 /// Marks are written once they have not changed for this long.
 const _notesDelay = Duration(milliseconds: 500);
 
@@ -228,7 +232,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     }
     final saved = _saved;
     final sentence = saved?.sentence;
-    if (sentence != null) _resume = _lastSentence = (page: sentence.page, index: sentence.index);
+    // Its number counts the desktop's sentences; with the phone's voice chosen they are other ones.
+    if (sentence != null && !_forcePhone) {
+      _resume = _lastSentence = (page: sentence.page, index: sentence.index);
+    }
     unawaited(_loadNotes());
     final prepared = widget.prepared;
     if (prepared == null && widget.phoneLangs.isEmpty) return;
@@ -242,6 +249,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       ..skip = ((direction) => unawaited(reader.skip(direction)))
       ..setSpeed = _changeSpeed
       ..comment = _commentOnSentence
+      ..setVoice = _setVoice
+      ..voice = _voiceChoice
       ..speed = _speed;
     _session.update(state);
     final playback = widget.playback;
@@ -295,6 +304,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     MarkKind kind,
     HighlightColor color, {
     String comment = '',
+    String? via,
   }) async {
     final text = _text;
     if (text == null) return;
@@ -312,7 +322,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         id: newId(),
         created: isoNow(),
       );
-      if (mark != null) made.add(comment.isEmpty ? mark : mark.copyWith(comment: comment));
+      if (mark != null) made.add(comment.isEmpty ? mark : mark.copyWith(comment: comment, via: via));
     }
     if (made.isEmpty || !mounted) return;
     setState(() => _markAt = {..._markAt, for (final m in made) m.id: (m.start, m.end)});
@@ -335,13 +345,12 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       await done();
       await _addMarks(selected, kind, color);
     },
-    onSpeak: !_session.canDictate
-        ? null
-        : () async {
-            final selected = await selection();
-            await done();
-            await _commentOnSelection(selected, speak: true);
-          },
+    // The sheet it opens has the microphone, where the phone can listen, and the keyboard.
+    onComment: () async {
+      final selected = await selection();
+      await done();
+      await _commentOnSelection(selected, speak: false);
+    },
     onReadFrom: _reader == null || !_hasAudio
         ? null
         : () async {
@@ -442,7 +451,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     if (anchor == null) return;
     final last = _lastSentence;
     String? key;
-    if (last != null && widget.prepared != null) {
+    if (last != null && widget.prepared != null && !_forcePhone) {
       final sentences = (await _plan(last.page)).sentences;
       if (last.index < sentences.length) key = sentences[last.index].key;
     }
@@ -453,7 +462,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         zoom: _pdf.isReady ? (_pdf.zoom * 1000).round() / 1000 : _saved?.zoom,
         page: anchor.page,
         offset: anchor.offset,
-        sentence: last,
+        // The phone's sentences are not the desktop's, so their numbers must not be kept for them.
+        sentence: _forcePhone ? null : last,
       ),
       prepared: widget.prepared,
       sentenceKey: key,
@@ -525,7 +535,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   Future<PagePlan> _plan(int page) => _plans[page] ??= () async {
     final utterances = await _text!.utterances(page);
-    final index = await widget.prepared?.index(page);
+    // With the phone's voice chosen the desktop's index is left out, so every sentence is the phone's.
+    final index = _forcePhone ? null : await widget.prepared?.index(page);
     return _planned[page] = planPage(utterances, index, phoneLangs: widget.phoneLangs);
   }();
 
@@ -610,7 +621,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     return [
       // The marks first, so the voice and search lie over them.
       for (final a in _notes.annotations)
-        if (_markAt[a.id] case final at?) Highlight.mark(a.page, [at], a.kind, a.color, a.id),
+        if (_markAt[a.id] case final at?)
+          Highlight.mark(a.page, [at], a.kind, a.color, a.id, badge: markBadge(a)),
       if (sentence != null) Highlight(sentence.page, sentence.ranges, HighlightKind.sentence),
       // A sentence over a page break is tinted on both pages (desktop ADR 12).
       if (sentence?.next case final next?) Highlight(next.page, next.ranges, HighlightKind.sentence),
@@ -666,6 +678,44 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   void _toggle() => _reader?.toggle(_resume ?? (page: _view.currentPage ?? 1, index: 0));
 
+  /// The phone's voice reads even where the computer's audio exists: chosen, and there is a choice.
+  bool get _forcePhone => _voiceChoice == VoiceChoice.phone && _session.canSwitchVoice;
+
+  /// Where a sentence starts in its page's text, so that it can be found among the other voice's
+  /// sentences, which break the page differently.
+  Future<({int page, int offset})?> _offsetOf(Cursor? at) async {
+    if (at == null) return null;
+    final sentences = (await _plan(at.page)).sentences;
+    if (at.index >= sentences.length || sentences[at.index].ranges.isEmpty) return null;
+    return (page: at.page, offset: sentences[at.index].ranges.first.$1);
+  }
+
+  /// Changes the audio and carries on at the sentence that starts where the old one did, reading if
+  /// it was reading. The loaded audio and the plans of the old voice are thrown away.
+  Future<void> _setVoice(VoiceChoice choice) async {
+    final reader = _reader;
+    if (reader == null || choice == _voiceChoice || !_session.canSwitchVoice) return;
+    final wasPlaying = state == ReaderState.playing;
+    final spoken = sentence;
+    final here = spoken != null && spoken.ranges.isNotEmpty
+        ? (page: spoken.page, offset: spoken.ranges.first.$1)
+        : await _offsetOf(_resume ?? _lastSentence);
+    await reader.forget();
+    _plans.clear();
+    _planned.clear();
+    _voiceChoice = choice;
+    _session.updateVoice(choice);
+    Cursor? at;
+    if (here != null) {
+      final ranges = [for (final s in (await _plan(here.page)).sentences) s.ranges];
+      final index = readFromIndex(ranges, here.offset);
+      at = index < 0 ? (page: here.page + 1, index: 0) : (page: here.page, index: index);
+    }
+    if (!mounted) return;
+    _resume = _lastSentence = at;
+    if (wasPlaying && at != null) reader.startAt(at);
+  }
+
   void _changeSpeed(double value) {
     setState(() {
       _speed = value;
@@ -710,15 +760,16 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     }
   }
 
-  Future<String?> _askComment(String quote, {required bool speak}) => showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => QuickCommentSheet(
-      quote: quote,
-      dictation: _session.canDictate ? widget.dictation : null,
-      listenAtOnce: speak && _session.canDictate,
-    ),
-  );
+  Future<QuickComment?> _askComment(String quote, {required bool speak}) =>
+      showModalBottomSheet<QuickComment>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => QuickCommentSheet(
+          quote: quote,
+          dictation: _session.canDictate ? widget.dictation : null,
+          listenAtOnce: speak && _session.canDictate,
+        ),
+      );
 
   /// The player's Comment and Speak buttons: pause, ask for a comment on the sentence being read, and
   /// mark the sentence with it, without touching the text (PLAN 11).
@@ -727,12 +778,13 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     if (spoken == null || spoken.ranges.isEmpty) return;
     final range = (spoken.ranges.first.$1, spoken.ranges.last.$2);
     final comment = await _whilePaused(() => _askComment(sentenceText(spoken), speak: speak));
-    if (comment == null || comment.isEmpty || !mounted) return;
+    if (comment == null || comment.text.isEmpty || !mounted) return;
     await _addMarks(
       [(page: spoken.page, range: range)],
       MarkKind.highlight,
       HighlightColor.yellow,
-      comment: comment,
+      comment: comment.text,
+      via: comment.dictated ? speechVia : null,
     );
   }
 
@@ -744,8 +796,14 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     final page = await text.page(first.page);
     final quote = readableText(page.blocks, first.range.$1, first.range.$2);
     final comment = await _whilePaused(() => _askComment(quote, speak: speak));
-    if (comment == null || comment.isEmpty || !mounted) return;
-    await _addMarks(selected, _lastKind, HighlightColor.yellow, comment: comment);
+    if (comment == null || comment.text.isEmpty || !mounted) return;
+    await _addMarks(
+      selected,
+      _lastKind,
+      HighlightColor.yellow,
+      comment: comment.text,
+      via: comment.dictated ? speechVia : null,
+    );
   }
 
   void _searchChanged(String query) {

@@ -7,6 +7,12 @@ enum HighlightColor { yellow, green, blue, red }
 
 enum MarkKind { highlight, underline, strike }
 
+/// The icon above a mark that has a comment: a note for typed text, a microphone for spoken.
+enum NoteBadge { note, speech }
+
+/// What `via` holds for a comment that was spoken and written out by the speech recogniser.
+const speechVia = 'speech';
+
 class Annotation {
   const Annotation({
     required this.id,
@@ -19,6 +25,7 @@ class Annotation {
     required this.color,
     required this.comment,
     required this.created,
+    this.via,
     this.updated,
   });
 
@@ -37,6 +44,10 @@ class Annotation {
   final String comment;
   final String created;
 
+  /// How the comment was made: [speechVia] when it was spoken, null for a typed comment and in files
+  /// written before this field. The desktop reads and writes it too.
+  final String? via;
+
   /// When it was last changed, in milliseconds. Set when notes are saved; older files have none.
   final num? updated;
 
@@ -47,6 +58,7 @@ class Annotation {
     String? comment,
     MarkKind? kind,
     HighlightColor? color,
+    String? via,
     num? updated,
   }) => Annotation(
     id: id,
@@ -59,6 +71,7 @@ class Annotation {
     color: color ?? this.color,
     comment: comment ?? this.comment,
     created: created,
+    via: via ?? this.via,
     updated: updated ?? this.updated,
   );
 
@@ -74,6 +87,7 @@ class Annotation {
     color: color,
     comment: comment,
     created: created,
+    via: via,
   );
 
   /// The keys in the order the desktop writes them.
@@ -88,6 +102,8 @@ class Annotation {
     'color': color.name,
     'comment': comment,
     'created': created,
+    // Between `created` and `updated`, where the desktop writes it too.
+    if (via != null) 'via': via,
     if (updated != null) 'updated': updated,
   };
 }
@@ -167,6 +183,7 @@ NotesFile? parseNotes(Object? value) {
         color: color,
         comment: comment,
         created: created is String ? created : '',
+        via: entry['via'] == speechVia ? speechVia : null,
         updated: _time(entry['updated']),
       ),
     );
@@ -185,6 +202,11 @@ NotesFile? parseNotes(Object? value) {
     removed: removed,
   );
 }
+
+/// The icon a mark shows above its text: none without a comment, a note for a typed comment and a
+/// microphone for a spoken one. The desktop's `markBadge` follows the same rule.
+NoteBadge? markBadge(Annotation a) =>
+    a.comment.trim().isEmpty ? null : (a.via == speechVia ? NoteBadge.speech : NoteBadge.note);
 
 final _space = RegExp(r'\s+', unicode: true);
 

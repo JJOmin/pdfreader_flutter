@@ -15,6 +15,7 @@ import 'package:pdfreader/notes_store.dart';
 import 'package:pdfreader/phone_voice.dart';
 import 'package:pdfreader/reader.dart';
 import 'package:pdfreader/reader_page.dart';
+import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/shared/read_plan.dart';
 import 'package:pdfreader/shared/types.dart';
 
@@ -42,6 +43,22 @@ Uint8List tinyPdf() {
   }
   out.write('trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n');
   return Uint8List.fromList(utf8.encode(out.toString()));
+}
+
+/// A recogniser that always hears the same words, so a spoken comment can be made without anyone speaking.
+class HeardDictation implements Dictation {
+  @override
+  Future<bool> available() async => true;
+
+  @override
+  Future<Dictated> listen({void Function(String text)? onPartial}) async =>
+      const Dictated(text: 'Said out loud');
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> cancel() async {}
 }
 
 void main() {
@@ -174,8 +191,139 @@ void main() {
     expect(page.marks.single.page, spoken.page);
     expect(page.marks.single.start, spoken.ranges.first.$1);
     expect(page.marks.single.end, spoken.ranges.last.$2);
+    expect(page.marks.single.via, isNull, reason: 'typed, so not marked as spoken');
     expect(page.state, ReaderState.playing, reason: 'it was reading, so it reads on');
     await tester.tap(play);
     await tester.pump(const Duration(milliseconds: 300));
   });
+
+  testWidgets('a spoken comment gets a microphone mark and a typed one a note, in both views', (
+    tester,
+  ) async {
+    await pdfrxFlutterInitialize();
+    final voice = PlatformPhoneVoice();
+    final langs = await voice.languages();
+    if (!langs.contains(Lang.en)) {
+      markTestSkipped('no offline English voice on this phone');
+      return;
+    }
+    final dir = Directory.systemTemp.createTempSync('badges-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ReaderPage(
+          name: 'tiny.pdf',
+          data: tinyPdf(),
+          placeKey: 'test:badges',
+          phoneVoice: voice,
+          phoneLangs: langs,
+          dictation: HeardDictation(),
+          notesStore: NotesStore(dir),
+        ),
+      ),
+    );
+    final play = find.byKey(const Key('play'));
+    for (
+      var i = 0;
+      i < 100 && (play.evaluate().isEmpty || tester.widget<IconButton>(play).onPressed == null);
+      i++
+    ) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
+    await tester.tap(play);
+    for (var i = 0; i < 100 && page.sentence == null; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    // The first sentence, spoken to the recogniser.
+    unawaited(page.session.comment!(speak: true));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.byKey(const Key('save-comment')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    // The second, typed.
+    page.session.skip!(1);
+    await tester.pump(const Duration(seconds: 1));
+    unawaited(page.session.comment!(speak: false));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.enterText(find.byKey(const Key('quick-comment')), 'Typed remark');
+    await tester.tap(find.byKey(const Key('save-comment')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.tap(play);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(page.marks, hasLength(2));
+    expect(
+      [for (final m in page.marks) (m.comment, m.via)],
+      [('Said out loud', 'speech'), ('Typed remark', null)],
+    );
+    expect([for (final m in page.marks) markBadge(m)], [NoteBadge.speech, NoteBadge.note]);
+
+    // Time to look at it: the pages first, then the reading view.
+    // ignore: avoid_print
+    print('SHOT pages');
+    await tester.pump(const Duration(seconds: 6));
+    await tester.tap(find.byKey(const Key('toggle-reading')));
+    await tester.pump(const Duration(seconds: 1));
+    // ignore: avoid_print
+    print('SHOT reading');
+    await tester.pump(const Duration(seconds: 6));
+  });
+
+  for (final reading in [true, false]) {
+    testWidgets(
+      'the Comment button in the selection menu opens the sheet in the ${reading ? 'reading view' : 'pages'}',
+      (tester) async {
+        await pdfrxFlutterInitialize();
+        final voice = PlatformPhoneVoice();
+        final langs = await voice.languages();
+        final dir = Directory.systemTemp.createTempSync('menu-');
+        addTearDown(() => dir.deleteSync(recursive: true));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ReaderPage(
+              name: 'tiny.pdf',
+              data: tinyPdf(),
+              placeKey: 'test:menu-$reading',
+              phoneVoice: voice,
+              phoneLangs: langs,
+              dictation: HeardDictation(),
+              notesStore: NotesStore(dir),
+              startInReading: reading,
+            ),
+          ),
+        );
+        final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
+        List<Utterance> utterances = const [];
+        for (var i = 0; i < 100 && utterances.isEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          try {
+            utterances = await page.utterancesOf(1);
+          } catch (_) {}
+        }
+        final word = utterances.first.words.first;
+        for (var i = 0; i < 100 && page.globalCenterOf(1, word.ranges) == null; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.longPressAt(page.globalCenterOf(1, word.ranges)!);
+        for (var i = 0; i < 50 && find.byKey(const Key('comment-selection')).evaluate().isEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.byKey(const Key('comment-selection')), findsOneWidget, reason: 'the menu has the button');
+        expect(find.byKey(const Key('speak-comment')), findsNothing);
+        await tester.tap(find.byKey(const Key('comment-selection')));
+        for (var i = 0; i < 50 && find.byKey(const Key('quick-comment')).evaluate().isEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.byKey(const Key('quick-comment')), findsOneWidget, reason: 'the comment sheet opens');
+        // Typed, with the keyboard; the microphone is in the sheet, for whoever wants it.
+        expect(find.byKey(const Key('dictate')), findsOneWidget);
+        await tester.enterText(find.byKey(const Key('quick-comment')), 'Typed on a selection');
+        await tester.tap(find.byKey(const Key('save-comment')));
+        await tester.pumpAndSettle(const Duration(milliseconds: 100));
+        expect(page.marks, hasLength(1));
+        expect(page.marks.single.comment, 'Typed on a selection');
+        expect(page.marks.single.via, isNull);
+      },
+    );
+  }
 }

@@ -5,6 +5,10 @@ import 'align.dart';
 import 'sync.dart';
 import 'types.dart';
 
+/// Which audio the user wants where both exist: the computer's prepared audio, or the phone's own
+/// voice. Prepared audio is the default; with no prepared audio the phone's voice reads either way.
+enum VoiceChoice { prepared, phone }
+
 /// Where a sentence's audio comes from. The desktop's is always preferred (ADR 5).
 enum SpeechSource { desktop, phone }
 

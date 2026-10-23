@@ -116,14 +116,17 @@ class Reader {
     host.onChange(state, null, -1);
   }
 
-  /// Stops and lets go of every loaded player.
-  Future<void> dispose() async {
+  /// Stops and lets go of every loaded player, so that nothing loaded before is played again: the
+  /// sentences may be other ones now, such as after the voice was changed. The reader stays usable.
+  Future<void> forget() async {
     stop();
     for (final prepared in _cache.values) {
       unawaited(prepared.then((p) => p.dispose(), onError: (_) {}));
     }
     _cache.clear();
   }
+
+  Future<void> dispose() => forget();
 
   void _cancel() {
     _run++;

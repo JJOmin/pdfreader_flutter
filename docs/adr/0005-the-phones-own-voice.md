@@ -44,6 +44,9 @@ whose words differ from the index. Until now each of these was skipped or not re
    `AVSpeechSynthesizer.write`. Until it exists the channel is missing and the phone reports no
    voice, so iOS builds and behaves as before.
 
+7. **The user can override the preference** in the full-screen player (ADR 6, section 8): "phone
+   voice" skips the computer's audio for the whole document. The default stays the computer's.
+
 ## Consequences
 
 - Every PDF can be read aloud on an Android phone that has an offline voice, prepared or not.

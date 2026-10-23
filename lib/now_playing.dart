@@ -51,14 +51,22 @@ class ReadingSession extends ChangeNotifier {
 
   double speed = 1;
 
+  /// Which audio is chosen where the computer's and the phone's both exist.
+  VoiceChoice voice = VoiceChoice.prepared;
+
   /// False for a PDF the desktop has not prepared, or has voiced no page of yet, when the phone has
   /// no voice either: there is nothing to play, so no player is shown for it.
   bool get hasAudio => phoneLangs.isNotEmpty || (prepared != null && prepared!.manifest.voiced.isNotEmpty);
+
+  /// Whether there is a choice: the computer voiced a page and the phone can speak as well.
+  bool get canSwitchVoice =>
+      phoneLangs.isNotEmpty && prepared != null && prepared!.manifest.voiced.isNotEmpty;
 
   /// Set by the reader once it can read aloud; null for a document the desktop has not prepared.
   VoidCallback? toggle;
   void Function(int direction)? skip;
   void Function(double speed)? setSpeed;
+  void Function(VoiceChoice voice)? setVoice;
 
   /// Pauses and asks for a comment on the sentence being read; `speak` starts listening at once.
   Future<void> Function({required bool speak})? comment;
@@ -73,6 +81,11 @@ class ReadingSession extends ChangeNotifier {
   void updateNeighbours(String? previous, String? next) {
     previousText = previous;
     nextText = next;
+    notifyListeners();
+  }
+
+  void updateVoice(VoiceChoice voice) {
+    this.voice = voice;
     notifyListeners();
   }
 

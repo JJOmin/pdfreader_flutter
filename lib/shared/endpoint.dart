@@ -1,4 +1,4 @@
-// Finds where a spoken comment ends (PLAN 12): the microphone gives 16 kHz samples, and listening
+// Finds where a spoken comment ends (PLAN 11): the microphone gives 16 kHz samples, and listening
 // stops once a pause follows speech. A plain level detector: the recogniser model decides what was
 // said, this only decides when to stop recording.
 import 'dart:math' as math;

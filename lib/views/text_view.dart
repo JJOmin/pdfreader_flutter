@@ -36,15 +36,20 @@ const markLine = {
 /// Raw ranges of one page, painted the same way by every view: the voice or search, or a mark.
 /// A view paints the highlights in list order, so later ones lie over earlier ones.
 class Highlight {
-  const Highlight(this.page, this.ranges, HighlightKind this.kind) : mark = null, color = null, markId = null;
+  const Highlight(this.page, this.ranges, HighlightKind this.kind)
+    : mark = null,
+      color = null,
+      markId = null,
+      badge = null;
 
   const Highlight.mark(
     this.page,
     this.ranges,
     MarkKind this.mark,
     HighlightColor this.color,
-    String this.markId,
-  ) : kind = null;
+    String this.markId, {
+    this.badge,
+  }) : kind = null;
 
   final int page;
   final List<RawRange> ranges;
@@ -54,6 +59,9 @@ class Highlight {
 
   /// The mark's id, so that a tap on it can be told from a tap on other text.
   final String? markId;
+
+  /// The icon above the mark's first line: set when the mark has a comment (PLAN 12).
+  final NoteBadge? badge;
 }
 
 /// One way of showing the document's text.
