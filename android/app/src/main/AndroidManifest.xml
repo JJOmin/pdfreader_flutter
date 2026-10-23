@@ -21,7 +21,7 @@
          (no cloud, CLAUDE.md), and a backup would carry them off through adb or the system's cloud. -->
     <application
         android:allowBackup="false"
-        android:label="PDF Reader"
+        android:label="Easy Reader"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

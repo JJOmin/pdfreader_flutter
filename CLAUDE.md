@@ -1,4 +1,4 @@
-# PDF Reader (Flutter)
+# Easy Reader (Flutter)
 
 The Android and iOS port of the desktop app in `../pdfreader`. It shows PDFs, lets the user mark
 and comment, and reads the text aloud while highlighting the spoken sentence and word. German and
@@ -66,7 +66,8 @@ and do not add a feature to one view only.
 - **Branches and CI.** A feature is made on a `feature/<name>` branch, never on `main`; it reaches `main`
   through a pull request whose CI (`.github/workflows/ci.yml`: analyze, format, tests, a release
   build) is green. Check `git branch --show-current` before the first edit of a feature. Do not commit
-  or push unless asked. A release is a `v*` tag, built and signed by `release.yml`; it needs the
+  or push unless asked. When the owner pushes a `feature/...` branch, `auto-pr.yml` opens a draft pull
+  request to `main` and starts the CI; "Ready for review" is the owner's click. A release is a `v*` tag, built and signed by `release.yml`; it needs the
   owner's keystore in the repository's secrets and refuses to publish a debug-signed app.
 - **Security and accessibility are part of "done".** `SECURITY.md` has what is guarded and why: do not
   weaken it (backup off, no `file:` access to the app's own storage, pinned TLS, no new permission
