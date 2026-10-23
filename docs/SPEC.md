@@ -44,6 +44,9 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
 
 ## Known limits
 
+0. **Spoken comments need the recogniser model on the phone** (ADR 6, 127 MB, pushed with adb like the
+   other models). Without it the microphone says so and typing works. The first words of a sentence
+   can be lost; no person has spoken to it yet.
 1. **The desktop's audio is preferred; the phone's own voice fills in** (ADR 5). A document, page
    or sentence the desktop did not prepare is read by the system's offline text-to-speech, with
    estimated word timings. Without an offline voice for the language, the sentence is skipped, and

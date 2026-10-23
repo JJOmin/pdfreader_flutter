@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'app_settings_store.dart';
 import 'desktop_link.dart';
+import 'dictation.dart';
 import 'document_access.dart';
 import 'favourites_store.dart';
 import 'favourites_tab.dart';
@@ -23,6 +24,7 @@ import 'notes_store.dart';
 import 'places.dart';
 import 'platform_secrets.dart';
 import 'phone_voice.dart';
+import 'player_screen.dart';
 import 'playback.dart';
 import 'reader_page.dart';
 import 'store/cloud_accounts.dart';
@@ -98,6 +100,7 @@ Future<void> main() async {
       library: library,
       playback: playback,
       phoneVoice: PlatformPhoneVoice(),
+      dictation: PlatformDictation(),
       places: places,
       notesStore: notesStore,
       cloud: cloud,
@@ -115,6 +118,7 @@ class PdfReaderApp extends StatefulWidget {
     this.library,
     this.playback,
     this.phoneVoice,
+    this.dictation,
     this.places,
     this.notesStore,
     this.cloud,
@@ -130,6 +134,9 @@ class PdfReaderApp extends StatefulWidget {
 
   /// The phone's own voice, for what the desktop did not prepare (ADR 5); null in widget tests.
   final PhoneVoice? phoneVoice;
+
+  /// The offline speech recogniser for spoken comments (ADR 6); null in widget tests.
+  final Dictation? dictation;
   final Places? places;
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
@@ -162,6 +169,7 @@ class _PdfReaderAppState extends State<PdfReaderApp> {
         library: widget.library,
         playback: widget.playback,
         phoneVoice: widget.phoneVoice,
+        dictation: widget.dictation,
         places: widget.places,
         notesStore: widget.notesStore,
         cloud: widget.cloud,
@@ -182,6 +190,7 @@ class HomePage extends StatefulWidget {
     this.library,
     this.playback,
     this.phoneVoice,
+    this.dictation,
     this.places,
     this.notesStore,
     this.cloud,
@@ -194,6 +203,7 @@ class HomePage extends StatefulWidget {
   final Library? library;
   final ReadingHandler? playback;
   final PhoneVoice? phoneVoice;
+  final Dictation? dictation;
   final Places? places;
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
@@ -221,6 +231,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   /// The languages the phone's own voice speaks, asked once; a document opens after the answer.
   late final Future<Set<Lang>> _phoneLangs = widget.phoneVoice?.languages() ?? Future.value(const {});
+
+  /// Whether spoken comments work on this phone, asked once like the voice.
+  late final Future<bool> _canDictate = widget.dictation?.available() ?? Future.value(false);
+
+  /// The full-screen player is up, over the menu or the reader (PLAN 11).
+  var _playerOpen = false;
 
   /// What the list listens to where there is no sync (widget tests).
   static final _never = ChangeNotifier();
@@ -336,6 +352,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     bool reading = false,
   }) async {
     final phoneLangs = await _phoneLangs;
+    final canDictate = await _canDictate;
     if (!mounted) return;
     setState(() {
       if (_session?.placeKey != placeKey) {
@@ -345,6 +362,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           placeKey: placeKey,
           prepared: prepared,
           phoneLangs: phoneLangs,
+          canDictate: canDictate,
           startInReading: reading,
         );
       }
@@ -365,6 +383,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _endSession() => setState(() {
     _session = null;
     _expanded = false;
+    _playerOpen = false;
   });
 
   /// Shows a PDF that came from outside: the picker, or "Open with" in another app.
@@ -554,10 +573,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final session = _session;
     return PopScope(
-      // Back hides the reader; the voice goes on and the bar stays.
-      canPop: !_expanded,
+      // Back minimises the player first, then hides the reader; the voice goes on and the bar stays.
+      canPop: !_expanded && !_playerOpen,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _collapse();
+        if (didPop) return;
+        if (_playerOpen) {
+          setState(() => _playerOpen = false);
+        } else {
+          _collapse();
+        }
       },
       child: Stack(
         children: [
@@ -624,7 +648,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             NowPlayingBar(
                               session: session,
                               favourites: _favourites,
-                              onOpen: () => setState(() => _expanded = true),
+                              onOpen: () => setState(() => _playerOpen = true),
                               onClose: _endSession,
                             ),
                           NavigationBar(
@@ -658,6 +682,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   prepared: session.prepared,
                   phoneVoice: widget.phoneVoice,
                   phoneLangs: session.phoneLangs,
+                  dictation: widget.dictation,
+                  favourites: _favourites,
+                  onOpenPlayer: () => setState(() => _playerOpen = true),
                   playback: widget.playback,
                   places: widget.places,
                   notesStore: widget.notesStore,
@@ -666,6 +693,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   onCollapse: _collapse,
                   startInReading: session.startInReading,
                 ),
+              ),
+            ),
+          // Over everything, the navigation bar too (PLAN 11).
+          if (session != null)
+            Positioned.fill(
+              child: PlayerLayer(
+                open: _playerOpen,
+                session: session,
+                onMinimize: () => setState(() => _playerOpen = false),
+                onOpenText: () => setState(() {
+                  _playerOpen = false;
+                  _expanded = true;
+                }),
               ),
             ),
         ],

@@ -37,10 +37,9 @@ whose words differ from the index. Until now each of these was skipped or not re
    the file's length and `estimateTimings` spreads it over the words by length, as the desktop's
    spike did before it had a recogniser. The mark can drift by a word on a long sentence.
    `// shortcut: estimated word timings, align with the recogniser if the drift is heard as wrong.`
-5. **The source is shown.** The play bar and the Now Playing bar carry a small icon for the sentence
-   being read: a computer for the desktop's audio, a phone for the phone's voice. The play bar's
-   status line says when a document has no audio from the computer yet, and a fully prepared
-   document tells once how many sentences the phone reads.
+5. **The source is shown.** Superseded by ADR 6: the bars carry no icon and the reader no status
+   box; the full-screen player's line says "computer audio" or "phone voice" for the sentence being
+   read, and a fully prepared document tells once how many sentences the phone reads.
 6. **iOS later.** `PhoneVoice` is a Dart interface; the Swift side would use
    `AVSpeechSynthesizer.write`. Until it exists the channel is missing and the phone reports no
    voice, so iOS builds and behaves as before.

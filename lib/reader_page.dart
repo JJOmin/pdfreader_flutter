@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import 'annotated_pdf.dart';
+import 'dictation.dart';
 import 'document_access.dart';
 import 'document_text.dart';
+import 'favourites_store.dart';
 import 'library.dart';
 import 'notes_store.dart';
 import 'now_playing.dart';
@@ -16,20 +18,22 @@ import 'places.dart';
 import 'phone_voice.dart';
 import 'playback.dart';
 import 'reader.dart';
+import 'shared/layout.dart' show readableText;
 import 'shared/mark_export.dart';
 import 'shared/marks.dart';
 import 'shared/notes.dart';
 import 'shared/notes_merge.dart';
 import 'shared/pdfium_text.dart' show rangeBoxes;
+import 'shared/player_preview.dart';
 import 'shared/read_plan.dart';
 import 'shared/search.dart';
 import 'shared/settings.dart';
 import 'shared/sync.dart';
 import 'shared/types.dart';
 import 'views/mark_menu.dart';
-import 'views/marquee.dart';
 import 'views/notes_sheet.dart';
 import 'views/pdf_pages_view.dart';
+import 'views/quick_comment.dart';
 import 'views/reading_view.dart';
 import 'views/text_view.dart';
 
@@ -66,6 +70,9 @@ class ReaderPage extends StatefulWidget {
     this.notesStore,
     this.documents,
     this.session,
+    this.dictation,
+    this.favourites,
+    this.onOpenPlayer,
     this.onCollapse,
     this.startInReading = false,
   });
@@ -97,6 +104,15 @@ class ReaderPage extends StatefulWidget {
   /// The app's reading session, which the Now Playing bar controls while the reader is hidden.
   final ReadingSession? session;
 
+  /// The offline speech recogniser for spoken comments (ADR 6); null where there is none.
+  final Dictation? dictation;
+
+  /// For the heart on the bar; null in widget tests.
+  final FavouritesStore? favourites;
+
+  /// A tap on the bar opens the full-screen player (PLAN 11).
+  final VoidCallback? onOpenPlayer;
+
   /// Back hides the reader and the voice goes on (PLAN 9.4); null where the reader is a route of its own.
   final VoidCallback? onCollapse;
 
@@ -116,6 +132,18 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   /// Each page's plan once it is made, for counting what the voice passed over.
   final _planned = <int, PagePlan>{};
+
+  /// The app's session, or one of the reader's own where it runs alone (tests).
+  late final ReadingSession _session =
+      widget.session ??
+      ReadingSession(
+        name: widget.name,
+        data: widget.data,
+        placeKey: widget.placeKey,
+        prepared: widget.prepared,
+        phoneLangs: widget.phoneLangs,
+        canDictate: widget.dictation != null,
+      );
 
   final _pdf = PdfPagesController();
   final _readingView = ReadingController();
@@ -209,12 +237,13 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       ..speed = _speed
       ..stopAtReferences = widget.places?.stopAtReferences ?? false;
     setState(() => _reader = reader);
-    final session = widget.session;
-    if (session != null) {
-      session.toggle = _toggle;
-      session.skip = (direction) => unawaited(reader.skip(direction));
-      session.update(state);
-    }
+    _session
+      ..toggle = _toggle
+      ..skip = ((direction) => unawaited(reader.skip(direction)))
+      ..setSpeed = _changeSpeed
+      ..comment = _commentOnSentence
+      ..speed = _speed;
+    _session.update(state);
     final playback = widget.playback;
     if (playback != null) {
       playback.onPlay = playback.onPause = _toggle;
@@ -261,7 +290,12 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   }
 
   /// Makes a mark for each page the selection reaches.
-  Future<void> _addMarks(List<PageSelection> selection, MarkKind kind, HighlightColor color) async {
+  Future<void> _addMarks(
+    List<PageSelection> selection,
+    MarkKind kind,
+    HighlightColor color, {
+    String comment = '',
+  }) async {
     final text = _text;
     if (text == null) return;
     final made = <Annotation>[];
@@ -278,7 +312,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         id: newId(),
         created: isoNow(),
       );
-      if (mark != null) made.add(mark);
+      if (mark != null) made.add(comment.isEmpty ? mark : mark.copyWith(comment: comment));
     }
     if (made.isEmpty || !mounted) return;
     setState(() => _markAt = {..._markAt, for (final m in made) m.id: (m.start, m.end)});
@@ -301,6 +335,13 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       await done();
       await _addMarks(selected, kind, color);
     },
+    onSpeak: !_session.canDictate
+        ? null
+        : () async {
+            final selected = await selection();
+            await done();
+            await _commentOnSelection(selected, speak: true);
+          },
     onReadFrom: _reader == null || !_hasAudio
         ? null
         : () async {
@@ -468,7 +509,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       skipped += plan.skipped;
       byPhone += plan.sentences.where((s) => s.source == SpeechSource.phone).length;
     }
-    // Pages the computer has not voiced yet are said in the status line instead.
+    // Pages the computer has not voiced yet are not counted: the phone's voice reads them.
     final m = widget.prepared?.manifest;
     if (m != null && m.voiced.length < m.pages) return;
     if (skipped > 0) {
@@ -526,8 +567,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       }
     });
     widget.playback?.show(state, widget.name, this.sentence?.page ?? _view.currentPage ?? 1);
-    widget.session?.update(state, this.sentence?.source);
+    _session.update(state, sentence: this.sentence, word: this.word);
     if (changedSentence) {
+      unawaited(_showNeighbours());
       _resume = null;
       final at = _reader?.cursor;
       if (at != null) {
@@ -590,6 +632,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   /// The page the view shows, for the integration test.
   int? get currentPage => _view.currentPage;
 
+  /// The session the bar and the full-screen player control, for the integration test.
+  @visibleForTesting
+  ReadingSession get session => _session;
+
   /// The marks as written, for the integration test.
   List<Annotation> get marks => _notes.annotations;
 
@@ -619,6 +665,88 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       _addMarks([(page: page, range: range)], kind, color);
 
   void _toggle() => _reader?.toggle(_resume ?? (page: _view.currentPage ?? 1, index: 0));
+
+  void _changeSpeed(double value) {
+    setState(() {
+      _speed = value;
+      _reader?.speed = value;
+      widget.places?.speed = value;
+    });
+    _session.updateSpeed(value);
+  }
+
+  /// Shows the sentences either side of the one being read in the full-screen player.
+  Future<void> _showNeighbours() async {
+    final at = _reader?.cursor;
+    if (at == null) return;
+    final previous = await _neighbour(at, -1);
+    final next = await _neighbour(at, 1);
+    if (mounted && !_closing && _reader?.cursor == at) _session.updateNeighbours(previous, next);
+  }
+
+  /// The text of the sentence `direction` away, across pages that have none.
+  Future<String?> _neighbour(Cursor at, int direction) async {
+    var page = at.page;
+    var index = at.index + direction;
+    while (page >= 1 && page <= pageCount) {
+      final sentences = (await _plan(page)).sentences;
+      if (index >= 0 && index < sentences.length) return sentenceText(sentences[index]);
+      page += direction;
+      if (page < 1 || page > pageCount) return null;
+      final count = (await _plan(page)).sentences.length;
+      index = direction > 0 ? 0 : count - 1;
+    }
+    return null;
+  }
+
+  /// Pauses the voice for a comment and goes on afterwards, if it was reading.
+  Future<T> _whilePaused<T>(Future<T> Function() ask) async {
+    final wasPlaying = state == ReaderState.playing;
+    if (wasPlaying) _toggle();
+    try {
+      return await ask();
+    } finally {
+      if (wasPlaying && mounted && state == ReaderState.paused) _toggle();
+    }
+  }
+
+  Future<String?> _askComment(String quote, {required bool speak}) => showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => QuickCommentSheet(
+      quote: quote,
+      dictation: _session.canDictate ? widget.dictation : null,
+      listenAtOnce: speak && _session.canDictate,
+    ),
+  );
+
+  /// The player's Comment and Speak buttons: pause, ask for a comment on the sentence being read, and
+  /// mark the sentence with it, without touching the text (PLAN 11).
+  Future<void> _commentOnSentence({required bool speak}) async {
+    final spoken = sentence;
+    if (spoken == null || spoken.ranges.isEmpty) return;
+    final range = (spoken.ranges.first.$1, spoken.ranges.last.$2);
+    final comment = await _whilePaused(() => _askComment(sentenceText(spoken), speak: speak));
+    if (comment == null || comment.isEmpty || !mounted) return;
+    await _addMarks(
+      [(page: spoken.page, range: range)],
+      MarkKind.highlight,
+      HighlightColor.yellow,
+      comment: comment,
+    );
+  }
+
+  /// A comment spoken for the text the user selected (the mark menu's microphone).
+  Future<void> _commentOnSelection(List<PageSelection> selected, {required bool speak}) async {
+    final text = _text;
+    if (text == null || selected.isEmpty) return;
+    final first = selected.first;
+    final page = await text.page(first.page);
+    final quote = readableText(page.blocks, first.range.$1, first.range.$2);
+    final comment = await _whilePaused(() => _askComment(quote, speak: speak));
+    if (comment == null || comment.isEmpty || !mounted) return;
+    await _addMarks(selected, _lastKind, HighlightColor.yellow, comment: comment);
+  }
 
   void _searchChanged(String query) {
     _searchTimer?.cancel();
@@ -700,48 +828,6 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     ),
   );
 
-  Future<void> _openSpeed() => showModalBottomSheet<void>(
-    context: context,
-    builder: (_) => StatefulBuilder(
-      builder: (context, setSheet) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          // Only as tall as the slider: a sheet otherwise takes half the screen.
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Speed', style: Theme.of(context).textTheme.titleMedium),
-              Row(
-                children: [
-                  Expanded(
-                    child: Slider(
-                      key: const Key('speed-slider'),
-                      value: _speed,
-                      min: minSpeed,
-                      max: maxSpeed,
-                      divisions: ((maxSpeed - minSpeed) / 0.05).round(),
-                      label: '${_speed.toStringAsFixed(2)}×',
-                      onChanged: (value) {
-                        setSheet(() {});
-                        setState(() {
-                          _speed = value;
-                          _reader?.speed = value;
-                          widget.places?.speed = value;
-                        });
-                      },
-                    ),
-                  ),
-                  Text('${_speed.toStringAsFixed(2)}×'),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-
   @override
   void dispose() {
     _placeTimer?.cancel();
@@ -762,29 +848,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     super.dispose();
   }
 
-  String? get _status {
-    if (_error != null) return _error;
-    final prepared = widget.prepared;
-    final phone = widget.phoneLangs.isNotEmpty;
-    if (prepared == null) {
-      return phone
-          ? 'Not prepared on the computer: read by this phone’s voice'
-          : 'Not prepared on the desktop';
-    }
-    // The computer adds the audio page by page; the rest is read once it is there (desktop ADR 11).
-    final m = prepared.manifest;
-    if (m.voiced.length < m.pages) {
-      if (phone) {
-        return m.voiced.isEmpty
-            ? 'No audio from the computer yet: read by this phone’s voice'
-            : 'Audio from the computer for ${m.voiced.length} of ${m.pages} pages; the rest by this phone’s voice';
-      }
-      return m.voiced.isEmpty
-          ? 'The audio is being made on the computer'
-          : 'Audio for ${m.voiced.length} of ${m.pages} pages so far';
-    }
-    return null;
-  }
+  /// Only a problem is shown above the bar; where the audio comes from is the player's business.
+  String? get _status => _error;
 
   PreferredSizeWidget _appBar() {
     final (:bar, :onBar) = _barColors;
@@ -962,12 +1027,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   @override
   Widget build(BuildContext context) {
-    final reader = _reader;
     final status = _status;
     final documentRef = _documentRef;
     final text = _text;
     final highlights = _highlights;
-    final (:bar, :onBar) = _barColors;
     final topHidden = _topHidden && !_searching;
     return Scaffold(
       backgroundColor: reading
@@ -1030,7 +1093,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                             ],
                           ),
                   ),
-                  // Over the page, which runs on behind the bar (PLAN 9.8).
+                  // Over the page, which runs on behind the bar (PLAN 9.8). The same bar as in the menu
+                  // (PLAN 11); a tap on it opens the full-screen player.
                   if (_hasAudio)
                     Positioned(
                       left: 0,
@@ -1041,8 +1105,22 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Padding(padding: const EdgeInsets.only(right: 24), child: _barNotch(bar, onBar)),
-                            if (!_barHidden) _playBar(reader, status, bar, onBar),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 24),
+                              child: _barNotch(
+                                Theme.of(context).colorScheme.surfaceContainerHigh,
+                                Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            if (status != null && !_barHidden) _statusLine(status),
+                            if (!_barHidden)
+                              NowPlayingBar(
+                                session: _session,
+                                favourites: widget.favourites,
+                                playKey: const Key('play'),
+                                barKey: const Key('reader-bar'),
+                                onOpen: widget.onOpenPlayer ?? () {},
+                              ),
                           ],
                         ),
                       ),
@@ -1056,73 +1134,15 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     );
   }
 
-  /// Previous, play and next at the left, the title running through when it is long, the speed at the
-  /// right (PLAN 9.7), on a rounded bar a shade off the page.
-  Widget _playBar(Reader? reader, String? status, Color bar, Color onBar) => Padding(
-    // On the bottom edge: only the top corners are rounded.
-    padding: const EdgeInsets.symmetric(horizontal: 6),
+  /// A problem with the audio, above the bar.
+  Widget _statusLine(String status) => Padding(
+    padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
     child: Material(
-      color: bar,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: IconTheme.merge(
-        data: IconThemeData(color: onBar),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (status != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-                  child: Text(
-                    status,
-                    key: const Key('status'),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: onBar),
-                  ),
-                ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.skip_previous),
-                    tooltip: 'Previous sentence',
-                    onPressed: reader == null ? null : () => reader.skip(-1),
-                  ),
-                  IconButton.filled(
-                    key: const Key('play'),
-                    iconSize: 24,
-                    // Its own colour: the bar's icon colour is for the plain buttons.
-                    icon: Icon(
-                      state == ReaderState.playing ? Icons.pause : Icons.play_arrow,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    tooltip: state == ReaderState.playing ? 'Pause' : 'Read aloud',
-                    onPressed: reader == null ? null : _toggle,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.skip_next),
-                    tooltip: 'Next sentence',
-                    onPressed: reader == null ? null : () => reader.skip(1),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Marquee(
-                      widget.name,
-                      key: const Key('play-bar-title'),
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: onBar),
-                    ),
-                  ),
-                  if (sentence?.source case final source?) AudioSourceBadge(source, color: onBar),
-                  IconButton(
-                    key: const Key('speed'),
-                    icon: const Icon(Icons.speed),
-                    tooltip: 'Speed ${_speed.toStringAsFixed(2)}×',
-                    onPressed: reader == null ? null : _openSpeed,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Text(status, key: const Key('status'), style: Theme.of(context).textTheme.bodySmall),
       ),
     ),
   );

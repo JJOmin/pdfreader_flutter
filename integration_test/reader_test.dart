@@ -69,9 +69,14 @@ void main() {
     await wait(600);
     final next = page.sentence!.key;
     expect(next, isNot(before));
-    await tester.tap(find.byTooltip('Previous sentence'));
+    // Previous is in the full-screen player, which a tap on the bar opens (PLAN 11).
+    await tester.tap(find.byKey(const Key('reader-bar')));
+    await wait(600);
+    await tester.tap(find.byKey(const Key('player-previous')));
     await wait(600);
     expect(page.sentence!.key, before);
+    await tester.tap(find.byKey(const Key('player-minimize')));
+    await wait(600);
     await tester.tap(play);
     await wait(300);
     expect(page.state, ReaderState.paused);

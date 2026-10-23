@@ -39,6 +39,7 @@ class MarkMenu extends StatefulWidget {
     required this.onKindChanged,
     required this.onMark,
     this.onReadFrom,
+    this.onSpeak,
   });
 
   /// Where the selection starts and ends on the screen, as the views report them.
@@ -52,6 +53,9 @@ class MarkMenu extends StatefulWidget {
 
   /// "Read from here", as on the desktop; null where the document cannot be read aloud.
   final VoidCallback? onReadFrom;
+
+  /// "Speak a comment" (ADR 6); null where the phone cannot recognise speech offline.
+  final VoidCallback? onSpeak;
 
   @override
   State<MarkMenu> createState() => _MarkMenuState();
@@ -95,6 +99,13 @@ class _MarkMenuState extends State<MarkMenu> {
           tooltip: 'Read from here',
           icon: const Icon(Icons.play_arrow),
           onPressed: readFrom,
+        ),
+      if (widget.onSpeak case final speak?)
+        _button(
+          key: const Key('speak-comment'),
+          tooltip: 'Speak a comment',
+          icon: const Icon(Icons.mic),
+          onPressed: speak,
         ),
       for (final k in MarkKind.values)
         _button(

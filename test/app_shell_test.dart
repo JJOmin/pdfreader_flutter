@@ -10,7 +10,6 @@ import 'package:pdfreader/library.dart';
 import 'package:pdfreader/main.dart';
 import 'package:pdfreader/now_playing.dart';
 import 'package:pdfreader/reader.dart';
-import 'package:pdfreader/shared/read_plan.dart' show SpeechSource;
 import 'package:pdfreader/shared/sync.dart';
 import 'package:pdfreader/shared/types.dart' show Lang;
 
@@ -193,25 +192,5 @@ void main() {
       isTrue,
       reason: 'the computer has not voiced a page yet',
     );
-  });
-
-  testWidgets('the Now Playing bar says where the sentence’s audio comes from', (tester) async {
-    final session = ReadingSession(name: 'x.pdf', data: Uint8List(0), placeKey: 'k');
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          bottomNavigationBar: NowPlayingBar(session: session, onOpen: () {}, onClose: () {}),
-        ),
-      ),
-    );
-    expect(find.byKey(const Key('source-desktop')), findsNothing);
-    expect(find.byKey(const Key('source-phone')), findsNothing);
-    session.update(ReaderState.playing, SpeechSource.desktop);
-    await tester.pump();
-    expect(find.byKey(const Key('source-desktop')), findsOneWidget);
-    session.update(ReaderState.playing, SpeechSource.phone);
-    await tester.pump();
-    expect(find.byKey(const Key('source-phone')), findsOneWidget);
-    expect(find.byKey(const Key('source-desktop')), findsNothing);
   });
 }

@@ -1,6 +1,7 @@
 // ADR 5 on the phone: the system's text-to-speech makes audio for a PDF the desktop never prepared,
 // and the reader plays it with the word mark and the "phone" badge.
 //   flutter test integration_test/phone_voice_test.dart --no-uninstall
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -9,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:pdfreader/dictation.dart';
+import 'package:pdfreader/notes_store.dart';
 import 'package:pdfreader/phone_voice.dart';
 import 'package:pdfreader/reader.dart';
 import 'package:pdfreader/reader_page.dart';
@@ -89,7 +92,7 @@ void main() {
     }
     expect(ready(), isTrue, reason: 'a document with a phone voice can be played');
     final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
-    expect(find.byKey(const Key('status')), findsOneWidget);
+    expect(find.byKey(const Key('status')), findsNothing, reason: 'no box about where the audio comes from');
 
     await tester.tap(play);
     final sentences = <String>{};
@@ -100,7 +103,7 @@ void main() {
       final sentence = page.sentence;
       if (sentence == null) continue;
       expect(sentence.source, SpeechSource.phone);
-      expect(find.byKey(const Key('source-phone')), findsOneWidget);
+      expect(page.session.source, SpeechSource.phone);
       sentences.add(sentence.key);
       if (page.word >= 0 && (words.isEmpty || words.last != page.word)) words.add(page.word);
     }
@@ -113,5 +116,66 @@ void main() {
     await tester.tap(play);
     await tester.pump(const Duration(milliseconds: 300));
     expect(page.state, ReaderState.paused);
+  });
+
+  testWidgets('a comment on the sentence being read pauses, saves a mark with the comment and goes on', (
+    tester,
+  ) async {
+    await pdfrxFlutterInitialize();
+    final voice = PlatformPhoneVoice();
+    final langs = await voice.languages();
+    if (!langs.contains(Lang.en)) {
+      markTestSkipped('no offline English voice on this phone');
+      return;
+    }
+    final dictation = PlatformDictation();
+    final dir = Directory.systemTemp.createTempSync('comment-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ReaderPage(
+          name: 'tiny.pdf',
+          data: tinyPdf(),
+          placeKey: 'test:comment',
+          phoneVoice: voice,
+          phoneLangs: langs,
+          dictation: dictation,
+          notesStore: NotesStore(dir),
+        ),
+      ),
+    );
+    final play = find.byKey(const Key('play'));
+    for (
+      var i = 0;
+      i < 100 && (play.evaluate().isEmpty || tester.widget<IconButton>(play).onPressed == null);
+      i++
+    ) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
+    await tester.tap(play);
+    for (var i = 0; i < 100 && page.sentence == null; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    final spoken = page.sentence!;
+
+    // What the player's Comment button does: pause, ask, save on the sentence, resume.
+    final session = page.session;
+    unawaited(session.comment!(speak: false));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(page.state, ReaderState.paused, reason: 'asking for a comment pauses the voice');
+    expect(find.byKey(const Key('quick-comment')), findsOneWidget);
+    expect(find.byKey(const Key('dictate')), findsNWidgets(await dictation.available() ? 1 : 0));
+    await tester.enterText(find.byKey(const Key('quick-comment')), 'Check this claim');
+    await tester.tap(find.byKey(const Key('save-comment')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    expect(page.marks, hasLength(1));
+    expect(page.marks.single.comment, 'Check this claim');
+    expect(page.marks.single.page, spoken.page);
+    expect(page.marks.single.start, spoken.ranges.first.$1);
+    expect(page.marks.single.end, spoken.ranges.last.$2);
+    expect(page.state, ReaderState.playing, reason: 'it was reading, so it reads on');
+    await tester.tap(play);
+    await tester.pump(const Duration(milliseconds: 300));
   });
 }

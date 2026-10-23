@@ -2,6 +2,7 @@ package io.github.jjomin.pdfreader
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.security.keystore.KeyGenParameterSpec
@@ -37,6 +38,7 @@ class MainActivity : AudioServiceActivity() {
     private var incoming: Uri? = null
     private var documents: MethodChannel? = null
     private val phoneVoice by lazy { PhoneVoice(applicationContext) }
+    private var dictation: Dictation? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,6 +89,17 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+        // Speaking a comment (ADR 6): the microphone only; the speech model runs in Dart.
+        val dictationChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/dictation")
+        val dictation = Dictation(this, dictationChannel).also { this.dictation = it }
+        dictationChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "available" -> result.success(true)
+                "start" -> dictation.start(result)
+                "stop" -> { dictation.stop(); result.success(null) }
+                else -> result.notImplemented()
+            }
+        }
         // SecretBox (ADR 3 section 5): the sign-in secrets and the sync key are encrypted with a key
         // in the Android Keystore, which never leaves the chip, as the desktop's safeStorage does.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/secrets")
@@ -153,7 +166,13 @@ class MainActivity : AudioServiceActivity() {
             }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        dictation?.onPermission(requestCode, grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
+    }
+
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        dictation?.stop()
         phoneVoice.shutdown()
         super.cleanUpFlutterEngine(flutterEngine)
     }
