@@ -82,7 +82,7 @@ jobs:
           echo "APK=$name" >> "$GITHUB_ENV"
       - name: Publish
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ${{ env.APK }}
           name: Easy Reader for Android ${{ github.ref_name }}
