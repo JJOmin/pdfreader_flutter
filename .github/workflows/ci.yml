@@ -61,7 +61,7 @@ jobs:
       # Without a release key the build is signed with the debug key (android/app/build.gradle.kts):
       # good for checking that it builds, not for giving to anyone. The release workflow refuses that.
       - run: flutter build apk --release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: app-release-debug-signed
           path: build/app/outputs/flutter-apk/app-release.apk

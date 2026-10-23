@@ -90,7 +90,7 @@ jobs:
           generate_release_notes: true
           # A version with a hyphen in it is an alpha or a beta.
           prerelease: ${{ contains(github.ref_name, '-') }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Easy-Reader-apk
           path: ${{ env.APK }}
