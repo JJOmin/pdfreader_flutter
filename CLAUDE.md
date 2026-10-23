@@ -55,8 +55,8 @@ and do not add a feature to one view only.
 - New logic goes in `lib/shared/` with a test written first. A bug gets a failing test before
   the fix.
 - No internet at runtime: no cloud voices, no external models or LLMs, no downloads. Speech is
-  made on the user's desktop. For now the phone has no voice of its own and plays only prepared
-  audio (ADR 2). The only network uses are sync with the user's paired desktop on the local network
+  made on the user's desktop, and that audio is always preferred. Where it is missing, the phone's
+  own offline text-to-speech reads instead (ADR 5). The only network uses are sync with the user's paired desktop on the local network
   (ADR 2), and with the user's own Nextcloud after they signed in, as encrypted files
   (ADR 3).
 - Comments explain why, not what. A known limit is marked `// shortcut: <limit>, <when to upgrade>`.

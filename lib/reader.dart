@@ -13,6 +13,10 @@ typedef Cursor = ({int page, int index});
 
 /// A sentence's audio, loaded and ready to start.
 abstract interface class PreparedAudio {
+  /// When each word starts, if the audio itself had to be measured (the phone's voice); null to
+  /// use the sentence's own, which the desktop measured.
+  List<WordTiming>? get timings;
+
   /// Plays from the start at `speed`; completes when it ends or is stopped.
   Future<void> play(double speed, void Function(Duration position) onPosition);
   Future<void> pause();
@@ -211,11 +215,12 @@ class Reader {
         _playing = prepared;
         _playingKey = _key(at);
         var word = -1;
+        final timings = prepared.timings ?? sentence.timings;
         await prepared.play(_speed, (position) {
           if (run != _run) return;
           final seconds = position.inMicroseconds / 1e6;
           var next = word;
-          while (next + 1 < sentence.timings.length && sentence.timings[next + 1].start <= seconds) {
+          while (next + 1 < timings.length && timings[next + 1].start <= seconds) {
             next++;
           }
           if (next != word) host.onChange(state, sentence, word = next);

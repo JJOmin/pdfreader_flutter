@@ -10,7 +10,9 @@ import 'package:pdfreader/library.dart';
 import 'package:pdfreader/main.dart';
 import 'package:pdfreader/now_playing.dart';
 import 'package:pdfreader/reader.dart';
+import 'package:pdfreader/shared/read_plan.dart' show SpeechSource;
 import 'package:pdfreader/shared/sync.dart';
+import 'package:pdfreader/shared/types.dart' show Lang;
 
 final docId = 'a' * 64;
 
@@ -162,5 +164,54 @@ void main() {
     expect(session().hasAudio, isFalse, reason: 'opened from elsewhere, not prepared');
     expect(session(doc(const [])).hasAudio, isFalse, reason: 'the audio is still being made');
     expect(session(doc(const [2])).hasAudio, isTrue);
+  });
+
+  test('with the phone’s own voice every document has audio', () {
+    ReadingSession session([LibraryDocument? prepared]) => ReadingSession(
+      name: 'x.pdf',
+      data: Uint8List(0),
+      placeKey: 'k',
+      prepared: prepared,
+      phoneLangs: const {Lang.en},
+    );
+    expect(session().hasAudio, isTrue, reason: 'not prepared, but the phone can speak it');
+    expect(
+      session(
+        LibraryDocument(
+          Directory('unused'),
+          Manifest(
+            docId: docId,
+            name: 'x.pdf',
+            pages: 3,
+            sentences: 1,
+            bytes: 1,
+            updated: 1,
+            voiced: const [],
+          ),
+        ),
+      ).hasAudio,
+      isTrue,
+      reason: 'the computer has not voiced a page yet',
+    );
+  });
+
+  testWidgets('the Now Playing bar says where the sentence’s audio comes from', (tester) async {
+    final session = ReadingSession(name: 'x.pdf', data: Uint8List(0), placeKey: 'k');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: NowPlayingBar(session: session, onOpen: () {}, onClose: () {}),
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('source-desktop')), findsNothing);
+    expect(find.byKey(const Key('source-phone')), findsNothing);
+    session.update(ReaderState.playing, SpeechSource.desktop);
+    await tester.pump();
+    expect(find.byKey(const Key('source-desktop')), findsOneWidget);
+    session.update(ReaderState.playing, SpeechSource.phone);
+    await tester.pump();
+    expect(find.byKey(const Key('source-phone')), findsOneWidget);
+    expect(find.byKey(const Key('source-desktop')), findsNothing);
   });
 }

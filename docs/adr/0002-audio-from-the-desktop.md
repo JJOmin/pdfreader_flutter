@@ -3,7 +3,8 @@
 Date: 2026-10-21
 
 Status: **Accepted** by the owner on 2026-10-21, with the packages and permissions of section 5,
-and with the phone's own voice turned off for now (section 1). The library, the protocol and the
+and with the phone's own voice turned off for now (section 1; **turned on again by
+[ADR 5](0005-the-phones-own-voice.md)** on 2026-10-23). The library, the protocol and the
 pairing are decided in the desktop's ADR 7 (`../pdfreader/docs/adr/0007-phone-sync.md`). This ADR
 covers only what the phone does.
 
@@ -17,6 +18,8 @@ where reading stopped.
 ## Decision
 
 ### 1. Prepared audio is the only source of speech
+
+_Superseded by [ADR 5](0005-the-phones-own-voice.md): the phone's own voice now fills in what the desktop did not prepare. Prepared audio is still preferred._
 
 The owner decided that, for now, the phone has no voice of its own. The speech service of step 1.9
 plays only what the desktop prepared.

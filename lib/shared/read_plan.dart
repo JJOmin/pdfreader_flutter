@@ -5,7 +5,11 @@ import 'align.dart';
 import 'sync.dart';
 import 'types.dart';
 
-/// A sentence with prepared audio, placed on the phone's page.
+/// Where a sentence's audio comes from. The desktop's is always preferred (ADR 5).
+enum SpeechSource { desktop, phone }
+
+/// A sentence to read, placed on the phone's page: with the desktop's prepared audio, or to be
+/// spoken by the phone's own voice.
 class PlannedSentence {
   const PlannedSentence({
     required this.page,
@@ -17,6 +21,8 @@ class PlannedSentence {
     required this.timings,
     required this.duration,
     this.next,
+    this.source = SpeechSource.desktop,
+    this.spoken = '',
   });
 
   final int page;
@@ -33,9 +39,15 @@ class PlannedSentence {
   /// The part on the next page, for a sentence over the page break (desktop ADR 12).
   final PagePart? next;
 
-  /// One per word, in seconds of the audio.
+  /// One per word, in seconds of the audio. Empty for the phone's voice: its audio is measured
+  /// once it exists, and the player reports the timings then.
   final List<WordTiming> timings;
   final double duration;
+
+  final SpeechSource source;
+
+  /// What the phone's voice is given to say; empty for the desktop's audio.
+  final String spoken;
 }
 
 class PagePlan {
@@ -130,26 +142,44 @@ List<RawRange> _joined(List<Word> words, List<RawRange> covered) {
   return out;
 }
 
+/// A sentence for the phone's own voice, in the phone's words and ranges.
+PlannedSentence _phoneSentence(Utterance u) => PlannedSentence(
+  page: u.page,
+  key: syncKey(u.text),
+  lang: u.lang,
+  role: u.role,
+  words: u.words,
+  ranges: u.ranges,
+  next: u.next,
+  timings: const [],
+  duration: 0,
+  source: SpeechSource.phone,
+  spoken: u.spoken,
+);
+
 /// Places a page's prepared sentences on the phone's sentences of the same page. `index` is null
-/// when the page has none.
-PagePlan planPage(List<Utterance> phone, PageIndex? index) {
-  if (index == null) return PagePlan(const [], phone.length);
-  final words = pageWords(phone);
-  if (words.length == index.wordCount && wordsHash(words) == index.wordsHash) {
-    final flat = [for (final u in phone) ...u.words];
-    final roles = [
-      for (final u in phone)
-        for (final _ in u.words) u.role,
-    ];
-    return PagePlan([
-      for (final s in index.sentences)
-        _planned(phone, flat.sublist(s.from, s.from + s.words.length), s, roles[s.from]),
-    ], 0);
+/// when the page has none. A sentence the desktop did not prepare goes to the phone's own voice if
+/// that speaks its language (`phoneLangs`), else it is skipped.
+PagePlan planPage(List<Utterance> phone, PageIndex? index, {Set<Lang> phoneLangs = const {}}) {
+  if (index != null) {
+    final words = pageWords(phone);
+    if (words.length == index.wordCount && wordsHash(words) == index.wordsHash) {
+      final flat = [for (final u in phone) ...u.words];
+      final roles = [
+        for (final u in phone)
+          for (final _ in u.words) u.role,
+      ];
+      return PagePlan([
+        for (final s in index.sentences)
+          _planned(phone, flat.sublist(s.from, s.from + s.words.length), s, roles[s.from]),
+      ], 0);
+    }
   }
 
-  // The engines found different words, which the spike never saw: match whole sentences by text.
+  // No index, or the engines found different words, which the spike never saw: match whole
+  // sentences by text.
   final byKey = <String, LibrarySentence>{};
-  for (final s in index.sentences) {
+  for (final s in index?.sentences ?? const <LibrarySentence>[]) {
     byKey.putIfAbsent(s.key, () => s);
   }
   final sentences = <PlannedSentence>[];
@@ -158,7 +188,13 @@ PagePlan planPage(List<Utterance> phone, PageIndex? index) {
   for (final u in phone) {
     final s = byKey[syncKey(u.text)];
     if (s == null) {
-      missed++;
+      if (phoneLangs.contains(u.lang) && u.spoken.trim().isNotEmpty) {
+        skippedBefore.add(missed);
+        missed = 0;
+        sentences.add(_phoneSentence(u));
+      } else {
+        missed++;
+      }
       continue;
     }
     skippedBefore.add(missed);

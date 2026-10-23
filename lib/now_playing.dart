@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'favourites_store.dart';
 import 'library.dart';
 import 'reader.dart';
+import 'shared/read_plan.dart';
+import 'shared/types.dart';
 
 class ReadingSession extends ChangeNotifier {
   ReadingSession({
@@ -14,8 +16,12 @@ class ReadingSession extends ChangeNotifier {
     required this.data,
     required this.placeKey,
     this.prepared,
+    this.phoneLangs = const {},
     this.startInReading = false,
   });
+
+  /// The languages the phone's own voice speaks (ADR 5); with one, any document can be read.
+  final Set<Lang> phoneLangs;
 
   /// The PDF came from another app and opens in the reading view.
   final bool startInReading;
@@ -27,17 +33,44 @@ class ReadingSession extends ChangeNotifier {
 
   ReaderState state = ReaderState.idle;
 
-  /// False for a PDF the desktop has not prepared, or has voiced no page of yet: there is nothing to
-  /// play, so no player is shown for it.
-  bool get hasAudio => prepared != null && prepared!.manifest.voiced.isNotEmpty;
+  /// Where the audio of the sentence being read comes from; null while nothing is read.
+  SpeechSource? source;
+
+  /// False for a PDF the desktop has not prepared, or has voiced no page of yet, when the phone has
+  /// no voice either: there is nothing to play, so no player is shown for it.
+  bool get hasAudio => phoneLangs.isNotEmpty || (prepared != null && prepared!.manifest.voiced.isNotEmpty);
 
   /// Set by the reader once it can read aloud; null for a document the desktop has not prepared.
   VoidCallback? toggle;
   void Function(int direction)? skip;
 
-  void update(ReaderState state) {
+  void update(ReaderState state, [SpeechSource? source]) {
     this.state = state;
+    this.source = source;
     notifyListeners();
+  }
+}
+
+/// Says where the sentence being read gets its audio: the desktop's, or the phone's own voice.
+class AudioSourceBadge extends StatelessWidget {
+  const AudioSourceBadge(this.source, {super.key, this.color, this.size = 20});
+
+  final SpeechSource source;
+  final Color? color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final desktop = source == SpeechSource.desktop;
+    return Tooltip(
+      message: desktop ? 'Audio prepared on the computer' : 'Spoken by this phone’s voice',
+      child: Icon(
+        desktop ? Icons.computer : Icons.smartphone,
+        key: Key(desktop ? 'source-desktop' : 'source-phone'),
+        size: size,
+        color: color,
+      ),
+    );
   }
 }
 
@@ -89,6 +122,7 @@ class NowPlayingBar extends StatelessWidget {
                         onPressed: session.toggle,
                       ),
                       Expanded(child: Text(session.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      if (session.source case final source?) AudioSourceBadge(source),
                       if (favourites case final favourites? when docId != null)
                         ValueListenableBuilder(
                           valueListenable: favourites,

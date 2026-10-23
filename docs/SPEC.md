@@ -44,9 +44,11 @@ The Android port of `../pdfreader`, at the end of M1 (2026-10-21). The plan is i
 
 ## Known limits
 
-1. **Only documents the desktop prepared are read aloud.** Others show "Not prepared on the
-   desktop" and Play is off (ADR 2). The step 1.8 voices and `sherpa_onnx` are still in the APK,
-   unused.
+1. **The desktop's audio is preferred; the phone's own voice fills in** (ADR 5). A document, page
+   or sentence the desktop did not prepare is read by the system's offline text-to-speech, with
+   estimated word timings. Without an offline voice for the language, the sentence is skipped, and
+   a document nobody can speak shows "Not prepared on the desktop" with Play off. The step 1.8
+   voices and `sherpa_onnx` are still in the APK, unused.
 2. **Documents arrive over Wi-Fi** from a paired desktop (Desktops, then Sync), or over USB with
    `tool/push_library.ps1` after the app is installed: installing it the first time clears the
    folder. Sync runs when the user presses it, not in the background.

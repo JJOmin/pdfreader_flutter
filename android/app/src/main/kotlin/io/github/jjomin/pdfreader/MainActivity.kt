@@ -36,6 +36,7 @@ class MainActivity : AudioServiceActivity() {
     /** The PDF another app opened this one with, until Flutter has taken it. */
     private var incoming: Uri? = null
     private var documents: MethodChannel? = null
+    private val phoneVoice by lazy { PhoneVoice(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +74,19 @@ class MainActivity : AudioServiceActivity() {
                 else -> result.notImplemented()
             }
         }
+        // The phone's own voice (ADR 5): the system's text-to-speech, offline voices only.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/tts")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "languages" -> phoneVoice.languages(result)
+                    "synthesize" -> phoneVoice.synthesize(
+                        call.argument<String>("text")!!,
+                        call.argument<String>("lang")!!,
+                        result,
+                    )
+                    else -> result.notImplemented()
+                }
+            }
         // SecretBox (ADR 3 section 5): the sign-in secrets and the sync key are encrypted with a key
         // in the Android Keystore, which never leaves the chip, as the desktop's safeStorage does.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdfreader/secrets")
@@ -137,6 +151,11 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        phoneVoice.shutdown()
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     private fun secretKey(): SecretKey {

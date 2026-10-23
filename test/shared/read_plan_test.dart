@@ -113,6 +113,73 @@ void main() {
     expect(plan.skipped, 2);
   });
 
+  group('planPage with the phone’s own voice', () {
+    const both = {Lang.en, Lang.de};
+
+    test('a page with no index is read entirely by the phone', () {
+      final plan = planPage(phone, null, phoneLangs: both);
+      expect(plan.skipped, 0);
+      expect(plan.sentences.map(texts), [
+        ['I', 'INTRODUCTION'],
+        ['Tutorials', 'help', 'you'],
+      ]);
+      expect(plan.sentences.map((s) => s.source), everyElement(SpeechSource.phone));
+      expect(plan.sentences[1].spoken, phone[1].spoken);
+      expect(plan.sentences[1].ranges, phone[1].ranges);
+      expect(plan.sentences[1].key, syncKey('Tutorials help you.'));
+      expect(plan.sentences[0].role, Role.heading);
+      expect(plan.sentences[1].timings, isEmpty, reason: 'measured once the phone has made the audio');
+    });
+
+    test('a sentence in a language the phone cannot speak is skipped', () {
+      final plan = planPage(phone, null, phoneLangs: const {Lang.de});
+      expect(plan.sentences, isEmpty);
+      expect(plan.skipped, 2);
+    });
+
+    test('a page whose words agree is read with the desktop’s audio only', () {
+      final plan = planPage(
+        phone,
+        index(phone, [sentence('I. INTRODUCTION Tutorials', 0, 3), sentence('help you.', 3, 2)]),
+        phoneLangs: both,
+      );
+      expect(plan.sentences.map((s) => s.source), everyElement(SpeechSource.desktop));
+    });
+
+    test('on a page whose words differ, only the sentences the desktop lacks use the phone', () {
+      final plan = planPage(
+        phone,
+        index(phone, [sentence('Tutorials help you.', 0, 3)], hash: 'f' * 64),
+        phoneLangs: both,
+      );
+      expect(plan.skipped, 0);
+      expect(plan.sentences.map((s) => s.source), [SpeechSource.phone, SpeechSource.desktop]);
+      expect(plan.sentences.map(texts), [
+        ['I', 'INTRODUCTION'],
+        ['Tutorials', 'help', 'you'],
+      ]);
+    });
+
+    test('a sentence with nothing to speak is left out', () {
+      final silent = [
+        Utterance(
+          page: 1,
+          text: '[1]',
+          spoken: '  ',
+          lang: Lang.en,
+          role: Role.main,
+          words: const [
+            Word('[1]', [(0, 3)]),
+          ],
+          ranges: const [(0, 3)],
+        ),
+      ];
+      final plan = planPage(silent, null, phoneLangs: both);
+      expect(plan.sentences, isEmpty);
+      expect(plan.skipped, 1);
+    });
+  });
+
   test(
     'tints a sentence over the page break on both pages, and puts its words on theirs (desktop ADR 12)',
     () {

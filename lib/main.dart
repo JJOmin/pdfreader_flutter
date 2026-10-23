@@ -22,10 +22,12 @@ import 'shared/library_view.dart';
 import 'notes_store.dart';
 import 'places.dart';
 import 'platform_secrets.dart';
+import 'phone_voice.dart';
 import 'playback.dart';
 import 'reader_page.dart';
 import 'store/cloud_accounts.dart';
 import 'shared/sync.dart' show Manifest;
+import 'shared/types.dart' show Lang;
 import 'shared/sync_state.dart';
 import 'store/cloud_catalog.dart';
 import 'store/memo_file.dart';
@@ -95,6 +97,7 @@ Future<void> main() async {
     PdfReaderApp(
       library: library,
       playback: playback,
+      phoneVoice: PlatformPhoneVoice(),
       places: places,
       notesStore: notesStore,
       cloud: cloud,
@@ -111,6 +114,7 @@ class PdfReaderApp extends StatefulWidget {
     this.documents,
     this.library,
     this.playback,
+    this.phoneVoice,
     this.places,
     this.notesStore,
     this.cloud,
@@ -123,6 +127,9 @@ class PdfReaderApp extends StatefulWidget {
   final DocumentAccess? documents;
   final Library? library;
   final ReadingHandler? playback;
+
+  /// The phone's own voice, for what the desktop did not prepare (ADR 5); null in widget tests.
+  final PhoneVoice? phoneVoice;
   final Places? places;
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
@@ -154,6 +161,7 @@ class _PdfReaderAppState extends State<PdfReaderApp> {
         documents: widget.documents ?? DocumentAccess(),
         library: widget.library,
         playback: widget.playback,
+        phoneVoice: widget.phoneVoice,
         places: widget.places,
         notesStore: widget.notesStore,
         cloud: widget.cloud,
@@ -173,6 +181,7 @@ class HomePage extends StatefulWidget {
     required this.documents,
     this.library,
     this.playback,
+    this.phoneVoice,
     this.places,
     this.notesStore,
     this.cloud,
@@ -184,6 +193,7 @@ class HomePage extends StatefulWidget {
   final DocumentAccess documents;
   final Library? library;
   final ReadingHandler? playback;
+  final PhoneVoice? phoneVoice;
   final Places? places;
   final NotesStore? notesStore;
   final CloudAccounts? cloud;
@@ -208,6 +218,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   var _expanded = false;
 
   late final FavouritesStore _favourites = widget.favourites ?? FavouritesStore.inMemory();
+
+  /// The languages the phone's own voice speaks, asked once; a document opens after the answer.
+  late final Future<Set<Lang>> _phoneLangs = widget.phoneVoice?.languages() ?? Future.value(const {});
 
   /// What the list listens to where there is no sync (widget tests).
   static final _never = ChangeNotifier();
@@ -315,24 +328,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   /// Opens the reader; another document ends the session before, as only one voice reads.
-  void _show(
+  Future<void> _show(
     String name,
     Uint8List data,
     String placeKey,
     LibraryDocument? prepared, {
     bool reading = false,
-  }) => setState(() {
-    if (_session?.placeKey != placeKey) {
-      _session = ReadingSession(
-        name: name,
-        data: data,
-        placeKey: placeKey,
-        prepared: prepared,
-        startInReading: reading,
-      );
-    }
-    _expanded = true;
-  });
+  }) async {
+    final phoneLangs = await _phoneLangs;
+    if (!mounted) return;
+    setState(() {
+      if (_session?.placeKey != placeKey) {
+        _session = ReadingSession(
+          name: name,
+          data: data,
+          placeKey: placeKey,
+          prepared: prepared,
+          phoneLangs: phoneLangs,
+          startInReading: reading,
+        );
+      }
+      _expanded = true;
+    });
+  }
 
   /// Back hides the reader, and a document with audio goes on in the Now Playing bar; one without has
   /// nothing to play, so closing it ends it.
@@ -353,7 +371,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _openOpened(OpenedDocument document, {bool reading = false}) async {
     // A PDF the desktop prepared is found by its bytes, wherever it was opened from.
     final prepared = await widget.library?.find(document.data);
-    if (mounted) _show(document.name, document.data, document.uri, prepared, reading: reading);
+    if (mounted) await _show(document.name, document.data, document.uri, prepared, reading: reading);
   }
 
   Future<void> _openIncoming() async {
@@ -638,6 +656,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   data: session.data,
                   placeKey: session.placeKey,
                   prepared: session.prepared,
+                  phoneVoice: widget.phoneVoice,
+                  phoneLangs: session.phoneLangs,
                   playback: widget.playback,
                   places: widget.places,
                   notesStore: widget.notesStore,

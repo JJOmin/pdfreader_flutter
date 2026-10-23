@@ -13,6 +13,7 @@ import 'library.dart';
 import 'notes_store.dart';
 import 'now_playing.dart';
 import 'places.dart';
+import 'phone_voice.dart';
 import 'playback.dart';
 import 'reader.dart';
 import 'shared/mark_export.dart';
@@ -58,6 +59,8 @@ class ReaderPage extends StatefulWidget {
     required this.data,
     required this.placeKey,
     this.prepared,
+    this.phoneVoice,
+    this.phoneLangs = const {},
     this.playback,
     this.places,
     this.notesStore,
@@ -82,8 +85,13 @@ class ReaderPage extends StatefulWidget {
   /// The system's "save as", for the Markdown export and "Save PDF"; null in widget tests.
   final DocumentAccess? documents;
 
-  /// Null when the desktop has not prepared this PDF: it shows, but cannot be read aloud.
+  /// Null when the desktop has not prepared this PDF: it is then read by the phone's own voice, if
+  /// it has one, else it only shows.
   final LibraryDocument? prepared;
+
+  /// The phone's own voice and the languages it speaks (ADR 5); null and empty in widget tests.
+  final PhoneVoice? phoneVoice;
+  final Set<Lang> phoneLangs;
   final ReadingHandler? playback;
 
   /// The app's reading session, which the Now Playing bar controls while the reader is hidden.
@@ -116,7 +124,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   late bool reading = widget.startInReading || _saved?.view == 'reading';
 
   /// Whether there is anything to play; without audio the player is not shown at all.
-  bool get _hasAudio => widget.prepared != null && widget.prepared!.manifest.voiced.isNotEmpty;
+  bool get _hasAudio =>
+      widget.phoneLangs.isNotEmpty ||
+      (widget.prepared != null && widget.prepared!.manifest.voiced.isNotEmpty);
   TextView get _view => reading ? _readingView : _pdf;
 
   /// The sentence being read and its word.
@@ -193,9 +203,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     if (sentence != null) _resume = _lastSentence = (page: sentence.page, index: sentence.index);
     unawaited(_loadNotes());
     final prepared = widget.prepared;
-    if (prepared == null) return;
-    unawaited(_findOffer(prepared));
-    final reader = Reader(this, LibraryAudio(prepared))
+    if (prepared == null && widget.phoneLangs.isEmpty) return;
+    if (prepared != null) unawaited(_findOffer(prepared));
+    final reader = Reader(this, LibraryAudio(document: prepared, voice: widget.phoneVoice))
       ..speed = _speed
       ..stopAtReferences = widget.places?.stopAtReferences ?? false;
     setState(() => _reader = reader);
@@ -449,20 +459,33 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     await _savePlace();
   }
 
-  /// The document says once how many of its sentences have no audio (ADR 2 section 1).
+  /// The document says once how many of its sentences have no audio (ADR 2 section 1), and how many
+  /// of a fully prepared document the phone's own voice reads (ADR 5).
   Future<void> _countSkipped() async {
-    var skipped = 0;
+    var skipped = 0, byPhone = 0;
     for (var page = 1; page <= pageCount; page++) {
-      skipped += (await _plan(page)).skipped;
+      final plan = await _plan(page);
+      skipped += plan.skipped;
+      byPhone += plan.sentences.where((s) => s.source == SpeechSource.phone).length;
     }
     // Pages the computer has not voiced yet are said in the status line instead.
-    final m = widget.prepared!.manifest;
-    if (skipped > 0 && m.voiced.length == m.pages) _toast('$skipped sentences have no audio and are skipped');
+    final m = widget.prepared?.manifest;
+    if (m != null && m.voiced.length < m.pages) return;
+    if (skipped > 0) {
+      _toast('$skipped sentences have no audio and are skipped');
+    } else if (byPhone > 0 && m != null) {
+      _toast(
+        byPhone == 1
+            ? 'One sentence is read by this phone’s voice'
+            : '$byPhone sentences are read by this phone’s voice',
+      );
+    }
   }
 
   Future<PagePlan> _plan(int page) => _plans[page] ??= () async {
     final utterances = await _text!.utterances(page);
-    return _planned[page] = planPage(utterances, await widget.prepared!.index(page));
+    final index = await widget.prepared?.index(page);
+    return _planned[page] = planPage(utterances, index, phoneLangs: widget.phoneLangs);
   }();
 
   /// A short note above the reader's buttons, only while the reader shows: hidden behind the tabs,
@@ -503,7 +526,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       }
     });
     widget.playback?.show(state, widget.name, this.sentence?.page ?? _view.currentPage ?? 1);
-    widget.session?.update(state);
+    widget.session?.update(state, this.sentence?.source);
     if (changedSentence) {
       _resume = null;
       final at = _reader?.cursor;
@@ -742,10 +765,20 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   String? get _status {
     if (_error != null) return _error;
     final prepared = widget.prepared;
-    if (prepared == null) return 'Not prepared on the desktop';
+    final phone = widget.phoneLangs.isNotEmpty;
+    if (prepared == null) {
+      return phone
+          ? 'Not prepared on the computer: read by this phone’s voice'
+          : 'Not prepared on the desktop';
+    }
     // The computer adds the audio page by page; the rest is read once it is there (desktop ADR 11).
     final m = prepared.manifest;
     if (m.voiced.length < m.pages) {
+      if (phone) {
+        return m.voiced.isEmpty
+            ? 'No audio from the computer yet: read by this phone’s voice'
+            : 'Audio from the computer for ${m.voiced.length} of ${m.pages} pages; the rest by this phone’s voice';
+      }
       return m.voiced.isEmpty
           ? 'The audio is being made on the computer'
           : 'Audio for ${m.voiced.length} of ${m.pages} pages so far';
@@ -1078,6 +1111,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: onBar),
                     ),
                   ),
+                  if (sentence?.source case final source?) AudioSourceBadge(source, color: onBar),
                   IconButton(
                     key: const Key('speed'),
                     icon: const Icon(Icons.speed),

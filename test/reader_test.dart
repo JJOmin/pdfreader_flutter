@@ -24,6 +24,9 @@ class FakePlayer implements PreparedAudio {
   FakePlayer(this.key);
 
   final String key;
+
+  @override
+  List<WordTiming>? timings;
   final ended = Completer<void>();
   void Function(Duration)? onPosition;
   double? speed;
@@ -64,9 +67,12 @@ class FakeAudio implements SentenceAudio {
   /// The player of the sentence that is playing now.
   FakePlayer get current => prepared.lastWhere((p) => p.onPosition != null && !p.ended.isCompleted);
 
+  /// What the player says about its own timings, for sentences the phone voices.
+  List<WordTiming>? timings;
+
   @override
   Future<PreparedAudio> prepare(PlannedSentence sentence) async {
-    final player = FakePlayer(sentence.key);
+    final player = FakePlayer(sentence.key)..timings = timings;
     prepared.add(player);
     return player;
   }
@@ -183,6 +189,15 @@ void main() {
     audio.current.onPosition!(const Duration(milliseconds: 500));
     audio.current.onPosition!(const Duration(milliseconds: 600));
     expect(host.changes.where((c) => c.$2 == 'a').map((c) => c.$3), [-1, 0, 1]);
+  });
+
+  test('takes the word timings from the audio when it measured them itself', () async {
+    audio.timings = const [WordTiming(0, 0.1), WordTiming(0.1, 0.2)];
+    reader.toggle((page: 1, index: 0));
+    await settle();
+    // 0.5 s is past the second word of the audio's timings, but not of the sentence's (0.4 s).
+    audio.current.onPosition!(const Duration(milliseconds: 150));
+    expect(host.changes.where((c) => c.$2 == 'a').map((c) => c.$3), [-1, 1]);
   });
 
   test('a seek stops the sentence playing and reads on from the new place', () async {
