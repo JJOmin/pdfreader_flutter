@@ -1,0 +1,67 @@
+# Runs on every pull request and on every push to main: the same checks as tool/check.sh, then a
+# release build of the app. Feature branches reach main only through a pull request that passes these.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A new push to a branch stops the run for the older one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The version FVM pins on the owner's computers; keep the two in step.
+  FLUTTER_VERSION: "3.47.7"
+
+jobs:
+  check:
+    name: Analyze, format, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
+      - name: Test
+        run: flutter test
+
+  build-android:
+    name: Build the Android app
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # Without a release key the build is signed with the debug key (android/app/build.gradle.kts):
+      # good for checking that it builds, not for giving to anyone. The release workflow refuses that.
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-debug-signed
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7

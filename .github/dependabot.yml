@@ -1,0 +1,15 @@
+# Opens a pull request when a package or an action has a new version, so that they are kept up to
+# date, and security fixes with them. Each arrives on its own branch and passes the CI first.
+version: 2
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: gradle
+    directory: /android
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

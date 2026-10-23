@@ -303,3 +303,15 @@ whole app, with a font and a text size for the app, and the reading view keeps o
 
 Note: the reading settings still hold a `theme` field, the desktop's file format, but nothing reads it.
 The desktop app's colours are unchanged: it has its own settings.
+
+## M16: security, CI and accessibility (the owner, 2026-10-23, both repositories)
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 16.1 | **Done 2026-10-23.** A review of both apps (`SECURITY.md` here and in the desktop repository). Phone: backup off, `file:` access to the app's own storage refused, a size cap on a document, release signing from a key and not the debug key. Device: the new build installed over the old one, the `file:` intent did nothing, the backup flag is gone from the package. **Security review.** | Device: seen. |
+| 16.2 | **Done 2026-10-23, not yet run on GitHub.** `.github/workflows/`: `ci.yml` (analyze, format, tests, a release build on every pull request and push to main), `security.yml` (dependency review, secret scan), `release.yml` (a `v*` tag builds the signed app and attaches it to a release; it refuses without the owner's key). Dependabot for pub, Gradle and the actions. Features go on `feature/...` branches (CLAUDE.md). The files are valid YAML; they have not run, because nothing is pushed. **CI/CD.** | The first pull request shows green checks. |
+| 16.3 | **Done 2026-10-23.** `test/accessibility_test.dart` runs Flutter's guidelines (48 dp targets, a label on every control, text contrast of 4.5) on Home, Favourites, Settings, Appearance, Speed reader, a mark's card and the play bar in the light, dark, sepia and a custom theme. It found and fixed: swatches and the pencil under 48 dp, a search field 24 dp high, sepia text at 4.0 contrast. The fast-scroll grip has a 48 dp area and a name, and a screen reader steps it. The custom colours have names and are refused below contrast 4.5. The status line, the search count and the place offer are announced. 529 tests. Not on the device with TalkBack. **Accessibility.** | Widget tests; device: not checked with TalkBack. |
+
+Known limit: the PDF pages are drawn on a canvas, which a screen reader cannot read; the reading view is
+the accessible way to read a document.
+

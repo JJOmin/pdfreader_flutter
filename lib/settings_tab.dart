@@ -201,18 +201,26 @@ class _CustomColours extends StatelessWidget {
                     child: InkResponse(
                       key: Key('custom-$id-${colour.toRadixString(16)}'),
                       onTap: ok ? () => choose(colour) : null,
+                      // The circle is 38 dp; the part that takes a touch is 48, as Android asks.
                       child: Semantics(
-                        label: '$label ${colour.toRadixString(16)}',
+                        label: '$label ${colourName(colour)}${ok ? '' : ', not readable on this background'}',
+                        button: true,
                         selected: colour == selected,
                         child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Color(colour),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              width: colour == selected ? 3 : 1,
+                          width: 48,
+                          height: 48,
+                          alignment: Alignment.center,
+                          color: Colors.transparent,
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Color(colour),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                width: colour == selected ? 3 : 1,
+                              ),
                             ),
                           ),
                         ),

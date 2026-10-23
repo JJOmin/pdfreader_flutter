@@ -62,20 +62,24 @@ class _FavouritesTabState extends State<FavouritesTab> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: SearchBar(
+      // A text field rather than a SearchBar: its touch target is the whole field, 48 dp high.
+      title: TextField(
         key: const Key('favourites-search'),
         controller: _search,
-        hintText: 'Search titles and folders',
-        leading: const Icon(Icons.search),
-        trailing: [
-          if (_search.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              tooltip: 'Clear',
-              onPressed: () => setState(_search.clear),
-            ),
-        ],
-        elevation: const WidgetStatePropertyAll(0),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search titles and folders',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _search.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear),
+                  tooltip: 'Clear',
+                  onPressed: () => setState(_search.clear),
+                ),
+          filled: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: BorderSide.none),
+        ),
         onChanged: (_) => setState(() {}),
       ),
     ),

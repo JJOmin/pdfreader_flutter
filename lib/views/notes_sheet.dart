@@ -92,7 +92,7 @@ class _MarkCardState extends State<MarkCard> {
                 children: [
                   Container(
                     width: 6,
-                    height: 44,
+                    height: 48,
                     margin: const EdgeInsets.only(right: 10),
                     decoration: BoxDecoration(
                       color: markLine[_color],
@@ -115,7 +115,6 @@ class _MarkCardState extends State<MarkCard> {
                     key: Key('edit-${mark.id}'),
                     icon: Icon(_editing ? Icons.check : Icons.edit_outlined),
                     tooltip: _editing ? 'Done' : 'Edit the comment and the mark',
-                    visualDensity: VisualDensity.compact,
                     onPressed: () => setState(() => _editing = !_editing),
                   ),
                 ],
@@ -128,7 +127,7 @@ class _MarkCardState extends State<MarkCard> {
               readOnly: !_editing,
               minLines: 1,
               maxLines: 5,
-              decoration: InputDecoration(hintText: _editing ? 'Comment' : 'No comment', isDense: true),
+              decoration: InputDecoration(hintText: _editing ? 'Comment' : 'No comment'),
               onChanged: (text) => widget.actions.onComment(mark.id, text),
             ),
             if (_editing) ...[
@@ -144,25 +143,32 @@ class _MarkCardState extends State<MarkCard> {
                       isSelected: _kind == kind,
                       icon: Icon(_kindIcons[kind]),
                       tooltip: _kindLabels[kind],
-                      visualDensity: VisualDensity.compact,
                       onPressed: () => _restyle(kind: kind),
                     ),
                   for (final color in HighlightColor.values)
                     InkResponse(
                       key: Key('color-${color.name}-${mark.id}'),
                       onTap: () => _restyle(color: color),
+                      // The circle is 32 dp; the part that takes a touch is 48, as Android asks.
                       child: Semantics(
                         label: color.name,
+                        button: true,
                         selected: _color == color,
                         child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: markLine[color],
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              width: _color == color ? 3 : 0,
+                          width: 48,
+                          height: 48,
+                          alignment: Alignment.center,
+                          color: Colors.transparent,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: markLine[color],
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                width: _color == color ? 3 : 0,
+                              ),
                             ),
                           ),
                         ),

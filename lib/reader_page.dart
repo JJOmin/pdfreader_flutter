@@ -941,13 +941,17 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         ),
         actions: [
           Center(
-            child: Text(
-              _searchBox.text.trim().isEmpty
-                  ? ''
-                  : _matches.isEmpty
-                  ? 'No results'
-                  : '${_match + 1} / ${_matches.length}',
-              key: const Key('search-count'),
+            // Read out as it changes: the number of results and which one is shown.
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                _searchBox.text.trim().isEmpty
+                    ? ''
+                    : _matches.isEmpty
+                    ? 'No results'
+                    : '${_match + 1} of ${_matches.length}',
+                key: const Key('search-count'),
+              ),
             ),
           ),
           IconButton(
@@ -1109,7 +1113,11 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
             if (_offer case final offer?)
               MaterialBanner(
                 key: const Key('place-offer'),
-                content: Text('Continue where you stopped on ${offer.name}, page ${offer.page}?'),
+                // Announced when it appears, to a screen reader that is on the page.
+                content: Semantics(
+                  liveRegion: true,
+                  child: Text('Continue where you stopped on ${offer.name}, page ${offer.page}?'),
+                ),
                 actions: [
                   TextButton(onPressed: () => setState(() => _offer = null), child: const Text('Stay here')),
                   TextButton(
@@ -1200,10 +1208,13 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       borderRadius: BorderRadius.circular(14),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Text(
-          status,
-          key: const Key('status'),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: _barColors.onBar),
+        child: Semantics(
+          liveRegion: true,
+          child: Text(
+            status,
+            key: const Key('status'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: _barColors.onBar),
+          ),
         ),
       ),
     ),

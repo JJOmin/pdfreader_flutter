@@ -17,7 +17,10 @@
     </queries>
     <!-- Speaking a comment (ADR 6): the microphone, asked for the first time the user dictates. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- No backup: the documents, notes and sync state stay on this phone and the user's own devices
+         (no cloud, CLAUDE.md), and a backup would carry them off through adb or the system's cloud. -->
     <application
+        android:allowBackup="false"
         android:label="PDF Reader"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

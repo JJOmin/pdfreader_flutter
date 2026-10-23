@@ -63,3 +63,12 @@ and do not add a feature to one view only.
 - Do not claim something works on the phone without running it there. If no phone is connected,
   report the step as **not verified on device**.
 - Keep iOS buildable in principle: no Android-only API outside `android/` and platform channels.
+- **Branches and CI.** A feature is made on a `feature/<name>` branch, never on `main`; it reaches `main`
+  through a pull request whose CI (`.github/workflows/ci.yml`: analyze, format, tests, a release
+  build) is green. Check `git branch --show-current` before the first edit of a feature. Do not commit
+  or push unless asked. A release is a `v*` tag, built and signed by `release.yml`; it needs the
+  owner's keystore in the repository's secrets and refuses to publish a debug-signed app.
+- **Security and accessibility are part of "done".** `SECURITY.md` has what is guarded and why: do not
+  weaken it (backup off, no `file:` access to the app's own storage, pinned TLS, no new permission
+  without the owner). A new screen passes `test/accessibility_test.dart`'s guidelines (48 dp touch
+  targets, a label on every control, text contrast of 4.5) in every theme.

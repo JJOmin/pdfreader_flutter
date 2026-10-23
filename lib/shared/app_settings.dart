@@ -44,6 +44,35 @@ const customAccents = [
   0xFF7B1FA2,
 ];
 
+/// What each offered colour is called, for a screen reader: a swatch is only a colour to the eye.
+const colourNames = {
+  0xFFFFFFFF: 'white',
+  0xFFF4ECD8: 'paper',
+  0xFFE8EEF5: 'pale blue',
+  0xFFE6F0E6: 'pale green',
+  0xFF2B2B2B: 'dark grey',
+  0xFF1E1E1E: 'charcoal',
+  0xFF0F1B2D: 'midnight blue',
+  0xFF000000: 'black',
+  0xFF1F1F1F: 'near black',
+  0xFF5B4636: 'brown',
+  0xFF1B2A41: 'navy',
+  0xFF1E4620: 'dark green',
+  0xFFE2E2E2: 'light grey',
+  0xFFFFD400: 'yellow',
+  0xFF3F51B5: 'indigo',
+  0xFF1F7FE0: 'blue',
+  0xFF00897B: 'teal',
+  0xFF2E9E3A: 'green',
+  0xFFF57C00: 'orange',
+  0xFFE03131: 'red',
+  0xFFC2185B: 'pink',
+  0xFF7B1FA2: 'purple',
+};
+
+/// The name of an offered colour, or its code for one that is not on the list.
+String colourName(int colour) => colourNames[colour] ?? colour.toRadixString(16);
+
 /// The app's look, as the user chose it.
 class Appearance {
   const Appearance({
@@ -159,5 +188,5 @@ double contrastRatio(int a, int b) {
   return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
 }
 
-/// Text on its background has to be at least this clear to be offered.
-const minContrast = 3.0;
+/// Text on its background has to be at least this clear to be offered: WCAG AA for normal text.
+const minContrast = 4.5;
