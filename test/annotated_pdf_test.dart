@@ -12,7 +12,7 @@ import 'package:pdfrx_engine/pdfrx_engine.dart';
 
 import 'desktop_repo.dart';
 
-final sample = '$desktopRepo/tests/fixtures/sample.pdf';
+const sample = sampleFixture;
 
 /// Each page's annotations, by PDFium subtype.
 Future<List<List<int>>> annotationsOf(List<int> bytes) async {

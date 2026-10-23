@@ -37,6 +37,7 @@ jobs:
         run: flutter analyze --fatal-infos
       - name: Format
         run: dart format --output=none --set-exit-if-changed .
+      - uses: ./.github/actions/pdfium
       - name: Test
         run: flutter test
 

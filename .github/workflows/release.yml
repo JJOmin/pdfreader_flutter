@@ -44,6 +44,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - uses: ./.github/actions/pdfium
       - name: Test
         run: flutter test
       - name: Build

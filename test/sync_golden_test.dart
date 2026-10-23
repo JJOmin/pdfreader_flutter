@@ -13,7 +13,7 @@ import 'package:pdfrx_engine/pdfrx_engine.dart';
 import 'desktop_repo.dart';
 
 final files = {
-  'sample': '$desktopRepo/tests/fixtures/sample.pdf',
+  'sample': sampleFixture,
   'centric': '$desktopRepo/docs/sample_pdfs/centric_2026_1_10_30003.pdf',
 };
 
@@ -34,6 +34,6 @@ void main() {
         expect(wordsHash(words), entry['wordsHash'], reason: 'page ${entry['page']}');
       }
       await document.dispose();
-    }, skip: File(path).existsSync() ? false : 'needs $path');
+    }, skip: skipWithout(path));
   }
 }
