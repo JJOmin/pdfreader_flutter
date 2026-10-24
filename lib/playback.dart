@@ -164,5 +164,7 @@ Future<ReadingHandler> initPlayback() => AudioService.init(
     // Stays a foreground service while paused, so Play on the lock screen can start it again
     // (Android 12 forbids starting one from the background).
     androidStopForegroundOnPause: false,
+    // The status bar shows only an icon's outline: the app icon would be a white square there.
+    androidNotificationIcon: 'drawable/ic_notification',
   ),
 );

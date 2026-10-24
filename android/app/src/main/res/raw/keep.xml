@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- lib/playback.dart names the notification's icon by a string, which the release build's resource
+     shrinker cannot see: without this it would drop the icon. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@drawable/ic_notification" />
