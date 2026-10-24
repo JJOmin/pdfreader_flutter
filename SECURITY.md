@@ -17,17 +17,17 @@ user's own Nextcloud as encrypted files (ADR 3). No analytics, no cloud voices, 
 
 ## What guards it
 
-| Where | What |
-| --- | --- |
-| Pairing with the computer | HTTPS to a self-signed certificate; no root is trusted, and every certificate is checked against the SHA-256 the user confirmed by code or QR (`desktop_link.dart`). A token of 256 bits follows. |
-| Nextcloud | HTTPS only (HTTP only for a private address); the sign-in is the browser's Login Flow v2, so the app never sees the password, and its addresses must stay on the server the user typed (`store/nextcloud_login.dart`). |
-| Files in the store | AES-256-GCM, a fresh IV each time, the file's path signed in, so a file moved to another path does not open (`shared/sync_store.dart`). |
-| Secrets (sync key, app password) | Encrypted with a key in the Android Keystore, which never leaves the chip (`MainActivity.kt`). |
-| Names from other devices | Document ids, device ids and file names are matched against strict patterns before they become a path, a key or a file name. |
-| Backup | Off (`android:allowBackup="false"`): `adb backup` and the system's cloud backup cannot carry the documents away. |
-| Other apps | `file:` addresses into the app's own storage are refused, so an intent from another app or a web page cannot make the app read its own private files; a document over 300 MB is refused. |
-| Permissions | Network, multicast (finding the computer), a media service, and the microphone, asked for the first time the user dictates. |
-| Release | Signed with the owner's key from `android/key.properties` or the CI's secrets; a build without it is signed with the debug key, says so, and cannot be published by `release.yml`. |
+| Where                            | What                                                                                                                                                                                                                   |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pairing with the computer        | HTTPS to a self-signed certificate; no root is trusted, and every certificate is checked against the SHA-256 the user confirmed by code or QR (`desktop_link.dart`). A token of 256 bits follows.                      |
+| Nextcloud                        | HTTPS only (HTTP only for a private address); the sign-in is the browser's Login Flow v2, so the app never sees the password, and its addresses must stay on the server the user typed (`store/nextcloud_login.dart`). |
+| Files in the store               | AES-256-GCM, a fresh IV each time, the file's path signed in, so a file moved to another path does not open (`shared/sync_store.dart`).                                                                                |
+| Secrets (sync key, app password) | Encrypted with a key in the Android Keystore, which never leaves the chip (`MainActivity.kt`).                                                                                                                         |
+| Names from other devices         | Document ids, device ids and file names are matched against strict patterns before they become a path, a key or a file name.                                                                                           |
+| Backup                           | Off (`android:allowBackup="false"`): `adb backup` and the system's cloud backup cannot carry the documents away.                                                                                                       |
+| Other apps                       | `file:` addresses into the app's own storage are refused, so an intent from another app or a web page cannot make the app read its own private files; a document over 300 MB is refused.                               |
+| Permissions                      | Network, multicast (finding the computer), a media service, and the microphone, asked for the first time the user dictates.                                                                                            |
+| Release                          | Signed with the owner's key from `android/key.properties` or the CI's secrets; a build without it is signed with the debug key, says so, and cannot be published by `release.yml`.                                     |
 
 ## Checked on 2026-10-23
 
@@ -46,8 +46,9 @@ target); the platform channels are reached only by the app's own Dart code.
 
 ## Open, for the owner
 
+- **One password.** `keytool` makes a PKCS12 keystore today, which has a single password for the keystore and its key: `ANDROID_KEY_PASSWORD` must be the same as `ANDROID_KEYSTORE_PASSWORD`, and the alias is a name, not a secret. `tool/check_release_key.sh` checks all three and says which is wrong; the release workflow runs it first.
 - **Create the release key** (`keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 2048
-  -validity 10000 -alias pdfreader`), keep it and its passwords somewhere safe outside the repository,
+-validity 10000 -alias pdfreader`), keep it and its passwords somewhere safe outside the repository,
   put them in `android/key.properties` and in the repository's secrets (`release.yml` lists the names).
   Losing it means a new app cannot update the installed one.
 - **Switch on, in the repository's settings:** branch protection for `main` (require a pull request and

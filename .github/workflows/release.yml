@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 env:
-  FLUTTER_VERSION: "3.47.7"
+  FLUTTER_VERSION: "3.47.8"
 
 jobs:
   release:
@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 45
     environment: release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: The tag names the version in pubspec.yaml
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
@@ -46,10 +46,17 @@ jobs:
             exit 1
           fi
           echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.jks"
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
+      - name: The key opens, with these passwords and this alias
+        env:
+          KEYSTORE: ${{ runner.temp }}/release.jks
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: sh tool/check_release_key.sh
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -82,7 +89,7 @@ jobs:
           echo "APK=$name" >> "$GITHUB_ENV"
       - name: Publish
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ${{ env.APK }}
           name: Easy Reader for Android ${{ github.ref_name }}
@@ -90,7 +97,7 @@ jobs:
           generate_release_notes: true
           # A version with a hyphen in it is an alpha or a beta.
           prerelease: ${{ contains(github.ref_name, '-') }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Easy-Reader-apk
           path: ${{ env.APK }}

@@ -38,9 +38,9 @@ dependencies:
   just_audio: ^0.10.6
   mobile_scanner: ^7.4.2
   path_provider: ^2.1.6
-  pdfium_dart: ^0.3.1
-  pdfrx: ^2.6.5
-  pdfrx_engine: ^0.6.1
+  pdfium_dart: ^0.4.0
+  pdfrx: ^2.10.1
+  pdfrx_engine: ^0.8.0
   sherpa_onnx: 1.13.8
   unorm_dart: ^0.3.3
 
