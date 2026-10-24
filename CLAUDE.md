@@ -36,6 +36,8 @@ app afterwards, and Android deletes the pushed models with it.
   platform channel, Kotlin now and Swift later.
 - `tool/` Scripts run on the PC, never in the app.
 - `models/` Speech models, not in git. They reach the phone with `tool/push_models.ps1`.
+  The recogniser instead comes with the app: `tool/bundle_recogniser.sh` puts it into
+  `assets/recogniser/` before a build (ADR 7).
 
 ## The one idea to keep intact
 

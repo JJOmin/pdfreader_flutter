@@ -46,7 +46,7 @@ void main() {
     final voice = PlatformPhoneVoice();
     final langs = await voice.languages();
     final transcriber = SherpaTranscriber();
-    expect(await transcriber.problem(), isNull, reason: 'the model is installed (tool/push_models)');
+    expect(await transcriber.problem(), isNull, reason: 'the model comes with the app or was pushed (ADR 7)');
     final sentences = {
       Lang.de: 'Das ist ein Kommentar zu diesem Absatz und er ist wirklich sehr wichtig.',
       Lang.en: 'This is a comment on this paragraph and it is really very important.',

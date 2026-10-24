@@ -44,9 +44,9 @@ recognition on the phone itself, and section 5 now describes that.
      without it the first word of an English test sentence came out as "Thishi".
    - While the user speaks, the words so far are worked out every 1.5 s; the whole recording is
      worked out once more at the end. The text goes into the comment field as a draft.
-   - The model must be on the phone, in the app's `models` folder (`tool/push_models`; only
-     `model.int8.onnx` and `tokens.txt` of the recogniser are read). Without it the sheet says so and
-     typing works. `// shortcut: pushed with adb; an in-app import comes with ADR 1's import button.`
+   - The model comes with the app since ADR 7; one pushed to the app's `models` folder
+     (`tool/push_models`) still comes first. Only `model.int8.onnx` and `tokens.txt` are read.
+     Without a model the sheet says so and typing works.
 
 6. **A spoken comment is told apart in the notes file** (PLAN M12): the mark gets `"via": "speech"`,
    and a mark with a comment shows a note icon above its first line, or a microphone icon if the

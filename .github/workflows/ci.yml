@@ -58,6 +58,12 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      # The speech recogniser goes into the app (ADR 7); downloaded once and kept, checked either way.
+      - uses: actions/cache@v6
+        with:
+          path: assets/recogniser
+          key: recogniser-${{ hashFiles('tool/bundle_recogniser.sh') }}
+      - run: sh tool/bundle_recogniser.sh
       # Without a release key the build is signed with the debug key (android/app/build.gradle.kts):
       # good for checking that it builds, not for giving to anyone. The release workflow refuses that.
       - run: flutter build apk --release
