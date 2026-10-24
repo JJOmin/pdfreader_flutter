@@ -63,6 +63,12 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      # The speech recogniser goes into the app (ADR 7); downloaded once and kept, checked either way.
+      - uses: actions/cache@v6
+        with:
+          path: assets/recogniser
+          key: recogniser-${{ hashFiles('tool/bundle_recogniser.sh') }}
+      - run: sh tool/bundle_recogniser.sh
       - uses: ./.github/actions/pdfium
       - name: Test
         run: flutter test

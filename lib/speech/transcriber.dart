@@ -3,9 +3,12 @@
 // and the decode blocks, so both happen in an isolate that lives while comments are being spoken and
 // is let go after a pause, which frees the model's memory.
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
 import 'catalog.dart';
@@ -61,16 +64,38 @@ class SherpaTranscriber implements Transcriber {
   int _next = 0;
   Timer? _release;
 
+  static Future<String?>? _unpacking;
+
   static Future<String?> _locate() async {
+    final model = catalog.firstWhere((m) => m.id == 'aligner');
+    // One copied there with tool/push_models comes first: it may be newer than the app's own.
     final folder = await modelsFolder();
-    if (folder == null) return null;
-    return installedDir(folder, catalog.firstWhere((m) => m.id == 'aligner'));
+    final pushed = folder == null ? null : installedDir(folder, model);
+    if (pushed != null) return pushed;
+    // The app's own (ADR 7), copied out once into storage only the app can read. One copy at a time:
+    // problem() and warmUp() ask at once.
+    final unpacking = _unpacking ??= getApplicationSupportDirectory().then(
+      (base) => unpackBundled(Directory('${base.path}/models'), model, rootBundle.load),
+    );
+    try {
+      return await unpacking;
+    } catch (_) {
+      _unpacking = null;
+      rethrow;
+    }
   }
 
   @override
-  Future<String?> problem() async => await locate() == null
-      ? 'The speech model is not on this phone. Copy it there with tool/push_models, or type the comment.'
-      : null;
+  Future<String?> problem() async {
+    try {
+      return await locate() == null
+          ? 'This copy of the app was built without the speech model. Type the comment instead.'
+          : null;
+    } on Object catch (error) {
+      // Most likely a full phone: the model needs 126 MB the first time.
+      return 'The speech model could not be set up ($error). Type the comment instead.';
+    }
+  }
 
   @override
   Future<void> warmUp() => _worker$().then((_) {}, onError: (Object _) {});
