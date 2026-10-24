@@ -33,7 +33,8 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 echo "Downloading the recogniser (about 120 MB)."
 curl --fail --location --retry 4 --silent --show-error "$url" -o "$tmp/model.tar.bz2"
-tar -xjf "$tmp/model.tar.bz2" -C "$tmp" "$name/model.int8.onnx" "$name/tokens.txt"
+# All of it: the archive names its files ./<name>/..., which GNU tar does not match to <name>/...
+tar -xjf "$tmp/model.tar.bz2" -C "$tmp"
 if ! checked "$tmp/$name"; then
   echo "The downloaded recogniser does not match its checksums: not used." >&2
   exit 1
