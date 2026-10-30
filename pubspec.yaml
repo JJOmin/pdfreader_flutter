@@ -29,7 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   audio_service: ^0.18.19
-  crypto: ^3.0.7
+  crypto: ^3.0.8
   cryptography: ^2.9.0
   # Both come with pdfrx; declared to write marks into a PDF through PDFium (ADR 4, PLAN 4.3).
   ffi: ^2.2.0
