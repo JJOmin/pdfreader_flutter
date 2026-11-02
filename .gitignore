@@ -59,3 +59,4 @@ app.*.map.json
 # The bundled speech recogniser (ADR 7): filled by tool/bundle_recogniser.sh, not in git.
 /assets/recogniser/*
 !/assets/recogniser/README.md
+pdfreader.code-workspace
