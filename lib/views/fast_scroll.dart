@@ -46,43 +46,65 @@ Widget scrollThumbLook(
   );
 }
 
-/// A grip on the right edge that scrolls a [ScrollController] by dragging, for a long document where
-/// flicking takes many tries: the whole height of the view is the whole length of the text. The pages
-/// view has pdfrx's own for the same purpose.
+/// A grip on the right edge for a long document, where flicking takes many tries: the whole height of
+/// the view is the whole document. It shows how far through the view is and jumps where it is dragged;
+/// the view decides how, since the speed reader builds only what it shows (PLAN 18.2). The pages view
+/// has pdfrx's own grip for the same purpose.
 class FastScrollThumb extends StatefulWidget {
-  const FastScrollThumb({super.key, required this.controller, required this.label, required this.child});
+  const FastScrollThumb({
+    super.key,
+    required this.listenable,
+    required this.fraction,
+    required this.onJump,
+    required this.label,
+    required this.child,
+    this.onStep,
+  });
 
-  final ScrollController controller;
+  /// Tells the grip that the view moved.
+  final Listenable listenable;
 
-  /// The scroll view that [controller] drives; the grip is laid over it.
-  final Widget child;
+  /// How far through the document the view is, 0 to 1; null when there is nothing to scroll.
+  final double? Function() fraction;
+
+  /// The grip was dragged to `fraction` of the way through.
+  final ValueChanged<double> onJump;
+
+  /// A screen reader's step forward (1) or back (-1).
+  final ValueChanged<int>? onStep;
 
   /// What the grip shows, usually the page the view is on.
   final String Function() label;
+
+  /// The view the grip is laid over.
+  final Widget child;
 
   @override
   State<FastScrollThumb> createState() => _FastScrollThumbState();
 }
 
 class _FastScrollThumbState extends State<FastScrollThumb> {
+  /// Where the finger holds the grip, while it is dragged: the grip follows the finger, not the view.
+  double? _dragging;
+
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_moved);
+    widget.listenable.addListener(_moved);
   }
 
   @override
   void didUpdateWidget(FastScrollThumb old) {
     super.didUpdateWidget(old);
-    if (old.controller != widget.controller) {
-      old.controller.removeListener(_moved);
-      widget.controller.addListener(_moved);
+    if (old.listenable != widget.listenable) {
+      old.listenable.removeListener(_moved);
+      widget.listenable.addListener(_moved);
     }
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_moved);
+    widget.listenable.removeListener(_moved);
     super.dispose();
   }
 
@@ -91,60 +113,55 @@ class _FastScrollThumbState extends State<FastScrollThumb> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final controller = widget.controller;
-    final max = controller.hasClients && controller.position.hasContentDimensions
-        ? controller.position.maxScrollExtent
-        : 0.0;
-    return NotificationListener<ScrollMetricsNotification>(
-      // The text grows as its pages are read in, and the first layout comes after the first build.
-      onNotification: (_) {
-        _moved();
-        return false;
-      },
-      child: Stack(
-        children: [
-          widget.child,
-          // A text that fits the screen has nothing to scroll.
-          if (max > 0)
-            Positioned.fill(
-              child: LayoutBuilder(
-                builder: (context, box) {
-                  final travel = box.maxHeight - scrollThumbSize.height;
-                  if (travel <= 0) return const SizedBox.shrink();
-                  final top = (controller.offset / max).clamp(0.0, 1.0) * travel;
-                  return Stack(
-                    children: [
-                      Positioned(
-                        right: 2,
-                        top: top,
-                        width: scrollThumbSize.width,
-                        height: scrollThumbSize.height,
-                        child: GestureDetector(
-                          key: const Key('fast-scroll'),
-                          behavior: HitTestBehavior.opaque,
-                          onVerticalDragUpdate: (details) => controller.jumpTo(
-                            (controller.offset + details.delta.dy / travel * max).clamp(0.0, max),
-                          ),
-                          child: scrollThumbLook(
-                            context,
-                            scrollThumbSize,
-                            widget.label(),
-                            // A tenth of the text a step, for a screen reader's swipe.
-                            onIncrease: () =>
-                                controller.jumpTo((controller.offset + max / 10).clamp(0.0, max)),
-                            onDecrease: () =>
-                                controller.jumpTo((controller.offset - max / 10).clamp(0.0, max)),
-                          ),
-                        ),
+  Widget build(BuildContext context) => NotificationListener<ScrollMetricsNotification>(
+    // The text grows as its pages are read in, and the first layout comes after the first build.
+    onNotification: (_) {
+      _moved();
+      return false;
+    },
+    child: Stack(
+      children: [
+        widget.child,
+        Positioned.fill(
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final travel = box.maxHeight - scrollThumbSize.height;
+              final at = _dragging ?? widget.fraction();
+              if (travel <= 0 || at == null) return const SizedBox.shrink();
+              final onStep = widget.onStep;
+              return Stack(
+                children: [
+                  Positioned(
+                    right: 2,
+                    top: at.clamp(0.0, 1.0) * travel,
+                    width: scrollThumbSize.width,
+                    height: scrollThumbSize.height,
+                    child: GestureDetector(
+                      key: const Key('fast-scroll'),
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragStart: (_) => _dragging = widget.fraction() ?? 0,
+                      onVerticalDragUpdate: (details) {
+                        final to = ((_dragging ?? 0) + details.delta.dy / travel).clamp(0.0, 1.0);
+                        setState(() => _dragging = to);
+                        widget.onJump(to);
+                      },
+                      onVerticalDragEnd: (_) => setState(() => _dragging = null),
+                      onVerticalDragCancel: () => setState(() => _dragging = null),
+                      child: scrollThumbLook(
+                        context,
+                        scrollThumbSize,
+                        widget.label(),
+                        onIncrease: onStep == null ? null : () => onStep(1),
+                        onDecrease: onStep == null ? null : () => onStep(-1),
                       ),
-                    ],
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
 }

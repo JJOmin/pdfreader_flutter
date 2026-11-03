@@ -330,3 +330,25 @@ the tests on the real document `centric` are skipped where the desktop checkout 
 or `DESKTOP_REPO=/nonexistent` to try it). Run as on the CI: 5 pass and 4 are skipped. Not yet seen green on
 GitHub.
 
+
+## M18: improvement round 2 (the owner, 2026-11-02)
+
+Asked by the owner, all important, performance above all. "Speed reader" is the reading view (its
+settings page has carried that name since 15.3); the three modes are the pages, the speed reader
+and the full-screen player. Answers to three questions: the comment editor gets the keyboard at once,
+comments typed without the pencil and the mark's look chosen in the comment sheet; in split screen
+the player is cramped; "save last seen documents" means a PDF opened from Files or another app is
+kept and listed under Continue reading. No new package.
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 18.1 | **A spoken word repaints only the word.** The voice's sentence and word reach the views through a listenable, so the reader page, its bars and the PDF viewer are not rebuilt for every word; the media notification changes only with play, pause and the page; the pages view converts a page's glyph boxes once; the reader is not painted while the full-screen player covers it. | Widget test: words do not rebuild the reader page. Device: frame times while reading, before and after. |
+| 18.2 | **The speed reader builds only what is on the screen.** A lazy list from the page the user is on, so a jump to any page is instant and scrolling stays smooth in a long document; the page number sits in the margin instead of a gap between pages; a paragraph that runs over a page break is one paragraph. `blockSpans` no longer scans every block. | Unit tests for the paragraphs over page breaks and the faster spans (same output as before). Device: scrolling, a jump, the voice followed. |
+| 18.3 | **The word mark keeps time with the voice.** The player's clock starts when `play` is called, before the sound is heard; the measured lead is taken off. The phone's voice uses the engine's own word marks where it gives them, else an estimate that counts pauses at punctuation. | Unit tests for the timings. Device: the lead measured before and after. |
+| 18.4 | **One switch for the three modes**: Pages, Speed reader and Player, in the reader's top bar and in the player. The speed reader stays built once shown, so switching back is instant. | Widget test; device: switching while reading. |
+| 18.5 | **The player in split screen**: a short window drops the neighbouring sentences and puts the controls in one row; a wide one puts text and controls side by side. | Widget test at split-screen sizes; device: seen in split screen. |
+| 18.6 | **Speed reader text settings without sliders**: size, line spacing and letter spacing each a number field with − and +, in the reader's sheet and in Settings. | Widget test; device: seen. |
+| 18.7 | **A primary comment colour and two favourite styles**: chosen in Settings, kept in `app-settings.json`; the selection menu shows Comment in the primary colour and the two favourites, and the other kinds and colours one tap further. | Unit tests for the model; widget test for the menu; device: seen. |
+| 18.8 | **The comment editor**: the keyboard opens at once in the comment sheet (not for Speak); the sheet offers the primary colour and the favourites for the mark; a mark's comment is typed into its card directly, while kind, colour and Delete stay behind the pencil; the notes sheet has a search over the comments. | Unit test for the comment search; widget tests; device: seen. |
+| 18.9 | **Search opens the keyboard**: choosing Search in the reader's menu focuses the field with the keyboard up. | Device: the keyboard is up after one tap. |
+| 18.10 | **Opened PDFs are kept**: a PDF opened from Files or another app is copied into the app's own storage (the 10 read last are kept), listed under Continue reading, and reopens at its place; its place is kept by the document's hash, not its address. | Unit tests for the list; device: open from Files, close, reopen from Home at the same page. |

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -18,8 +18,10 @@ import 'places.dart';
 import 'phone_voice.dart';
 import 'playback.dart';
 import 'reader.dart';
+import 'shared/app_settings.dart';
 import 'shared/layout.dart' show readableText;
 import 'shared/mark_export.dart';
+import 'shared/mark_styles.dart';
 import 'shared/marks.dart';
 import 'shared/notes.dart';
 import 'shared/notes_merge.dart';
@@ -76,6 +78,7 @@ class ReaderPage extends StatefulWidget {
     this.onOpenPlayer,
     this.onCollapse,
     this.startInReading = false,
+    this.look,
   });
 
   final String name;
@@ -120,6 +123,10 @@ class ReaderPage extends StatefulWidget {
   /// Opens in the reading view whatever the saved place says: for a PDF another app handed over.
   final bool startInReading;
 
+  /// The app's settings, for the primary comment colour and the favourite looks (PLAN 18.7); null in
+  /// widget tests, which get the defaults.
+  final ValueListenable<Appearance>? look;
+
   @override
   State<ReaderPage> createState() => ReaderPageState();
 }
@@ -151,6 +158,22 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
 
   /// True while the reading view is shown instead of the pages.
   late bool reading = widget.startInReading || _saved?.view == 'reading';
+
+  /// The speed reader is built the first time it is shown and then kept, so that switching back to
+  /// it is instant (PLAN 18.4).
+  late bool _readingBuilt = reading;
+
+  /// The spoken sentence and word as highlights. The views listen to it, so a new word repaints only
+  /// the word and the page is not rebuilt (PLAN 18.1).
+  final _voice = ValueNotifier<List<Highlight>>(const []);
+
+  /// What the media notification shows, so that it is told only of a change, not of every word.
+  (ReaderState, int)? _shown;
+
+  /// Whether the reader is on the screen: not behind the tabs or the full-screen player.
+  bool _visible = true;
+
+  final _searchFocus = FocusNode();
 
   /// Whether there is anything to play; without audio the player is not shown at all.
   bool get _hasAudio =>
@@ -241,6 +264,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       _resume = _lastSentence = (page: sentence.page, index: sentence.index);
     }
     unawaited(_loadNotes());
+    _session.showMode = _setMode;
     final prepared = widget.prepared;
     if (prepared == null && widget.phoneLangs.isEmpty) return;
     if (prepared != null) unawaited(_findOffer(prepared));
@@ -342,6 +366,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   ) => MarkMenu(
     anchorA: anchorA,
     anchorB: anchorB,
+    styles: _styles,
     initialKind: _lastKind,
     onKindChanged: (kind) => _lastKind = kind,
     onMark: (kind, color) async {
@@ -441,7 +466,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       _placed = true;
       _pdf.viewer.addListener(_moved);
       final saved = _saved;
-      if (saved != null && !reading) unawaited(_pdf.showPage(saved.page, saved.offset, zoom: saved.zoom));
+      if (saved == null) return;
+      // Both views open where the user left the document, the one shown and the one behind it.
+      unawaited(_pdf.showPage(saved.page, saved.offset, zoom: saved.zoom));
+      if (_readingBuilt) unawaited(_readingView.showPage(saved.page, saved.offset));
     });
   }
 
@@ -458,7 +486,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   /// Remembers where the user is, and for a prepared document writes this phone's state (step 5.6).
   Future<void> _savePlace() async {
     final places = widget.places;
-    if (places == null || !_placed || _closing || !_view.isReady) return;
+    // A speed reader still on its way to the saved place would save the top of the document over it.
+    if (places == null || !_placed || _closing || !_view.isReady || (reading && _readingView.settling)) {
+      return;
+    }
     final anchor = _view.scrollAnchor();
     if (anchor == null) return;
     final last = _lastSentence;
@@ -482,16 +513,36 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     );
   }
 
-  /// Switches between the pages and the reading view, at the same page and with the voice going on.
-  void _switchView() {
-    final page = sentence?.page ?? _view.currentPage ?? 1;
-    setState(() => reading = !reading);
+  /// Switches between the pages and the speed reader, at the same place and with the voice going on.
+  /// Both stay built, so the switch is instant.
+  void _showView(bool toReading) {
+    if (toReading == reading) return;
+    final from = _view.scrollAnchor();
+    final page = sentence?.page ?? from?.page ?? 1;
+    setState(() {
+      reading = toReading;
+      _readingBuilt = true;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _view.showPage(page, 0);
+      if (!mounted) return;
+      // The voice's sentence if one is read, else the place the other view was at.
+      await _view.showPage(page, sentence == null ? (from?.offset ?? 0) : 0);
       _revealSpoken(force: true);
       if (reading) _placed = true;
       unawaited(_savePlace());
     });
+  }
+
+  /// The three modes (PLAN 18.4): the pages and the speed reader here, the player over the app.
+  void _setMode(ReaderMode mode) {
+    switch (mode) {
+      case ReaderMode.pages:
+        _showView(false);
+      case ReaderMode.speedReader:
+        _showView(true);
+      case ReaderMode.player:
+        widget.onOpenPlayer?.call();
+    }
   }
 
   /// Offers another device's place if it is newer than this phone's (ADR 7 section 8).
@@ -578,18 +629,23 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   void onChange(ReaderState state, PlannedSentence? sentence, int word) {
     if (!mounted || _closing) return;
     final changedSentence = sentence != null && sentence != this.sentence;
-    setState(() {
-      this.state = state;
-      _error = null;
-      if (sentence != null) {
-        this.sentence = sentence;
-        this.word = word;
-      } else if (state == ReaderState.idle) {
-        this.sentence = null;
-        this.word = -1;
-      }
-    });
-    widget.playback?.show(state, widget.name, this.sentence?.page ?? _view.currentPage ?? 1);
+    final rebuild = state != this.state || _error != null;
+    this.state = state;
+    if (sentence != null) {
+      this.sentence = sentence;
+      this.word = word;
+    } else if (state == ReaderState.idle) {
+      this.sentence = null;
+      this.word = -1;
+    }
+    // A new word goes to the views alone; the page is built again only when the state changes.
+    if (rebuild) setState(() => _error = null);
+    _voice.value = _voiceHighlights;
+    final shown = (state, this.sentence?.page ?? _view.currentPage ?? 1);
+    if (shown != _shown) {
+      _shown = shown;
+      widget.playback?.show(state, widget.name, shown.$2);
+    }
     _session.update(state, sentence: this.sentence, word: this.word);
     if (changedSentence) {
       unawaited(_showNeighbours());
@@ -618,7 +674,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   /// Keeps the spoken word in view, unless the user has just moved the view somewhere else.
   void _revealSpoken({bool force = false}) {
     final sentence = this.sentence;
-    if (sentence == null || (!force && DateTime.now().difference(_lastTouch) < _followPause)) return;
+    // Behind the tabs or the player nothing is shown; the view catches up when it is shown again.
+    if (sentence == null || !_visible || (!force && DateTime.now().difference(_lastTouch) < _followPause)) {
+      return;
+    }
     final current = word >= 0 && word < sentence.words.length ? sentence.words[word] : null;
     final ranges = current?.ranges ?? sentence.ranges;
     // A word of the sentence's continuation is on the next page (desktop ADR 12).
@@ -627,24 +686,29 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_view.reveal(page, ranges)));
   }
 
-  /// What both views paint: the spoken sentence and word, and the search matches.
-  List<Highlight> get _highlights {
+  /// What both views paint with the text: the marks and the search matches. The voice lies over the
+  /// marks and is painted apart, from `_voice` (`paintLayer` has the order).
+  List<Highlight> get _highlights => [
+    for (final a in _notes.annotations)
+      if (_markAt[a.id] case final at?)
+        Highlight.mark(a.page, [at], a.kind, a.color, a.id, badge: markBadge(a)),
+    for (var i = 0; i < _matches.length; i++)
+      Highlight(
+        _matches[i].page,
+        _matches[i].ranges,
+        i == _match ? HighlightKind.searchCurrent : HighlightKind.search,
+      ),
+  ];
+
+  /// The spoken sentence and word.
+  List<Highlight> get _voiceHighlights {
     final sentence = this.sentence;
+    if (sentence == null) return const [];
     return [
-      // The marks first, so the voice and search lie over them.
-      for (final a in _notes.annotations)
-        if (_markAt[a.id] case final at?)
-          Highlight.mark(a.page, [at], a.kind, a.color, a.id, badge: markBadge(a)),
-      if (sentence != null) Highlight(sentence.page, sentence.ranges, HighlightKind.sentence),
+      Highlight(sentence.page, sentence.ranges, HighlightKind.sentence),
       // A sentence over a page break is tinted on both pages (desktop ADR 12).
-      if (sentence?.next case final next?) Highlight(next.page, next.ranges, HighlightKind.sentence),
-      for (var i = 0; i < _matches.length; i++)
-        Highlight(
-          _matches[i].page,
-          _matches[i].ranges,
-          i == _match ? HighlightKind.searchCurrent : HighlightKind.search,
-        ),
-      if (sentence != null && word >= 0 && word < sentence.words.length)
+      if (sentence.next case final next?) Highlight(next.page, next.ranges, HighlightKind.sentence),
+      if (word >= 0 && word < sentence.words.length)
         Highlight(
           sentence.words[word].page ?? sentence.page,
           sentence.words[word].ranges,
@@ -652,6 +716,9 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         ),
     ];
   }
+
+  /// The comment colour and the favourite looks the user chose (PLAN 18.7).
+  MarkStyles get _styles => widget.look?.value.marks ?? const MarkStyles();
 
   /// The page the view shows, for the integration test.
   int? get currentPage => _view.currentPage;
@@ -674,6 +741,10 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
   @visibleForTesting
   Offset? globalCenterOf(int page, List<RawRange> ranges) =>
       reading ? _readingView.globalCenterOf(page, ranges) : _pdf.globalCenterOf(page, ranges);
+
+  /// Shows a place in the view that is shown, for tests.
+  @visibleForTesting
+  Future<void> showPageForTest(int page, double offset) => _view.showPage(page, offset);
 
   /// Changes a mark's comment as the card does, for tests.
   @visibleForTesting
@@ -772,16 +843,19 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     }
   }
 
-  Future<QuickComment?> _askComment(String quote, {required bool speak}) =>
-      showModalBottomSheet<QuickComment>(
-        context: context,
-        isScrollControlled: true,
-        builder: (_) => QuickCommentSheet(
-          quote: quote,
-          dictation: _session.canDictate ? widget.dictation : null,
-          listenAtOnce: speak && _session.canDictate,
-        ),
-      );
+  Future<QuickComment?> _askComment(String quote, {required bool speak}) {
+    final styles = _styles;
+    return showModalBottomSheet<QuickComment>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => QuickCommentSheet(
+        quote: quote,
+        dictation: _session.canDictate ? widget.dictation : null,
+        listenAtOnce: speak && _session.canDictate,
+        looks: {styles.commentStyle, ...styles.favourites}.toList(),
+      ),
+    );
+  }
 
   /// The player's Comment and Speak buttons: pause, ask for a comment on the sentence being read, and
   /// mark the sentence with it, without touching the text (PLAN 11).
@@ -793,8 +867,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     if (comment == null || comment.text.isEmpty || !mounted) return;
     await _addMarks(
       [(page: spoken.page, range: range)],
-      MarkKind.highlight,
-      HighlightColor.yellow,
+      comment.look.kind,
+      comment.look.color,
       comment: comment.text,
       via: comment.dictated ? speechVia : null,
     );
@@ -811,8 +885,8 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     if (comment == null || comment.text.isEmpty || !mounted) return;
     await _addMarks(
       selected,
-      _lastKind,
-      HighlightColor.yellow,
+      comment.look.kind,
+      comment.look.color,
       comment: comment.text,
       via: comment.dictated ? speechVia : null,
     );
@@ -854,6 +928,19 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     final match = _matches[_match];
     _lastTouch = DateTime.now();
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_view.reveal(match.page, match.ranges)));
+  }
+
+  /// Opens the search field with the keyboard up (PLAN 18.9). The menu it is chosen from gives the
+  /// focus back to the page as it closes, after the field took it, so the field asks again once the
+  /// menu is gone.
+  void _openSearch() {
+    setState(() => _searching = true);
+    void focus() {
+      if (mounted && _searching && !_searchFocus.hasFocus) _searchFocus.requestFocus();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => focus());
+    Timer(const Duration(milliseconds: 400), focus);
   }
 
   void _closeSearch() {
@@ -915,8 +1002,19 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
     }
     unawaited(_reader?.dispose());
     _searchBox.dispose();
+    _searchFocus.dispose();
+    _voice.dispose();
     unawaited(_document?.dispose());
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Shown again after the tabs or the player covered it: the view goes to where the voice is.
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible && !_visible) WidgetsBinding.instance.addPostFrameCallback((_) => _revealSpoken(force: true));
+    _visible = visible;
   }
 
   /// Only a problem is shown above the bar; where the audio comes from is the player's business.
@@ -933,6 +1031,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
         title: TextField(
           key: const Key('search'),
           controller: _searchBox,
+          focusNode: _searchFocus,
           autofocus: true,
           decoration: const InputDecoration(hintText: 'Search', border: InputBorder.none),
           textInputAction: TextInputAction.search,
@@ -972,25 +1071,21 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
       foregroundColor: onBar,
       scrolledUnderElevation: 0,
       leading: widget.onCollapse == null ? null : BackButton(onPressed: widget.onCollapse),
+      titleSpacing: 0,
       title: Text(widget.name, overflow: TextOverflow.ellipsis),
       actions: [
+        _modeSwitch(),
         IconButton(
           key: const Key('notes'),
           icon: const Icon(Icons.sticky_note_2_outlined),
           tooltip: 'Notes and marks',
           onPressed: _text == null ? null : _openNotes,
         ),
-        IconButton(
-          key: const Key('toggle-reading'),
-          icon: Icon(reading ? Icons.picture_as_pdf : Icons.article),
-          tooltip: reading ? 'Show the pages' : 'Reading view',
-          onPressed: _text == null ? null : _switchView,
-        ),
         PopupMenuButton<String>(
           key: const Key('reader-menu'),
           enabled: _text != null,
           onSelected: (choice) => switch (choice) {
-            'search' => setState(() => _searching = true),
+            'search' => _openSearch(),
             'text' => unawaited(_openReadingSettings()),
             'markdown' => unawaited(_exportMarkdown()),
             _ => unawaited(_savePdf()),
@@ -1018,6 +1113,50 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
           ],
         ),
       ],
+    );
+  }
+
+  /// One switch for the three modes (PLAN 18.4): the pages, the speed reader, and the player where
+  /// there is something to play.
+  Widget _modeSwitch() {
+    final (:bar, :onBar) = _barColors;
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: SegmentedButton<ReaderMode>(
+        key: const Key('reader-mode'),
+        showSelectedIcon: false,
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4)),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? scheme.onSecondaryContainer : onBar,
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? scheme.secondaryContainer : bar,
+          ),
+        ),
+        segments: [
+          const ButtonSegment(
+            value: ReaderMode.pages,
+            icon: Icon(Icons.picture_as_pdf_outlined, key: Key('mode-pages')),
+            tooltip: 'Pages',
+          ),
+          const ButtonSegment(
+            value: ReaderMode.speedReader,
+            icon: Icon(Icons.article_outlined, key: Key('mode-reading')),
+            tooltip: 'Speed reader',
+          ),
+          if (_hasAudio && widget.onOpenPlayer != null)
+            const ButtonSegment(
+              value: ReaderMode.player,
+              icon: Icon(Icons.headphones_outlined, key: Key('mode-player')),
+              tooltip: 'Player',
+            ),
+        ],
+        selected: {reading ? ReaderMode.speedReader : ReaderMode.pages},
+        onSelectionChanged: _text == null ? null : (modes) => _setMode(modes.first),
+      ),
     );
   }
 
@@ -1133,7 +1272,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                   Positioned.fill(
                     child: documentRef == null || text == null
                         ? const Center(child: CircularProgressIndicator())
-                        // The pages stay built behind the reading view, so switching back keeps their place.
+                        // Both views stay built once shown, so switching keeps their place and is instant.
                         : Stack(
                             children: [
                               Offstage(
@@ -1143,6 +1282,7 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                                   text: text,
                                   controller: _pdf,
                                   highlights: reading ? const [] : highlights,
+                                  voice: _voice,
                                   initialPage: _saved?.page ?? 1,
                                   onReady: _pagesReady,
                                   onTouched: _touched,
@@ -1151,16 +1291,21 @@ class ReaderPageState extends State<ReaderPage> implements ReaderHost {
                                   onTapped: _toggleTop,
                                 ),
                               ),
-                              if (reading)
-                                ReadingView(
-                                  text: text,
-                                  settings: _readingSettings,
-                                  controller: _readingView,
-                                  highlights: highlights,
-                                  onTouched: _touched,
-                                  buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
-                                  onMarkTapped: _openMark,
-                                  onTapped: _toggleTop,
+                              if (_readingBuilt)
+                                Offstage(
+                                  offstage: !reading,
+                                  child: ReadingView(
+                                    text: text,
+                                    settings: _readingSettings,
+                                    controller: _readingView,
+                                    highlights: highlights,
+                                    voice: _voice,
+                                    onTouched: _touched,
+                                    onMoved: _moved,
+                                    buildSelectionMenu: widget.notesStore == null ? null : _selectionMenu,
+                                    onMarkTapped: _openMark,
+                                    onTapped: _toggleTop,
+                                  ),
                                 ),
                             ],
                           ),

@@ -4,13 +4,22 @@
 import 'package:flutter/material.dart';
 
 import '../dictation.dart';
+import '../shared/mark_styles.dart';
+import '../shared/notes.dart';
+import 'mark_menu.dart' show markKindNames, markStyleIcon;
 
-/// What the sheet gives back: the comment, and whether any of it was spoken, which marks it with the
-/// microphone icon.
-typedef QuickComment = ({String text, bool dictated});
+/// What the sheet gives back: the comment, whether any of it was spoken, which marks it with the
+/// microphone icon, and the look of its mark.
+typedef QuickComment = ({String text, bool dictated, MarkStyle look});
 
 class QuickCommentSheet extends StatefulWidget {
-  const QuickCommentSheet({super.key, required this.quote, this.dictation, this.listenAtOnce = false});
+  const QuickCommentSheet({
+    super.key,
+    required this.quote,
+    this.dictation,
+    this.listenAtOnce = false,
+    this.looks = const [(kind: MarkKind.highlight, color: HighlightColor.yellow)],
+  });
 
   /// The passage the comment is for.
   final String quote;
@@ -18,6 +27,9 @@ class QuickCommentSheet extends StatefulWidget {
   /// Null where the phone cannot recognise speech offline: the microphone is then not shown.
   final Dictation? dictation;
   final bool listenAtOnce;
+
+  /// The looks the mark can take (PLAN 18.8): the primary comment colour first, then the favourites.
+  final List<MarkStyle> looks;
 
   @override
   State<QuickCommentSheet> createState() => _QuickCommentSheetState();
@@ -28,6 +40,7 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
   bool _listening = false;
   bool _dictated = false;
   String? _problem;
+  var _chosen = 0;
 
   @override
   void initState() {
@@ -96,10 +109,11 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
             style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
           ),
           const SizedBox(height: 12),
+          // The keyboard comes up at once, unless the sheet was opened to speak (PLAN 18.8).
           TextField(
             key: const Key('quick-comment'),
             controller: _text,
-            autofocus: !widget.listenAtOnce && widget.dictation == null,
+            autofocus: !widget.listenAtOnce,
             minLines: 2,
             maxLines: 6,
             textCapitalization: TextCapitalization.sentences,
@@ -118,9 +132,10 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
               ),
             ),
           const SizedBox(height: 12),
-          if (widget.dictation != null)
-            Row(
-              children: [
+          // The microphone, and the look of the mark: the primary comment colour or a favourite.
+          Row(
+            children: [
+              if (widget.dictation != null) ...[
                 IconButton.filledTonal(
                   key: const Key('dictate'),
                   iconSize: 28,
@@ -128,8 +143,22 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
                   tooltip: _listening ? 'Done speaking' : 'Speak the comment',
                   onPressed: _listening ? _stop : _listen,
                 ),
+                const SizedBox(width: 12),
               ],
-            ),
+              const Spacer(),
+              for (final (i, look) in widget.looks.indexed)
+                IconButton(
+                  key: Key('comment-look-$i'),
+                  isSelected: i == _chosen,
+                  tooltip: 'Mark: ${markKindNames[look.kind]}, ${look.color.name}',
+                  style: IconButton.styleFrom(
+                    backgroundColor: i == _chosen ? theme.colorScheme.secondaryContainer : null,
+                  ),
+                  icon: markStyleIcon(look),
+                  onPressed: () => setState(() => _chosen = i),
+                ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -140,9 +169,11 @@ class _QuickCommentSheetState extends State<QuickCommentSheet> {
                   key: const Key('save-comment'),
                   onPressed: _listening
                       ? null
-                      : () =>
-                            Navigator.of(context)
-                                .pop<QuickComment>((text: _text.text.trim(), dictated: _dictated)),
+                      : () => Navigator.of(context).pop<QuickComment>((
+                          text: _text.text.trim(),
+                          dictated: _dictated,
+                          look: widget.looks[_chosen],
+                        )),
                   child: const Text('Save'),
                 ),
               ),

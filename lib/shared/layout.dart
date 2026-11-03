@@ -237,13 +237,23 @@ List<RawRange> rawRanges(List<int> raw, int start, int end) {
 /// A stretch of one block's readable text.
 typedef BlockSpan = ({int block, int from, int to});
 
+/// The smallest and largest raw offset of each block, worked out once: a block that cannot hold any
+/// of a range is passed over without reading its characters (PLAN 18.2).
+final _rawBounds = Expando<(int, int)>();
+
+(int, int) _boundsOf(Block block) => _rawBounds[block] ??= block.raw.fold<(int, int)>((
+  1 << 62,
+  -1,
+), (bounds, at) => at < 0 ? bounds : (math.min(bounds.$1, at), math.max(bounds.$2, at)));
+
 /// The inverse of `rawRanges`: where the page's raw range `[start, end)` shows up in the blocks' text.
 List<BlockSpan> blockSpans(List<Block> blocks, int start, int end) {
   bool inside(int at) => at >= start && at < end;
   return [
     for (var index = 0; index < blocks.length; index++)
-      if (blocks[index].raw.indexWhere(inside) case final from when from >= 0)
-        (block: index, from: from, to: blocks[index].raw.lastIndexWhere(inside) + 1),
+      if (_boundsOf(blocks[index]) case (final low, final high) when low < end && high >= start)
+        if (blocks[index].raw.indexWhere(inside) case final from when from >= 0)
+          (block: index, from: from, to: blocks[index].raw.lastIndexWhere(inside) + 1),
   ];
 }
 

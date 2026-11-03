@@ -113,6 +113,7 @@ class PdfPagesView extends StatefulWidget {
     required this.controller,
     required this.highlights,
     required this.initialPage,
+    this.voice,
     this.onReady,
     this.onTouched,
     this.buildSelectionMenu,
@@ -123,7 +124,12 @@ class PdfPagesView extends StatefulWidget {
   final PdfDocumentRef document;
   final DocumentText text;
   final PdfPagesController controller;
+
+  /// The marks and the search matches, painted with the pages.
   final List<Highlight> highlights;
+
+  /// The spoken sentence and word, painted over each page by a layer of its own (PLAN 18.1).
+  final VoiceHighlights? voice;
   final int initialPage;
   final VoidCallback? onReady;
 
@@ -142,8 +148,10 @@ class PdfPagesView extends StatefulWidget {
 }
 
 class _PdfPagesViewState extends State<PdfPagesView> {
-  /// Pages whose text is loaded, for painting on their glyph boxes.
+  /// Pages whose text is loaded, for painting on their glyph boxes, and the boxes as `rangeBoxes`
+  /// takes them, made once per page rather than for every highlight on every paint.
   final _loaded = <int, LoadedPage>{};
+  final _rects = <int, List<CharBox>>{};
   final _loading = <int>{};
 
   @override
@@ -170,21 +178,44 @@ class _PdfPagesViewState extends State<PdfPagesView> {
   /// The boxes to paint for raw ranges of a page, or null while its text is being loaded.
   List<CharBox>? _boxes(int page, List<RawRange> ranges) {
     final loaded = _loaded[page];
-    if (loaded == null) {
+    final rects = _rects[page];
+    if (loaded == null || rects == null) {
       if (_loading.add(page)) {
         unawaited(
           widget.text.page(page).then((text) {
             _loaded[page] = text;
+            _rects[page] = [
+              for (final r in text.charRects) (left: r.left, bottom: r.bottom, right: r.right, top: r.top),
+            ];
             if (mounted && widget.controller.viewer.isReady) widget.controller.viewer.invalidate();
           }),
         );
       }
       return null;
     }
-    final rects = [
-      for (final r in loaded.charRects) (left: r.left, bottom: r.bottom, right: r.right, top: r.top),
-    ];
     return rangeBoxes(ranges, loaded.text.charIndex, rects);
+  }
+
+  /// The voice's highlights of one page in the order they are painted, and the colour of each box.
+  void _paintVoice(Canvas canvas, Rect pageRect, PdfPage page, List<Highlight> voice) {
+    for (final highlight in voice) {
+      final kind = highlight.kind;
+      if (highlight.page != page.pageNumber || kind == null) continue;
+      final paint = Paint()..color = kind.color;
+      for (final b in _boxes(page.pageNumber, highlight.ranges) ?? const <CharBox>[]) {
+        final rect = PdfRect(
+          b.left,
+          b.top,
+          b.right,
+          b.bottom,
+        ).toRectInDocument(page: page, pageRect: pageRect);
+        if (kind == HighlightKind.word) {
+          canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(1), const Radius.circular(2)), paint);
+        } else {
+          canvas.drawRect(rect, paint);
+        }
+      }
+    }
   }
 
   void _paint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
@@ -202,12 +233,7 @@ class _PdfPagesViewState extends State<PdfPagesView> {
       for (final b in boxes) {
         final rect = place(b);
         if (kind != null) {
-          final paint = Paint()..color = kind.color;
-          if (kind == HighlightKind.word) {
-            canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(1), const Radius.circular(2)), paint);
-          } else {
-            canvas.drawRect(rect, paint);
-          }
+          canvas.drawRect(rect, Paint()..color = kind.color);
           continue;
         }
         final color = highlight.color!;
@@ -322,6 +348,20 @@ class _PdfPagesViewState extends State<PdfPagesView> {
       // The last page can be scrolled up out from under the reader's play bar.
       boundaryMargin: const EdgeInsets.only(bottom: 120),
       pagePaintCallbacks: [_paint],
+      // The voice on a layer of its own over each page: a new word repaints that layer only, not the
+      // viewer (PLAN 18.1).
+      pageOverlaysBuilder: switch (widget.voice) {
+        null => null,
+        final voice => (context, rect, page) => [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _VoicePainter(this, page, voice, loaded: _rects.containsKey(page.pageNumber)),
+              ),
+            ),
+          ),
+        ],
+      },
       onGeneralTap: _tapped,
       buildContextMenu: _menu,
       // A grip on the right edge to drag through a long document (the reading view has its own).
@@ -347,6 +387,25 @@ class _PdfPagesViewState extends State<PdfPagesView> {
       ],
     ),
   );
+}
+
+/// Paints the voice over one page, in the page's own box; repainted by the voice alone.
+class _VoicePainter extends CustomPainter {
+  _VoicePainter(this.view, this.page, this.voice, {required this.loaded}) : super(repaint: voice);
+
+  final _PdfPagesViewState view;
+  final PdfPage page;
+  final VoiceHighlights voice;
+
+  /// Whether the page's text was loaded when this was made: once it is, the boxes can be painted.
+  final bool loaded;
+
+  @override
+  void paint(Canvas canvas, Size size) => view._paintVoice(canvas, Offset.zero & size, page, voice.value);
+
+  @override
+  bool shouldRepaint(_VoicePainter old) =>
+      old.page.pageNumber != page.pageNumber || old.loaded != loaded || old.voice != voice;
 }
 
 /// What lies around the pages: mid grey, and a dark grey in the dark theme, so a white page stands out.

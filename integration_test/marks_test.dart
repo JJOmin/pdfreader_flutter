@@ -55,29 +55,37 @@ void main() {
       reason: 'the first word is on screen',
     );
 
-    // 1. A long press selects a word and shows the menu; one tap on a colour marks it.
+    // 1. A long press selects a word and shows the menu; one tap on a favourite marks it (PLAN 18.7).
     await tester.longPressAt(at(0));
     await tester.pump(const Duration(milliseconds: 500));
     await waitFor(
-      () => find.byKey(const Key('color-green')).evaluate().isNotEmpty,
+      () => find.byKey(const Key('favourite-1')).evaluate().isNotEmpty,
       reason: 'the menu appears',
     );
     await shot('menu');
-    await tester.tap(find.byKey(const Key('color-green')));
+    await tester.tap(find.byKey(const Key('favourite-1')));
     await waitFor(() => page.marks.length == 1, seconds: 10, reason: 'one mark');
     expect(page.marks.single.text, 'Dieser');
     expect((page.marks.single.kind, page.marks.single.color), (MarkKind.highlight, HighlightColor.green));
 
-    // 2. The kind stays selected: choose underline once, and the next mark is one too.
+    // 2. More has every kind and colour. The kind stays selected: choose underline once, and the next
+    // mark is one too.
+    Future<void> openMore() async {
+      await waitFor(() => find.byKey(const Key('more-looks')).evaluate().isNotEmpty);
+      await tester.tap(find.byKey(const Key('more-looks')));
+      await tester.pump();
+    }
+
     await tester.longPressAt(at(1));
-    await waitFor(() => find.byKey(const Key('kind-underline')).evaluate().isNotEmpty);
+    await openMore();
+    await shot('menu-more');
     await tester.tap(find.byKey(const Key('kind-underline')));
     await tester.pump();
     await tester.tap(find.byKey(const Key('color-red')));
     await waitFor(() => page.marks.length == 2, seconds: 10);
     expect(page.marks.last.kind, MarkKind.underline);
     await tester.longPressAt(at(2));
-    await waitFor(() => find.byKey(const Key('color-blue')).evaluate().isNotEmpty);
+    await openMore();
     await tester.tap(find.byKey(const Key('color-blue')));
     await waitFor(() => page.marks.length == 3, seconds: 10);
     expect(page.marks.last.kind, MarkKind.underline, reason: 'the kind is kept for the next mark');
@@ -86,9 +94,7 @@ void main() {
     await tester.tapAt(at(0));
     final comment = find.byKey(Key('comment-${page.marks.first.id}'));
     await waitFor(() => comment.evaluate().isNotEmpty, reason: 'a tap on a mark opens its card');
-    // Closed, the card only shows; the pencil opens it for changes.
-    await tester.tap(find.byKey(Key('edit-${page.marks.first.id}')));
-    await tester.pump();
+    // The comment is typed straight into the card (PLAN 18.8).
     await tester.enterText(comment, 'A comment, ä ö ü');
     await tester.pump(const Duration(seconds: 1));
     expect(page.marks.first.comment, 'A comment, ä ö ü');
@@ -128,17 +134,17 @@ void main() {
     print('NOTES ${files.single.path} ${written.length} bytes');
 
     // 6. In the reading view: the same marks, and a selection there makes a mark too.
-    await tester.tap(find.byKey(const Key('toggle-reading')));
+    await tester.tap(find.byKey(const Key('mode-reading')));
     await tester.pump(const Duration(seconds: 2));
     await shot('reading-marks');
     final before = page.marks.length;
     final target = utterances.firstWhere((u) => u.text.startsWith('Die Verarbeitung')).words;
     await tester.longPressAt(page.globalCenterOf(1, target[1].ranges)!);
     await waitFor(
-      () => find.byKey(const Key('color-yellow')).evaluate().isNotEmpty,
+      () => find.byKey(const Key('favourite-0')).evaluate().isNotEmpty,
       reason: 'the menu in the reading view',
     );
-    await tester.tap(find.byKey(const Key('color-yellow')));
+    await tester.tap(find.byKey(const Key('favourite-0')));
     await waitFor(() => page.marks.length == before + 1, seconds: 10, reason: 'a mark from the reading view');
     expect(page.marks.last.text, 'Verarbeitung');
     await shot('reading-marked');

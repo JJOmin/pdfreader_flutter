@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,11 +15,13 @@ import 'dictation.dart';
 import 'document_access.dart';
 import 'favourites_store.dart';
 import 'favourites_tab.dart';
+import 'kept_store.dart';
 import 'library.dart';
 import 'library_list.dart';
 import 'now_playing.dart';
 import 'shared/home_lists.dart';
 import 'shared/inbox.dart' show PendingOffer;
+import 'shared/kept_documents.dart';
 import 'shared/library_view.dart';
 import 'notes_store.dart';
 import 'places.dart';
@@ -92,6 +95,7 @@ Future<void> main() async {
   await sync.offerFile.load();
   final favourites = await FavouritesStore.load(File('$support/favourites.json'));
   final appSettings = await AppSettingsStore.load(File('$support/app-settings.json'));
+  final kept = await KeptStore.open(Directory(support));
   // What the user changes is sent soon; what a sync brings in is not sent back.
   notesStore.onSaved = sync.ownChanged;
   places.onStateWritten = () => sync.ownChanged(place: true);
@@ -107,6 +111,7 @@ Future<void> main() async {
       sync: sync,
       favourites: favourites,
       appSettings: appSettings,
+      kept: kept,
     ),
   );
 }
@@ -125,10 +130,14 @@ class PdfReaderApp extends StatefulWidget {
     this.sync,
     this.favourites,
     this.appSettings,
+    this.kept,
   });
 
   /// Replaced in widget tests, which have no platform side.
   final DocumentAccess? documents;
+
+  /// PDFs opened from outside, kept for Home (PLAN 18.10); in memory in widget tests.
+  final KeptStore? kept;
   final Library? library;
   final ReadingHandler? playback;
 
@@ -175,6 +184,7 @@ class _PdfReaderAppState extends State<PdfReaderApp> {
           sync: widget.sync,
           favourites: widget.favourites,
           appSettings: _appSettings,
+          kept: widget.kept,
         ),
       );
     },
@@ -197,9 +207,11 @@ class HomePage extends StatefulWidget {
     this.sync,
     this.favourites,
     this.appSettings,
+    this.kept,
   });
 
   final DocumentAccess documents;
+  final KeptStore? kept;
   final Library? library;
   final ReadingHandler? playback;
   final PhoneVoice? phoneVoice;
@@ -237,6 +249,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   /// The full-screen player is up, over the menu or the reader (PLAN 11).
   var _playerOpen = false;
+
+  /// The player is all the way up: the reader behind it need not be painted (PLAN 18.1).
+  var _covered = false;
+
+  late final KeptStore _kept = widget.kept ?? KeptStore.inMemory();
 
   /// What the list listens to where there is no sync (widget tests).
   static final _never = ChangeNotifier();
@@ -384,13 +401,65 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _session = null;
     _expanded = false;
     _playerOpen = false;
+    _covered = false;
   });
 
   /// Shows a PDF that came from outside: the picker, or "Open with" in another app.
   Future<void> _openOpened(OpenedDocument document, {bool reading = false}) async {
-    // A PDF the desktop prepared is found by its bytes, wherever it was opened from.
+    // A PDF the desktop prepared is found by its bytes, wherever it was opened from, and keeps the
+    // place it has when opened from Home.
     final prepared = await widget.library?.find(document.data);
-    if (mounted) await _show(document.name, document.data, document.uri, prepared, reading: reading);
+    if (prepared != null) {
+      if (mounted) {
+        await _show(
+          document.name,
+          document.data,
+          'library:${prepared.manifest.docId}',
+          prepared,
+          reading: reading,
+        );
+      }
+      return;
+    }
+    // Any other is kept, so Home can open it again at its place (PLAN 18.10).
+    String key;
+    try {
+      key = placeOfKept(await _kept.keep(document.name, document.data));
+    } on FileSystemException {
+      key = document.uri;
+    }
+    if (mounted) await _show(document.name, document.data, key, null, reading: reading);
+  }
+
+  /// Opens a kept PDF from Home.
+  Future<void> _openKept(KeptDocument document) async {
+    final data = await _kept.bytes(document.id);
+    if (!mounted) return;
+    if (data == null) {
+      await _kept.remove(document.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${document.name} is no longer here.')));
+      }
+      return;
+    }
+    await _kept.keep(document.name, data);
+    await _show(document.name, data, placeOfKept(document.id), null);
+  }
+
+  Future<void> _forgetKept(KeptDocument document) async {
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Remove ${document.name} from this phone?'),
+        content: const Text('The PDF where you opened it from stays as it is.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (sure == true) await _kept.remove(document.id);
   }
 
   Future<void> _openIncoming() async {
@@ -465,8 +534,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   /// Home: the documents read last and those new on the phone, then every document (PLAN 9.2).
   Widget _home(List<LibraryDocument> prepared, List<LibraryEntry> entries, bool loaded) {
     final byId = {for (final d in prepared) d.manifest.docId: d};
+    final keptById = {for (final k in _kept.list) k.id: k};
     final lastRead = widget.places?.lastRead ?? const <String, num>{};
-    final recent = [for (final id in continueReading(lastRead)) ?byId[id]];
+    final placed = widget.places?.lastOpened ?? const <String, num>{};
+    // The documents read last: from the library, and the PDFs opened from outside (PLAN 18.10), each by
+    // when its place was saved or it was opened.
+    final opened = <String, num>{
+      for (final MapEntry(:key, :value) in placed.entries)
+        if (byId.containsKey(docIdOfPlace(key))) key: value,
+      for (final k in _kept.list) placeOfKept(k.id): math.max(k.opened, placed[placeOfKept(k.id)] ?? 0),
+    };
+    final recent = continueReading(opened);
+    String pageOf(String key, int? pages) {
+      final page = widget.places?.progress(key)?.progress.page;
+      return page == null ? '' : (pages == null ? 'Page $page' : 'Page $page of $pages');
+    }
+
     final fresh = [
       for (final id in newOnPhone({
         for (final d in prepared) d.manifest.docId: d.arrived.millisecondsSinceEpoch,
@@ -528,10 +611,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
           children: [
             if (recent.isNotEmpty)
-              section('Continue reading', recent, (d) {
-                final page = widget.places?.progress('library:${d.manifest.docId}')?.progress.page;
-                return page == null ? '' : 'Page $page of ${d.manifest.pages}';
-              }),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  Text('Continue reading', style: Theme.of(context).textTheme.titleSmall),
+                  for (final key in recent)
+                    if (byId[docIdOfPlace(key)] case final d?)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.description_outlined),
+                        title: Text(d.manifest.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(pageOf(key, d.manifest.pages)),
+                        onTap: () => _openPrepared(d),
+                      )
+                    else if (keptById[keptIdOfPlace(key)] case final k?)
+                      ListTile(
+                        key: Key('kept-${k.id}'),
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.picture_as_pdf_outlined),
+                        title: Text(k.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(pageOf(key, null)),
+                        onTap: () => _openKept(k),
+                        // The phone keeps a copy; a long press lets it go.
+                        onLongPress: () => _forgetKept(k),
+                      ),
+                ],
+              ),
             if (fresh.isNotEmpty) section('New on this phone', fresh, (d) => formatBytes(d.manifest.bytes)),
             if (entries.isEmpty)
               loaded
@@ -590,7 +696,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             builder: (context, snapshot) {
               final prepared = snapshot.data ?? const <LibraryDocument>[];
               return ListenableBuilder(
-                listenable: widget.sync ?? _never,
+                listenable: Listenable.merge([widget.sync ?? _never, _kept]),
                 builder: (context, _) {
                   final sync = widget.sync;
                   final entries = libraryEntries(
@@ -673,10 +779,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           if (session != null)
             BlockSemantics(
               blocking: _expanded,
+              // Not painted while the player covers it, nor behind the tabs (PLAN 18.1).
               child: Offstage(
-                offstage: !_expanded,
+                offstage: !_expanded || _covered,
                 child: TickerMode(
-                  enabled: _expanded,
+                  enabled: _expanded && !_covered,
                   child: ReaderPage(
                     key: ObjectKey(session),
                     name: session.name,
@@ -695,6 +802,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     session: session,
                     onCollapse: _collapse,
                     startInReading: session.startInReading,
+                    look: widget.appSettings,
                   ),
                 ),
               ),
@@ -709,10 +817,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   open: _playerOpen,
                   session: session,
                   onMinimize: () => setState(() => _playerOpen = false),
-                  onOpenText: () => setState(() {
-                    _playerOpen = false;
-                    _expanded = true;
-                  }),
+                  // The pages or the speed reader: the player goes down into the reader, in that view.
+                  onShowMode: (mode) {
+                    session.showMode?.call(mode);
+                    setState(() {
+                      _playerOpen = false;
+                      _expanded = true;
+                    });
+                  },
+                  onCovering: (covering) {
+                    if (mounted && covering != _covered) setState(() => _covered = covering);
+                  },
                 ),
               ),
             ),

@@ -72,10 +72,13 @@ void main() {
     expect(langs, isNotEmpty, reason: 'this phone has an offline voice');
     for (final lang in langs) {
       final watch = Stopwatch()..start();
-      final path = await voice.synthesize(
+      final spoken = await voice.synthesize(
         lang == Lang.de ? 'Das ist ein kurzer Satz.' : 'This is a short sentence.',
         lang,
       );
+      final path = spoken.path;
+      // ignore: avoid_print
+      print('marks from the engine: ${spoken.marks}');
       // ignore: avoid_print
       print('${lang.name}: ${watch.elapsedMilliseconds} ms, ${File(path).lengthSync()} bytes');
       expect(File(path).lengthSync(), greaterThan(2000));
@@ -184,6 +187,7 @@ void main() {
     expect(find.byKey(const Key('quick-comment')), findsOneWidget);
     expect(find.byKey(const Key('dictate')), findsNWidgets(await dictation.available() ? 1 : 0));
     await tester.enterText(find.byKey(const Key('quick-comment')), 'Check this claim');
+    await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.byKey(const Key('save-comment')));
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
     expect(page.marks, hasLength(1));
@@ -246,6 +250,8 @@ void main() {
     unawaited(page.session.comment!(speak: false));
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byKey(const Key('quick-comment')), 'Typed remark');
+    // The sheet opens with the keyboard up (PLAN 18.8); Save is tapped once it has settled.
+    await tester.pump(const Duration(seconds: 1));
     await tester.tap(find.byKey(const Key('save-comment')));
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
     await tester.tap(play);
@@ -262,7 +268,7 @@ void main() {
     // ignore: avoid_print
     print('SHOT pages');
     await tester.pump(const Duration(seconds: 6));
-    await tester.tap(find.byKey(const Key('toggle-reading')));
+    await tester.tap(find.byKey(const Key('mode-reading')));
     await tester.pump(const Duration(seconds: 1));
     // ignore: avoid_print
     print('SHOT reading');
@@ -318,11 +324,15 @@ void main() {
         // Typed, with the keyboard; the microphone is in the sheet, for whoever wants it.
         expect(find.byKey(const Key('dictate')), findsOneWidget);
         await tester.enterText(find.byKey(const Key('quick-comment')), 'Typed on a selection');
+        // The sheet opens with the keyboard up (PLAN 18.8); Save is tapped once it has settled.
+        await tester.pump(const Duration(seconds: 1));
         await tester.tap(find.byKey(const Key('save-comment')));
         await tester.pumpAndSettle(const Duration(milliseconds: 100));
         expect(page.marks, hasLength(1));
         expect(page.marks.single.comment, 'Typed on a selection');
         expect(page.marks.single.via, isNull);
+        // The marks are written half a second after the last change: before the test's folder goes.
+        await tester.pump(const Duration(seconds: 1));
       },
     );
   }

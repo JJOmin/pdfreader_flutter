@@ -112,6 +112,17 @@ void main() {
         handle.dispose();
       });
 
+      testWidgets('Marks and comments meets the guidelines, every swatch named', (tester) async {
+        final handle = tester.ensureSemantics();
+        await openAppearance(tester, look);
+        await tester.tap(find.text('Settings'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('settings-marks')));
+        await tester.pumpAndSettle();
+        await guidelines(tester);
+        handle.dispose();
+      });
+
       testWidgets('a mark’s card meets them, closed and open', (tester) async {
         final handle = tester.ensureSemantics();
         await tester.pumpWidget(
@@ -143,7 +154,17 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: FastScrollThumb(
-            controller: controller,
+            listenable: controller,
+            fraction: () =>
+                controller.hasClients ? controller.offset / controller.position.maxScrollExtent : 0,
+            onJump: (f) => controller.jumpTo(f * controller.position.maxScrollExtent),
+            // A tenth of the text a step, for a screen reader's swipe.
+            onStep: (direction) => controller.jumpTo(
+              (controller.offset + direction * controller.position.maxScrollExtent / 10).clamp(
+                0.0,
+                controller.position.maxScrollExtent,
+              ),
+            ),
             label: () => '3',
             child: SingleChildScrollView(
               controller: controller,

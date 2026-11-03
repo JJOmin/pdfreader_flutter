@@ -11,6 +11,8 @@ import 'package:pdfreader/library.dart';
 import 'package:pdfreader/main.dart';
 import 'package:pdfreader/places.dart';
 import 'package:pdfreader/shared/app_settings.dart';
+import 'package:pdfreader/shared/mark_styles.dart';
+import 'package:pdfreader/shared/notes.dart';
 
 Future<(AppSettingsStore, Places)> openAppearance(WidgetTester tester) async {
   // Tall, so that the whole page is on screen at once.
@@ -41,6 +43,9 @@ Future<(AppSettingsStore, Places)> openAppearance(WidgetTester tester) async {
 ThemeData appTheme(WidgetTester tester) => Theme.of(tester.element(find.byType(Scaffold).last));
 
 void main() {
+  numberFields();
+  markLooks();
+
   testWidgets('sepia colours the whole app, and the other choices take it back', (tester) async {
     final (settings, _) = await openAppearance(tester);
     await tester.tap(find.byKey(const Key('theme-sepia')));
@@ -130,5 +135,57 @@ void main() {
       find.descendant(of: find.byKey(const Key('speed-reader-preview')), matching: find.byType(Text)),
     );
     expect(preview.style?.fontFamily, 'Lexend');
+  });
+}
+
+// PLAN 18.6: no sliders; each number has − and + and can be typed.
+void numberFields() {
+  testWidgets('the speed reader’s size and spacing are numbers with − and +, and can be typed', (
+    tester,
+  ) async {
+    final (_, places) = await openAppearance(tester);
+    await tester.ensureVisible(find.byKey(const Key('settings-speed-reader')));
+    await tester.tap(find.byKey(const Key('settings-speed-reader')));
+    await tester.pumpAndSettle();
+    expect(find.byType(Slider), findsNothing);
+    final size = places.reading.size;
+    await tester.tap(find.byKey(const Key('size-up')));
+    await tester.pumpAndSettle();
+    expect(places.reading.size, size + 1);
+    await tester.tap(find.byKey(const Key('lineHeight-down')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: find.byKey(const Key('size-field')), matching: find.text('${(size + 1).round()}')),
+      findsOneWidget,
+    );
+    await tester.enterText(find.byKey(const Key('size-field')), '26');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(places.reading.size, 26);
+    // Kept inside the limits, with a decimal comma read as a point.
+    await tester.enterText(find.byKey(const Key('lineHeight-field')), '9,5');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(places.reading.lineHeight, 2.6);
+  });
+}
+
+// PLAN 18.7: the comment colour and the two favourites, kept in the app's settings.
+void markLooks() {
+  testWidgets('Marks and comments sets the comment colour and the two favourites', (tester) async {
+    final (settings, _) = await openAppearance(tester);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-marks')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('comment-blue')));
+    await tester.pumpAndSettle();
+    expect(settings.value.marks.comment, HighlightColor.blue);
+    await tester.tap(find.byKey(const Key('favourite-1-underline')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('favourite-1-red')));
+    await tester.pumpAndSettle();
+    expect(settings.value.marks.favourites[1], (kind: MarkKind.underline, color: HighlightColor.red));
+    expect(settings.value.marks.favourites[0], const MarkStyles().favourites[0]);
   });
 }

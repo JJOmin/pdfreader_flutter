@@ -9,6 +9,8 @@ import 'package:pdfreader/library.dart';
 import 'package:pdfreader/now_playing.dart';
 import 'package:pdfreader/player_screen.dart';
 import 'package:pdfreader/reader.dart';
+import 'package:pdfreader/shared/mark_styles.dart';
+import 'package:pdfreader/shared/notes.dart';
 import 'package:pdfreader/shared/read_plan.dart';
 import 'package:pdfreader/shared/sync.dart';
 import 'package:pdfreader/shared/types.dart';
@@ -38,10 +40,10 @@ Future<void> pumpPlayer(
   WidgetTester tester,
   ReadingSession session, {
   VoidCallback? onMinimize,
-  VoidCallback? onOpenText,
+  ValueChanged<ReaderMode>? onShowMode,
 }) => tester.pumpWidget(
   MaterialApp(
-    home: PlayerScreen(session: session, onMinimize: onMinimize ?? () {}, onOpenText: onOpenText ?? () {}),
+    home: PlayerScreen(session: session, onMinimize: onMinimize ?? () {}, onShowMode: onShowMode ?? (_) {}),
   ),
 );
 
@@ -78,18 +80,23 @@ void main() {
   group('PlayerScreen', () {
     testWidgets('plays, skips and minimises', (tester) async {
       final s = session();
-      var toggled = 0, skipped = 0, minimised = 0, text = 0;
+      var toggled = 0, skipped = 0, minimised = 0;
+      final modes = <ReaderMode>[];
       s
         ..toggle = (() => toggled++)
         ..skip = ((direction) => skipped += direction);
-      await pumpPlayer(tester, s, onMinimize: () => minimised++, onOpenText: () => text++);
+      await pumpPlayer(tester, s, onMinimize: () => minimised++, onShowMode: modes.add);
       await tester.tap(find.byKey(const Key('player-play')));
       await tester.tap(find.byKey(const Key('player-next')));
       await tester.tap(find.byKey(const Key('player-next')));
       await tester.tap(find.byKey(const Key('player-previous')));
       await tester.tap(find.byKey(const Key('player-minimize')));
-      await tester.tap(find.byKey(const Key('player-open-text')));
-      expect((toggled, skipped, minimised, text), (1, 1, 1, 1));
+      // The switch in the header goes to the other two modes; the player is where it is already.
+      await tester.tap(find.byKey(const Key('player-mode-reading')));
+      await tester.tap(find.byKey(const Key('player-mode-pages')));
+      await tester.tap(find.byKey(const Key('player-mode-player')));
+      expect((toggled, skipped, minimised), (1, 1, 1));
+      expect(modes, [ReaderMode.speedReader, ReaderMode.pages]);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       s.update(ReaderState.playing);
       await tester.pump();
@@ -110,6 +117,42 @@ void main() {
       expect(text.bottom, lessThanOrEqualTo(panel.top));
       expect(tester.getTopLeft(find.byKey(const Key('player-minimize'))).dy, lessThan(100));
       expect(tester.getTopLeft(find.byKey(const Key('player-minimize'))).dx, lessThan(100));
+    });
+
+    // Split screen (PLAN 18.5): half of the S20 FE's screen is about 360 by 390.
+    testWidgets('in a short window, the sentence keeps most of the room and the buttons share one row', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 390);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final s = session()
+        ..comment = (({required speak}) async {})
+        ..update(ReaderState.playing, sentence: sentence())
+        ..updateNeighbours('Before it.', 'After it.');
+      await pumpPlayer(tester, s);
+      expect(tester.takeException(), isNull);
+      final panel = tester.getRect(find.byKey(const Key('player-panel')));
+      final text = tester.getRect(find.byKey(const Key('speed-reader')).first);
+      expect(panel.height, lessThan(390 * 0.35));
+      expect(text.top, lessThan(panel.top));
+      expect(find.text('Before it.'), findsNothing, reason: 'no room for the sentences either side');
+      final play = tester.getCenter(find.byKey(const Key('player-play'))).dy;
+      expect(tester.getCenter(find.byKey(const Key('player-comment'))).dy, closeTo(play, 1));
+      expect(tester.getCenter(find.byKey(const Key('player-dictate'))).dy, closeTo(play, 1));
+    });
+
+    testWidgets('in a wide window, the text and the controls sit side by side', (tester) async {
+      tester.view.physicalSize = const Size(900, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final s = session()..update(ReaderState.playing, sentence: sentence());
+      await pumpPlayer(tester, s);
+      expect(tester.takeException(), isNull);
+      final panel = tester.getRect(find.byKey(const Key('player-panel')));
+      final text = tester.getRect(find.byKey(const Key('speed-reader')).first);
+      expect(text.right, lessThanOrEqualTo(panel.left));
+      expect(panel.bottom, 400);
     });
 
     testWidgets('asks to press play before anything is read, and shows the sentence once it is', (
@@ -253,7 +296,7 @@ void main() {
       final s = session();
       Widget layer(bool open) => MaterialApp(
         home: Stack(
-          children: [PlayerLayer(open: open, session: s, onMinimize: () {}, onOpenText: () {})],
+          children: [PlayerLayer(open: open, session: s, onMinimize: () {}, onShowMode: (_) {})],
         ),
       );
       await tester.pumpWidget(layer(false));
@@ -341,6 +384,7 @@ void main() {
       WidgetTester tester, {
       Dictation? dictation,
       bool speak = false,
+      List<MarkStyle> looks = const [(kind: MarkKind.highlight, color: HighlightColor.yellow)],
     }) async {
       QuickComment? result;
       await tester.pumpWidget(
@@ -351,8 +395,12 @@ void main() {
                 result = await showModalBottomSheet<QuickComment>(
                   context: context,
                   isScrollControlled: true,
-                  builder: (_) =>
-                      QuickCommentSheet(quote: 'The quick fox.', dictation: dictation, listenAtOnce: speak),
+                  builder: (_) => QuickCommentSheet(
+                    quote: 'The quick fox.',
+                    dictation: dictation,
+                    listenAtOnce: speak,
+                    looks: looks,
+                  ),
                 );
               },
               child: const Text('open'),
@@ -375,7 +423,32 @@ void main() {
       expect(find.byKey(const Key('dictate')), findsNothing, reason: 'no recogniser on this phone');
       await tester.enterText(find.byKey(const Key('quick-comment')), '  A thought  ');
       await save(tester);
-      expect(sheet.saved(), (text: 'A thought', dictated: false));
+      expect((sheet.saved()!.text, sheet.saved()!.dictated), ('A thought', false));
+    });
+
+    // PLAN 18.8: the keyboard comes up at once, also where the phone can listen.
+    testWidgets('has the keyboard up at once, unless it was opened to speak', (tester) async {
+      await open(tester, dictation: FakeDictation(const Dictated()));
+      expect(tester.testTextInput.isVisible, isTrue);
+    });
+
+    testWidgets('the mark takes the primary comment colour, or a favourite chosen in the sheet', (
+      tester,
+    ) async {
+      const looks = <MarkStyle>[
+        (kind: MarkKind.highlight, color: HighlightColor.blue),
+        (kind: MarkKind.underline, color: HighlightColor.red),
+      ];
+      var sheet = await open(tester, looks: looks);
+      await tester.enterText(find.byKey(const Key('quick-comment')), 'First');
+      await save(tester);
+      expect(sheet.saved()!.look, looks[0]);
+      sheet = await open(tester, looks: looks);
+      await tester.enterText(find.byKey(const Key('quick-comment')), 'Second');
+      await tester.tap(find.byKey(const Key('comment-look-1')));
+      await tester.pump();
+      await save(tester);
+      expect(sheet.saved()!.look, looks[1]);
     });
 
     testWidgets('marks a comment that was spoken, and keeps the mark when it was corrected by hand', (
@@ -386,7 +459,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('quick-comment')), 'spoken thought, corrected');
       await save(tester);
-      expect(sheet.saved(), (text: 'spoken thought, corrected', dictated: true));
+      expect((sheet.saved()!.text, sheet.saved()!.dictated), ('spoken thought, corrected', true));
     });
 
     testWidgets('does not mark a comment typed after nothing was heard', (tester) async {
@@ -395,7 +468,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('quick-comment')), 'typed instead');
       await save(tester);
-      expect(sheet.saved(), (text: 'typed instead', dictated: false));
+      expect((sheet.saved()!.text, sheet.saved()!.dictated), ('typed instead', false));
     });
 
     testWidgets('puts what was heard into the field as a draft', (tester) async {

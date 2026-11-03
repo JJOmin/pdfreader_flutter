@@ -25,9 +25,10 @@ double _similarity(String a, String b) {
   return 1 - row[b.length] / math.max(a.length, b.length);
 }
 
-/// Turns known start times into full timings. Unknown starts are interpolated by word length.
-List<WordTiming> _fill(List<String> words, List<double?> starts, double duration) {
-  final weight = [for (final w in words) w.length + 2];
+/// Turns known start times into full timings. Unknown starts are interpolated by word length, or by
+/// `weights` where given.
+List<WordTiming> _fill(List<String> words, List<double?> starts, double duration, [List<int>? weights]) {
+  final weight = weights ?? [for (final w in words) w.length + 2];
   final out = <double>[];
   var from = 0.0;
   for (var i = 0; i < words.length;) {
@@ -64,6 +65,99 @@ List<WordTiming> _fill(List<String> words, List<double?> starts, double duration
 /// Spreads `duration` over the words by length. Used when nothing was measured.
 List<WordTiming> estimateTimings(List<String> words, double duration) =>
     _fill(words, List.filled(words.length, null), duration);
+
+// Phone only (PLAN 18.3): the phone's voice speaks `spoken`, the sentence's text, and its words are
+// found in it in order.
+
+final _digit = RegExp(r'\p{N}', unicode: true);
+final _stop = RegExp(r'[.!?;:…]');
+final _comma = RegExp(r'[,–—()\[\]"“”„«»]');
+
+/// Where each word starts in `spoken`, or -1 where it is not found.
+List<int> _locate(List<String> words, String spoken) {
+  final out = <int>[];
+  var from = 0;
+  for (final w in words) {
+    final at = spoken.indexOf(w, from);
+    out.add(at);
+    if (at >= 0) from = at + w.length;
+  }
+  return out;
+}
+
+/// How long each word and the pause after it take, in the units of `_fill`: a digit is said as a
+/// syllable or more, and punctuation is a pause.
+List<int> _spokenWeights(List<String> words, String spoken, List<int> at) => [
+  for (var i = 0; i < words.length; i++)
+    () {
+      final word = words[i];
+      var weight = word.length + 2 + 2 * _digit.allMatches(word).length;
+      if (at[i] >= 0) {
+        final end = at[i] + word.length;
+        final next = i + 1 < words.length && at[i + 1] >= end ? at[i + 1] : spoken.length;
+        final after = spoken.substring(end, math.max(end, next));
+        weight += _stop.hasMatch(after) ? 7 : (_comma.hasMatch(after) ? 4 : 0);
+      }
+      return weight;
+    }(),
+];
+
+/// Spreads `duration` over the words of `spoken` by how long each is to say: longer for numbers, with
+/// a pause after a comma and a longer one after a full stop. Used when the engine gives no marks.
+List<WordTiming> estimateSpokenTimings(List<String> words, String spoken, double duration) => _fill(
+  words,
+  List.filled(words.length, null),
+  duration,
+  _spokenWeights(words, spoken, _locate(words, spoken)),
+);
+
+/// The marks a speech engine reported, as places in the text and seconds into the audio. Android
+/// documents a mark as (start, end, frame); Samsung's engine gives (frame, start, end). Which one it
+/// is shows in the numbers: text offsets never pass the text's length, and frames do not go back.
+List<(int, double)> marksFromRanges(
+  List<(int, int, int)> ranges, {
+  required int textLength,
+  required int rate,
+}) {
+  if (rate <= 0 || ranges.isEmpty) return const [];
+  bool fits(List<(int, int, int)> marks) {
+    var frame = 0;
+    for (final (start, end, at) in marks) {
+      if (start < 0 || start > end || end > textLength || at < frame) return false;
+      frame = at;
+    }
+    return true;
+  }
+
+  final documented = [for (final (start, end, frame) in ranges) (start, end, frame)];
+  final rotated = [for (final (frame, start, end) in ranges) (start, end, frame)];
+  final read = fits(documented) ? documented : (fits(rotated) ? rotated : null);
+  return [for (final (start, _, frame) in read ?? const <(int, int, int)>[]) (start, frame / rate)];
+}
+
+/// Word timings from the marks a speech engine reports while it speaks `spoken`: each mark is where a
+/// stretch starts in the text (a UTF-16 offset) and when in the audio, in seconds. A word takes the
+/// first mark that starts in it or in the space before it; words no mark reached are spread between
+/// their neighbours as in `estimateSpokenTimings`.
+List<WordTiming> timingsFromMarks(
+  List<String> words,
+  String spoken,
+  List<(int, double)> marks,
+  double duration,
+) {
+  final at = _locate(words, spoken);
+  final starts = List<double?>.filled(words.length, null);
+  for (final (offset, seconds) in marks) {
+    for (var i = 0; i < words.length; i++) {
+      if (at[i] < 0) continue;
+      if (offset < at[i] + words[i].length) {
+        starts[i] ??= seconds;
+        break;
+      }
+    }
+  }
+  return _fill(words, starts, duration, _spokenWeights(words, spoken, at));
+}
 
 /// Finds when each expected word is spoken, given what a speech recogniser heard in the
 /// synthesised audio. Recogniser tokens are word pieces; a leading space or "▁" starts a word.

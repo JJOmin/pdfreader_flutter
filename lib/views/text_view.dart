@@ -3,6 +3,8 @@
 // are written once against raw ranges and work in either.
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
+
 import '../shared/notes.dart';
 import '../shared/types.dart';
 
@@ -63,6 +65,22 @@ class Highlight {
   /// The icon above the mark's first line: set when the mark has a comment (PLAN 12).
   final NoteBadge? badge;
 }
+
+/// The spoken sentence and word. They change with every word, so the views listen to them and repaint
+/// only what they cover, and the reader is not rebuilt for each word (PLAN 18.1).
+typedef VoiceHighlights = ValueListenable<List<Highlight>>;
+
+/// No voice: for a view shown where nothing is read aloud.
+final VoiceHighlights silent = ValueNotifier(const <Highlight>[]);
+
+/// Where a highlight lies in the order both views paint in: the marks, the spoken sentence, search,
+/// the spoken word. A later one lies over an earlier one.
+int paintLayer(Highlight h) => switch (h.kind) {
+  null => 0,
+  HighlightKind.sentence => 1,
+  HighlightKind.search || HighlightKind.searchCurrent => 2,
+  HighlightKind.word => 3,
+};
 
 /// One way of showing the document's text.
 abstract interface class TextView {

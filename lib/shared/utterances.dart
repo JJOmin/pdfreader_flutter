@@ -113,13 +113,17 @@ bool isReferenceHeading(String text) => _referenceHeading.hasMatch(text.trim());
 /// A sentence's end: what a sentence cut by a page break lacks.
 final _sentenceEnd = RegExp(r'[.!?…:]["”’»)\]]*$', unicode: true);
 
+/// Whether a text ends a sentence: a full stop, question or exclamation mark, ellipsis or colon, maybe
+/// followed by a closing quote or bracket.
+bool endsSentence(String text) => _sentenceEnd.hasMatch(text);
+
 /// Whether `first`, the next page's first sentence, goes on `last`, this page's last (desktop ADR 12).
 bool continuesOver(Utterance? last, Utterance? first) =>
     last != null &&
     first != null &&
     last.role != Role.heading &&
     first.role != Role.heading &&
-    !_sentenceEnd.hasMatch(last.text);
+    !endsSentence(last.text);
 
 /// Port of the desktop's `joinedPage`: a page's sentences with page breaks undone (desktop ADR 12, the
 /// owner's rule of 2026-10-22). A sentence that starts on this page belongs to it whole, so the next

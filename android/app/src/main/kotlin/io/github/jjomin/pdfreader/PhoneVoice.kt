@@ -34,6 +34,11 @@ class PhoneVoice(private val context: Context) {
     private var running: Job? = null
     private var runningId: String? = null
     private var runningFile: File? = null
+    /** The running request's audio rate, and where the engine said each stretch of the text starts:
+     *  start, end and frame for each, in the order the engine passes them, which differs between engines
+     *  (PLAN 18.3; Dart sorts it out). Engines that say nothing leave it empty. */
+    private var runningRate = 0
+    private val runningMarks = mutableListOf<Int>()
     private var counter = 0
     private val timeout = Runnable { finish(runningId, "The voice did not answer") }
 
@@ -142,6 +147,8 @@ class PhoneVoice(private val context: Context) {
         val id = file.name
         runningId = id
         runningFile = file
+        runningRate = 0
+        runningMarks.clear()
         // shortcut: a sentence longer than the engine's limit is cut at a space; none has been that long.
         val limit = TextToSpeech.getMaxSpeechInputLength()
         val text = if (job.text.length <= limit) job.text else job.text.take(limit).substringBeforeLast(' ')
@@ -161,7 +168,7 @@ class PhoneVoice(private val context: Context) {
         runningId = null
         runningFile = null
         if (error == null && file != null && file.length() > 0) {
-            job.result.success(file.path)
+            job.result.success(mapOf("path" to file.path, "rate" to runningRate, "marks" to runningMarks.toList()))
         } else {
             file?.delete()
             job.result.error("synthesis", error ?: "The voice made no audio", null)
@@ -171,6 +178,19 @@ class PhoneVoice(private val context: Context) {
 
     private val listener = object : UtteranceProgressListener() {
         override fun onStart(utteranceId: String) {}
+        override fun onBeginSynthesis(utteranceId: String, sampleRateInHz: Int, audioFormat: Int, channelCount: Int) {
+            main.post { if (utteranceId == runningId) runningRate = sampleRateInHz }
+        }
+        // Android 8 and later, where the engine reports them: a word's place in the text and its frame.
+        override fun onRangeStart(utteranceId: String, start: Int, end: Int, frame: Int) {
+            main.post {
+                if (utteranceId == runningId) {
+                    runningMarks.add(start)
+                    runningMarks.add(end)
+                    runningMarks.add(frame)
+                }
+            }
+        }
         override fun onDone(utteranceId: String) { main.post { finish(utteranceId, null) } }
         @Deprecated("Deprecated in Java")
         override fun onError(utteranceId: String) { main.post { finish(utteranceId, "The voice failed") } }
