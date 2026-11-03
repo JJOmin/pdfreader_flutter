@@ -1,6 +1,7 @@
 // The full-screen player (PLAN 11), opened by a tap on the small bar in the menu or in the reader.
-// Made to be run without looking: three large playback buttons in the lower two fifths, and big
-// targets for the speed and for commenting. The upper part shows the sentence in large type.
+// Made to be run without looking: large playback buttons at the bottom, and big targets for the speed
+// and for commenting. The rest shows the sentence in large type. A short window, as in split screen,
+// gets one row of controls; a wide one puts the text and the controls side by side (PLAN 18.5).
 import 'package:flutter/material.dart';
 
 import 'now_playing.dart';
@@ -16,13 +17,18 @@ class PlayerLayer extends StatefulWidget {
     required this.open,
     required this.session,
     required this.onMinimize,
-    required this.onOpenText,
+    required this.onShowMode,
+    this.onCovering,
   });
 
   final bool open;
   final ReadingSession session;
   final VoidCallback onMinimize;
-  final VoidCallback onOpenText;
+  final ValueChanged<ReaderMode> onShowMode;
+
+  /// Told when the player has come all the way up and covers what is behind it, and when it starts
+  /// to go: what it covers need not be painted meanwhile (PLAN 18.1).
+  final ValueChanged<bool>? onCovering;
 
   @override
   State<PlayerLayer> createState() => _PlayerLayerState();
@@ -33,7 +39,7 @@ class _PlayerLayerState extends State<PlayerLayer> with SingleTickerProviderStat
     vsync: this,
     duration: const Duration(milliseconds: 280),
     value: widget.open ? 1 : 0,
-  );
+  )..addStatusListener((status) => widget.onCovering?.call(status == AnimationStatus.completed));
 
   @override
   void didUpdateWidget(PlayerLayer old) {
@@ -64,22 +70,25 @@ class _PlayerLayerState extends State<PlayerLayer> with SingleTickerProviderStat
             child: PlayerScreen(
               session: widget.session,
               onMinimize: widget.onMinimize,
-              onOpenText: widget.onOpenText,
+              onShowMode: widget.onShowMode,
             ),
           ),
   );
 }
 
+/// Below this height the player is in a short window, such as half of a split screen.
+const _shortHeight = 560.0;
+
 class PlayerScreen extends StatelessWidget {
-  const PlayerScreen({super.key, required this.session, required this.onMinimize, required this.onOpenText});
+  const PlayerScreen({super.key, required this.session, required this.onMinimize, required this.onShowMode});
 
   final ReadingSession session;
 
   /// Back to where the player was opened from: the menu or the reader.
   final VoidCallback onMinimize;
 
-  /// Minimises into the reader, whichever view the player was opened from.
-  final VoidCallback onOpenText;
+  /// The switch in the header: the pages or the speed reader minimise the player into the reader.
+  final ValueChanged<ReaderMode> onShowMode;
 
   @override
   Widget build(BuildContext context) {
@@ -88,25 +97,59 @@ class PlayerScreen extends StatelessWidget {
       color: theme.colorScheme.surface,
       child: SafeArea(
         bottom: false,
-        child: ListenableBuilder(
-          listenable: session,
-          // The text takes whatever the controls leave: they are only as tall as they need to be.
-          builder: (context, _) => Column(
-            children: [
-              _header(context),
-              Expanded(
-                child: Padding(padding: const EdgeInsets.fromLTRB(20, 4, 20, 12), child: _preview(context)),
-              ),
-              _panel(context),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final short = box.maxHeight < _shortHeight;
+            final wide = box.maxWidth >= 600 && box.maxWidth > box.maxHeight * 1.2;
+            return ListenableBuilder(
+              listenable: session,
+              // The text takes whatever the controls leave: they are only as tall as they need to be.
+              builder: (context, _) => wide
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _header(context),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(20, 4, 12, 12),
+                                  child: _preview(context, short: short),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: (box.maxWidth * 0.42).clamp(320.0, 420.0),
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: _panel(context, short: short),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        _header(context),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(20, 4, 20, short ? 4 : 12),
+                            child: _preview(context, short: short),
+                          ),
+                        ),
+                        _panel(context, short: short),
+                      ],
+                    ),
+            );
+          },
         ),
       ),
     );
   }
 
   /// The title, and under it which page is read and by which audio, in words: an icon would look
-  /// like a button.
+  /// like a button. At the right, the switch between the three modes.
   Widget _header(BuildContext context) {
     final theme = Theme.of(context).textTheme;
     final sentence = session.sentence;
@@ -144,17 +187,43 @@ class PlayerScreen extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          key: const Key('player-open-text'),
-          icon: const Icon(Icons.article_outlined),
-          tooltip: 'Show the text',
-          onPressed: onOpenText,
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: SegmentedButton<ReaderMode>(
+            key: const Key('player-mode'),
+            showSelectedIcon: false,
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4)),
+            ),
+            segments: const [
+              ButtonSegment(
+                value: ReaderMode.pages,
+                icon: Icon(Icons.picture_as_pdf_outlined, key: Key('player-mode-pages')),
+                tooltip: 'Pages',
+              ),
+              ButtonSegment(
+                value: ReaderMode.speedReader,
+                icon: Icon(Icons.article_outlined, key: Key('player-mode-reading')),
+                tooltip: 'Speed reader',
+              ),
+              ButtonSegment(
+                value: ReaderMode.player,
+                icon: Icon(Icons.headphones_outlined, key: Key('player-mode-player')),
+                tooltip: 'Player',
+              ),
+            ],
+            selected: const {ReaderMode.player},
+            onSelectionChanged: (modes) {
+              if (modes.first != ReaderMode.player) onShowMode(modes.first);
+            },
+          ),
         ),
       ],
     );
   }
 
-  Widget _preview(BuildContext context) {
+  Widget _preview(BuildContext context, {required bool short}) {
     final sentence = session.sentence;
     if (sentence == null) {
       return Center(
@@ -165,16 +234,24 @@ class PlayerScreen extends StatelessWidget {
         ),
       );
     }
-    return SpeedReaderWindow(
-      words: [for (final w in sentence.words) w.text],
-      current: session.word,
-      previous: session.previousText,
-      next: session.nextText,
+    final words = [for (final w in sentence.words) w.text];
+    // Only this listens to the spoken word, so a new word builds the preview and nothing else.
+    return ValueListenableBuilder<int>(
+      valueListenable: session.spokenWord,
+      builder: (context, word, _) => SpeedReaderWindow(
+        words: words,
+        current: word,
+        // In a short window the sentence alone, a little smaller, so that it can be read.
+        previous: short ? null : session.previousText,
+        next: short ? null : session.nextText,
+        fontSize: short ? 24 : 30,
+      ),
     );
   }
 
-  /// The controls on one rounded panel at the bottom, as tall as they need to be and no more.
-  Widget _panel(BuildContext context) {
+  /// The controls on one rounded panel at the bottom, as tall as they need to be and no more. In a
+  /// short window the buttons share one row.
+  Widget _panel(BuildContext context, {required bool short}) {
     final colors = Theme.of(context).colorScheme;
     return Material(
       key: const Key('player-panel'),
@@ -183,16 +260,18 @@ class PlayerScreen extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: EdgeInsets.fromLTRB(16, short ? 4 : 8, 16, short ? 4 : 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              _info(context),
-              const SizedBox(height: 4),
-              _transport(context),
-              const SizedBox(height: 8),
-              _actions(),
-            ],
+            children: short
+                ? [_info(context), _transport(context, short: true)]
+                : [
+                    _info(context),
+                    const SizedBox(height: 4),
+                    _transport(context, short: false),
+                    const SizedBox(height: 8),
+                    _actions(),
+                  ],
           ),
         ),
       ),
@@ -256,38 +335,61 @@ class PlayerScreen extends StatelessWidget {
     );
   }
 
-  Widget _transport(BuildContext context) {
+  Widget _transport(BuildContext context, {required bool short}) {
     final playing = session.state == ReaderState.playing;
     final skip = session.skip;
+    final side = short ? 48.0 : 56.0;
+    final ready = session.sentence != null && session.comment != null;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: short ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
       children: [
         IconButton.filledTonal(
           key: const Key('player-previous'),
-          iconSize: 30,
-          style: IconButton.styleFrom(fixedSize: const Size(56, 56)),
+          iconSize: short ? 26 : 30,
+          style: IconButton.styleFrom(fixedSize: Size(side, side)),
           icon: const Icon(Icons.skip_previous),
           tooltip: 'Previous sentence',
           onPressed: skip == null ? null : () => skip(-1),
         ),
-        const SizedBox(width: 20),
+        SizedBox(width: short ? 8 : 20),
         IconButton.filled(
           key: const Key('player-play'),
-          iconSize: 40,
-          style: IconButton.styleFrom(fixedSize: const Size(72, 72)),
+          iconSize: short ? 32 : 40,
+          style: IconButton.styleFrom(fixedSize: Size(side + 8, side + 8) * (short ? 1 : 72 / 64)),
           icon: Icon(playing ? Icons.pause : Icons.play_arrow),
           tooltip: playing ? 'Pause' : 'Read aloud',
           onPressed: session.toggle,
         ),
-        const SizedBox(width: 20),
+        SizedBox(width: short ? 8 : 20),
         IconButton.filledTonal(
           key: const Key('player-next'),
-          iconSize: 30,
-          style: IconButton.styleFrom(fixedSize: const Size(56, 56)),
+          iconSize: short ? 26 : 30,
+          style: IconButton.styleFrom(fixedSize: Size(side, side)),
           icon: const Icon(Icons.skip_next),
           tooltip: 'Next sentence',
           onPressed: skip == null ? null : () => skip(1),
         ),
+        // In a short window, Comment and Speak join the same row as icons.
+        if (short) ...[
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            key: const Key('player-comment'),
+            style: IconButton.styleFrom(fixedSize: const Size(48, 48)),
+            icon: const Icon(Icons.edit_note),
+            tooltip: 'Comment',
+            onPressed: ready ? () => session.comment!(speak: false) : null,
+          ),
+          if (session.canDictate) ...[
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              key: const Key('player-dictate'),
+              style: IconButton.styleFrom(fixedSize: const Size(48, 48)),
+              icon: const Icon(Icons.mic),
+              tooltip: 'Speak a comment',
+              onPressed: ready ? () => session.comment!(speak: true) : null,
+            ),
+          ],
+        ],
       ],
     );
   }

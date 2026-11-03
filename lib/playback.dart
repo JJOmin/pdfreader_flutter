@@ -16,6 +16,20 @@ import 'shared/types.dart';
 /// How often the word mark asks where the audio is. The player interpolates between its events.
 const _tick = Duration(milliseconds: 30);
 
+/// How far just_audio's clock runs ahead of the sound (PLAN 18.3): it starts when `play` is called,
+/// before Android has the audio going, and is not asked again while it plays. On the S20 FE's speaker
+/// ExoPlayer, which follows the sound, was 105 to 112 ms behind it (integration_test/timing_test.dart);
+/// 20 of those are left in, as the mark takes about that long to reach the screen.
+// shortcut: one value for every phone and the speaker; Bluetooth adds 100 to 200 ms. If the mark is
+// seen to run ahead on headphones, measure the lead per output route.
+const outputLead = Duration(milliseconds: 90);
+
+/// The place in the audio that is being heard now, which the word mark follows.
+Duration heardPosition(AudioPlayer player) {
+  final at = player.position - outputLead * player.speed;
+  return at.isNegative ? Duration.zero : at;
+}
+
 class _Sentence implements PreparedAudio {
   _Sentence(this._player, {this.timings, this.file});
 
@@ -32,7 +46,7 @@ class _Sentence implements PreparedAudio {
   Future<void> play(double speed, void Function(Duration position) onPosition) async {
     await _player.setSpeed(speed);
     final ended = _player.processingStateStream.firstWhere((s) => s == ProcessingState.completed);
-    final ticker = Timer.periodic(_tick, (_) => onPosition(_player.position));
+    final ticker = Timer.periodic(_tick, (_) => onPosition(heardPosition(_player)));
     // Returns at once when paused, so the end is taken from the processing state instead.
     unawaited(_player.play());
     try {
@@ -91,12 +105,18 @@ class LibraryAudio implements SentenceAudio {
   }
 
   Future<PreparedAudio> _spoken(PlannedSentence sentence) async {
-    final file = File(await voice!.synthesize(sentence.spoken, sentence.lang));
+    final spoken = await voice!.synthesize(sentence.spoken, sentence.lang);
+    final file = File(spoken.path);
     final player = AudioPlayer();
     try {
       final length = await player.setFilePath(file.path) ?? player.duration ?? Duration.zero;
-      // The engine says nothing about its words, so they are spread over the audio by length.
-      final timings = estimateTimings([for (final w in sentence.words) w.text], length.inMicroseconds / 1e6);
+      final words = [for (final w in sentence.words) w.text];
+      final seconds = length.inMicroseconds / 1e6;
+      // Where the engine said where its words start, they are taken from it; else they are spread over
+      // the audio by how long each is to say (PLAN 18.3).
+      final timings = spoken.marks.isEmpty
+          ? estimateSpokenTimings(words, sentence.spoken, seconds)
+          : timingsFromMarks(words, sentence.spoken, spoken.marks, seconds);
       return _Sentence(player, timings: timings, file: file);
     } catch (_) {
       await player.dispose();

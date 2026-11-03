@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../shared/comment_search.dart';
 import '../shared/notes.dart';
 import 'text_view.dart';
 
@@ -36,8 +37,8 @@ const _kindIcons = {
   MarkKind.strike: Icons.format_strikethrough,
 };
 
-/// One mark: its page and quote and its comment. The pencil opens it for changes: the comment, the
-/// kind and the colour of the mark, and Delete. Closed, the card only shows.
+/// One mark: its page and quote and its comment, which is typed into directly (PLAN 18.8). The pencil
+/// opens the kind and the colour of the mark, and Delete.
 class MarkCard extends StatefulWidget {
   const MarkCard({super.key, required this.mark, required this.found, required this.actions, this.onDeleted});
 
@@ -114,7 +115,7 @@ class _MarkCardState extends State<MarkCard> {
                   IconButton(
                     key: Key('edit-${mark.id}'),
                     icon: Icon(_editing ? Icons.check : Icons.edit_outlined),
-                    tooltip: _editing ? 'Done' : 'Edit the comment and the mark',
+                    tooltip: _editing ? 'Done' : 'Change the mark’s look, or delete it',
                     onPressed: () => setState(() => _editing = !_editing),
                   ),
                 ],
@@ -123,11 +124,10 @@ class _MarkCardState extends State<MarkCard> {
             TextField(
               key: Key('comment-${mark.id}'),
               controller: _comment,
-              // Closed, the comment can be read and copied but not changed.
-              readOnly: !_editing,
               minLines: 1,
               maxLines: 5,
-              decoration: InputDecoration(hintText: _editing ? 'Comment' : 'No comment'),
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(hintText: 'Add a comment'),
               onChanged: (text) => widget.actions.onComment(mark.id, text),
             ),
             if (_editing) ...[
@@ -219,52 +219,118 @@ class NotesSheet extends StatefulWidget {
 class _NotesSheetState extends State<NotesSheet> {
   late final _notes = TextEditingController(text: widget.notes);
   late final _marks = sortAnnotations(widget.marks);
+  final _search = TextEditingController();
+
+  /// The comments as typed in this sheet, so the search finds what was just written.
+  final _typed = <String, String>{};
 
   @override
   void dispose() {
     _notes.dispose();
+    _search.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) => DraggableScrollableSheet(
-    expand: false,
-    initialChildSize: 0.75,
-    minChildSize: 0.4,
-    maxChildSize: 0.95,
-    builder: (context, scroll) => ListView(
-      controller: scroll,
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
-      children: [
-        Text('Notes', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        TextField(
-          key: const Key('general-notes'),
-          controller: _notes,
-          minLines: 3,
-          maxLines: 8,
-          decoration: const InputDecoration(
-            hintText: 'General notes on this document',
-            border: OutlineInputBorder(),
-          ),
-          onChanged: widget.actions.onNotes,
-        ),
-        const SizedBox(height: 16),
-        Text('Marks', style: Theme.of(context).textTheme.titleMedium),
-        if (_marks.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Select text and choose a colour to mark it.'),
-          ),
-        for (final mark in _marks)
-          MarkCard(
-            key: ValueKey(mark.id),
-            mark: mark,
-            found: widget.found.contains(mark.id),
-            actions: widget.actions,
-            onDeleted: () => setState(() => _marks.removeWhere((m) => m.id == mark.id)),
-          ),
-      ],
-    ),
+  late final _actions = NotesActions(
+    onNotes: widget.actions.onNotes,
+    onComment: (id, comment) {
+      _typed[id] = comment;
+      widget.actions.onComment(id, comment);
+    },
+    onStyle: widget.actions.onStyle,
+    onDelete: widget.actions.onDelete,
+    onJump: widget.actions.onJump,
   );
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final query = _search.text.trim();
+    final current = [for (final m in _marks) _typed[m.id] == null ? m : m.copyWith(comment: _typed[m.id])];
+    final found = {for (final m in searchComments(current, query)) m.id};
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (context, scroll) => ListView(
+        controller: scroll,
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
+        children: [
+          // Over the comments only: the document's own text is searched from the reader's menu.
+          if (_marks.isNotEmpty)
+            TextField(
+              key: const Key('comment-search'),
+              controller: _search,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search comments',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        tooltip: 'Clear',
+                        onPressed: () => setState(_search.clear),
+                      ),
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(28),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          // While searching, the general notes step aside so the comments found are in view.
+          if (query.isEmpty) ...[
+            const SizedBox(height: 12),
+            Text('Notes', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('general-notes'),
+              controller: _notes,
+              minLines: 3,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                hintText: 'General notes on this document',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: widget.actions.onNotes,
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text('Marks', style: theme.textTheme.titleMedium),
+              const Spacer(),
+              if (query.isNotEmpty)
+                Semantics(
+                  liveRegion: true,
+                  child: Text('${found.length} of ${_marks.length} marks', style: theme.textTheme.bodySmall),
+                ),
+            ],
+          ),
+          if (_marks.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text('Select text and choose a colour to mark it.'),
+            )
+          else if (found.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text('No comment has these words.'),
+            ),
+          for (final mark in _marks)
+            if (found.contains(mark.id))
+              MarkCard(
+                key: ValueKey(mark.id),
+                mark: mark,
+                found: widget.found.contains(mark.id),
+                actions: _actions,
+                onDeleted: () => setState(() => _marks.removeWhere((m) => m.id == mark.id)),
+              ),
+        ],
+      ),
+    );
+  }
 }

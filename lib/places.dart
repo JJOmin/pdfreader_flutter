@@ -87,6 +87,11 @@ class Places extends ChangeNotifier {
     for (final MapEntry(:key, :value) in _store.documents.entries) ?docIdOfPlace(key): value.updated,
   };
 
+  /// When the place in each document was last saved, by the key it is remembered under.
+  Map<String, num> get lastOpened => {
+    for (final MapEntry(:key, :value) in _store.documents.entries) key: value.updated,
+  };
+
   /// Remembers the place in a document. `state` is this phone's state for a prepared document.
   void remember(String key, Progress progress, {LibraryDocument? prepared, String? sentenceKey}) {
     final now = DateTime.now().millisecondsSinceEpoch;

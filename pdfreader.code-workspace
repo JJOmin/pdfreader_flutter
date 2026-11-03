@@ -4,7 +4,7 @@
 			"path": "."
 		},
 		{
-			"path": "../pdfReaderWindows"
+			"path": "../../../Projects/pdfreader"
 		}
 	],
 	"settings": {

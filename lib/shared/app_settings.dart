@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 
 import 'fonts.dart';
+import 'mark_styles.dart';
 
 /// The colours of the whole app. Light and dark are the stock Material look; sepia and custom set the
 /// background, the text and the accent. The system's choice picks light or dark.
@@ -82,6 +83,7 @@ class Appearance {
     this.background = 0xFFFFFFFF,
     this.text = 0xFF1F1F1F,
     this.accent = 0xFF3F51B5,
+    this.marks = const MarkStyles(),
   });
 
   final ThemeChoice theme;
@@ -97,6 +99,9 @@ class Appearance {
   final int text;
   final int accent;
 
+  /// The primary comment colour and the two favourite looks of the selection menu (PLAN 18.7).
+  final MarkStyles marks;
+
   Appearance copyWith({
     ThemeChoice? theme,
     String? font,
@@ -104,6 +109,7 @@ class Appearance {
     int? background,
     int? text,
     int? accent,
+    MarkStyles? marks,
   }) => Appearance(
     theme: theme ?? this.theme,
     font: font ?? this.font,
@@ -111,6 +117,7 @@ class Appearance {
     background: background ?? this.background,
     text: text ?? this.text,
     accent: accent ?? this.accent,
+    marks: marks ?? this.marks,
   );
 
   Map<String, Object?> toJson() => {
@@ -119,6 +126,7 @@ class Appearance {
     'font': font,
     'fontScale': fontScale,
     'custom': {'background': background, 'text': text, 'accent': accent},
+    'marks': marks.toJson(),
   };
 
   /// The look with another custom background. If the text could no longer be read on it, the text
@@ -137,10 +145,11 @@ class Appearance {
       other.fontScale == fontScale &&
       other.background == background &&
       other.text == text &&
-      other.accent == accent;
+      other.accent == accent &&
+      other.marks == marks;
 
   @override
-  int get hashCode => Object.hash(theme, font, fontScale, background, text, accent);
+  int get hashCode => Object.hash(theme, font, fontScale, background, text, accent, marks);
 }
 
 /// Builds the look from anything read from disk: a missing or unreadable file, an unknown name or a
@@ -167,6 +176,7 @@ Appearance parseAppearance(Object? json) {
     background: colour('background', defaults.background),
     text: colour('text', defaults.text),
     accent: colour('accent', defaults.accent),
+    marks: parseMarkStyles(map['marks']),
   );
 }
 

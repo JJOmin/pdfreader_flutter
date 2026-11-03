@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../shared/mark_styles.dart';
 import '../shared/notes.dart';
 import 'text_view.dart';
 
@@ -16,20 +17,31 @@ typedef SelectionMenuBuilder = Widget Function(
 
 typedef PageSelection = ({int page, (int, int) range});
 
-const _kindIcons = {
+const markKindIcons = {
   MarkKind.highlight: Icons.border_color,
   MarkKind.underline: Icons.format_underlined,
   MarkKind.strike: Icons.format_strikethrough,
 };
-const _kindNames = {
+const markKindNames = {
   MarkKind.highlight: 'Highlight',
   MarkKind.underline: 'Underline',
   MarkKind.strike: 'Strike through',
 };
 
-/// The kind of mark, then one tap on a colour makes it. The kind stays selected for the next mark.
-/// It is the platform's own selection toolbar, which keeps itself on the screen and above or below
-/// the selection as there is room, with the kinds and colours as its buttons.
+/// A mark's look as an icon: the kind's icon in the colour, on a tint of it for a highlight.
+Widget markStyleIcon(MarkStyle style, {double size = 22}) {
+  final icon = Icon(markKindIcons[style.kind], color: markLine[style.color], size: size);
+  if (style.kind != MarkKind.highlight) return icon;
+  return DecoratedBox(
+    decoration: BoxDecoration(color: markFill[style.color], borderRadius: BorderRadius.circular(6)),
+    child: Padding(padding: const EdgeInsets.all(2), child: icon),
+  );
+}
+
+/// The menu over a selection (PLAN 18.7): Read from here, Comment in the primary comment colour, the two
+/// favourite looks, which mark with one tap, and More for every kind and colour. There, the kind stays
+/// selected for the next mark and one tap on a colour makes it. It is the platform's own selection
+/// toolbar, which keeps itself on the screen and above or below the selection as there is room.
 class MarkMenu extends StatefulWidget {
   const MarkMenu({
     super.key,
@@ -38,6 +50,7 @@ class MarkMenu extends StatefulWidget {
     required this.initialKind,
     required this.onKindChanged,
     required this.onMark,
+    this.styles = const MarkStyles(),
     this.onReadFrom,
     this.onComment,
   });
@@ -46,6 +59,9 @@ class MarkMenu extends StatefulWidget {
   final Offset anchorA;
   final Offset? anchorB;
   final MarkKind initialKind;
+
+  /// The comment colour and the favourite looks.
+  final MarkStyles styles;
 
   /// The kind was changed: kept for the next mark.
   final ValueChanged<MarkKind> onKindChanged;
@@ -64,6 +80,9 @@ class MarkMenu extends StatefulWidget {
 
 class _MarkMenuState extends State<MarkMenu> {
   late MarkKind _kind = widget.initialKind;
+
+  /// Every kind and colour shows instead of the favourites.
+  bool _more = false;
 
   Widget _button({
     required Key key,
@@ -92,40 +111,60 @@ class _MarkMenuState extends State<MarkMenu> {
   );
 
   Widget _toolbar() => AdaptiveTextSelectionToolbar(
+    // A new key for each row, so the toolbar measures the row it shows.
+    key: ValueKey(_more),
     anchors: TextSelectionToolbarAnchors(primaryAnchor: widget.anchorA, secondaryAnchor: widget.anchorB),
-    children: [
-      if (widget.onReadFrom case final readFrom?)
-        _button(
-          key: const Key('read-from-here'),
-          tooltip: 'Read from here',
-          icon: const Icon(Icons.play_arrow),
-          onPressed: readFrom,
-        ),
-      if (widget.onComment case final comment?)
-        _button(
-          key: const Key('comment-selection'),
-          tooltip: 'Comment',
-          icon: const Icon(Icons.edit_note),
-          onPressed: comment,
-        ),
-      for (final k in MarkKind.values)
-        _button(
-          key: Key('kind-${k.name}'),
-          tooltip: _kindNames[k]!,
-          icon: Icon(_kindIcons[k]),
-          selected: _kind == k,
-          onPressed: () {
-            setState(() => _kind = k);
-            widget.onKindChanged(k);
-          },
-        ),
-      for (final c in HighlightColor.values)
-        _button(
-          key: Key('color-${c.name}'),
-          tooltip: '${_kindNames[_kind]}, ${c.name}',
-          icon: CircleAvatar(radius: 10, backgroundColor: markLine[c]),
-          onPressed: () => widget.onMark(_kind, c),
-        ),
-    ],
+    children: _more ? _everyLook() : _first(),
   );
+
+  List<Widget> _first() => [
+    if (widget.onReadFrom case final readFrom?)
+      _button(
+        key: const Key('read-from-here'),
+        tooltip: 'Read from here',
+        icon: const Icon(Icons.play_arrow),
+        onPressed: readFrom,
+      ),
+    if (widget.onComment case final comment?)
+      _button(
+        key: const Key('comment-selection'),
+        tooltip: 'Comment',
+        icon: Icon(Icons.edit_note, color: markLine[widget.styles.comment]),
+        onPressed: comment,
+      ),
+    for (final (i, look) in widget.styles.favourites.indexed)
+      _button(
+        key: Key('favourite-$i'),
+        tooltip: '${markKindNames[look.kind]}, ${look.color.name}',
+        icon: markStyleIcon(look),
+        onPressed: () => widget.onMark(look.kind, look.color),
+      ),
+    _button(
+      key: const Key('more-looks'),
+      tooltip: 'Other kinds and colours',
+      icon: const Icon(Icons.palette_outlined),
+      onPressed: () => setState(() => _more = true),
+    ),
+  ];
+
+  List<Widget> _everyLook() => [
+    for (final k in MarkKind.values)
+      _button(
+        key: Key('kind-${k.name}'),
+        tooltip: markKindNames[k]!,
+        icon: Icon(markKindIcons[k]),
+        selected: _kind == k,
+        onPressed: () {
+          setState(() => _kind = k);
+          widget.onKindChanged(k);
+        },
+      ),
+    for (final c in HighlightColor.values)
+      _button(
+        key: Key('color-${c.name}'),
+        tooltip: '${markKindNames[_kind]}, ${c.name}',
+        icon: CircleAvatar(radius: 10, backgroundColor: markLine[c]),
+        onPressed: () => widget.onMark(_kind, c),
+      ),
+  ];
 }

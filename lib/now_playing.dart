@@ -11,6 +11,10 @@ import 'reader.dart';
 import 'shared/read_plan.dart';
 import 'shared/types.dart';
 
+/// The three ways of reading a document (PLAN 18.4): the PDF pages, the speed reader and the
+/// full-screen player.
+enum ReaderMode { pages, speedReader, player }
+
 class ReadingSession extends ChangeNotifier {
   ReadingSession({
     required this.name,
@@ -42,6 +46,10 @@ class ReadingSession extends ChangeNotifier {
   PlannedSentence? sentence;
   int word = -1;
 
+  /// The spoken word alone. It changes several times a second, so only the player's preview listens to
+  /// it; the session's own listeners hear of a new sentence or state (PLAN 18.1).
+  final spokenWord = ValueNotifier<int>(-1);
+
   /// Where the audio of the sentence being read comes from; null while nothing is read.
   SpeechSource? get source => sentence?.source;
 
@@ -71,11 +79,22 @@ class ReadingSession extends ChangeNotifier {
   /// Pauses and asks for a comment on the sentence being read; `speak` starts listening at once.
   Future<void> Function({required bool speak})? comment;
 
+  /// Shows the reader's pages or its speed reader; set by the reader.
+  void Function(ReaderMode mode)? showMode;
+
   void update(ReaderState state, {PlannedSentence? sentence, int word = -1}) {
+    final changed = state != this.state || !identical(sentence, this.sentence);
     this.state = state;
     this.sentence = sentence;
     this.word = word;
-    notifyListeners();
+    spokenWord.value = word;
+    if (changed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    spokenWord.dispose();
+    super.dispose();
   }
 
   void updateNeighbours(String? previous, String? next) {

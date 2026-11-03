@@ -1,5 +1,5 @@
-// A mark's card only shows until the pencil opens it: then the comment, the kind, the colour and
-// Delete can be changed.
+// A mark's card: its comment is typed into directly (PLAN 18.8), while the kind, the colour and Delete
+// wait behind the pencil. The notes sheet searches the comments.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfreader/shared/notes.dart';
@@ -43,37 +43,31 @@ Widget card(Log log) => MaterialApp(
 TextField field(WidgetTester tester) => tester.widget<TextField>(find.byKey(const Key('comment-m1')));
 
 void main() {
-  testWidgets('closed, it shows the comment and offers nothing to change', (tester) async {
+  testWidgets('shows the comment, and offers the kind, the colour and Delete only behind the pencil', (
+    tester,
+  ) async {
     final log = Log();
     await tester.pumpWidget(card(log));
     expect(find.text('Said so.'), findsOneWidget);
-    expect(field(tester).readOnly, isTrue);
     expect(find.byKey(const Key('color-blue-m1')), findsNothing);
     expect(find.byKey(const Key('kind-underline-m1')), findsNothing);
     expect(find.text('Delete'), findsNothing);
     expect(find.byKey(const Key('edit-m1')), findsOneWidget);
   });
 
-  testWidgets('does not take typing while it is closed', (tester) async {
+  testWidgets('the comment is typed into directly, without the pencil', (tester) async {
     final log = Log();
     await tester.pumpWidget(card(log));
-    await tester.tap(find.byKey(const Key('comment-m1')));
-    await tester.pump();
-    await tester.enterText(find.byKey(const Key('comment-m1')), 'Overwritten');
-    expect(log.comments, isEmpty);
+    expect(field(tester).readOnly, isFalse);
+    await tester.enterText(find.byKey(const Key('comment-m1')), 'Said otherwise.');
+    expect(log.comments, ['Said otherwise.']);
   });
 
-  testWidgets('the pencil opens it: the comment changes, and the kind, the colour and Delete show', (
-    tester,
-  ) async {
+  testWidgets('the pencil opens the kind, the colour and Delete', (tester) async {
     final log = Log();
     await tester.pumpWidget(card(log));
     await tester.tap(find.byKey(const Key('edit-m1')));
     await tester.pump();
-    expect(field(tester).readOnly, isFalse);
-    await tester.enterText(find.byKey(const Key('comment-m1')), 'Said otherwise.');
-    expect(log.comments, ['Said otherwise.']);
-
     await tester.tap(find.byKey(const Key('color-blue-m1')));
     await tester.pump();
     await tester.tap(find.byKey(const Key('kind-underline-m1')));
@@ -95,7 +89,49 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('edit-m1')));
     await tester.pump();
-    expect(field(tester).readOnly, isTrue);
     expect(find.byKey(const Key('color-blue-m1')), findsNothing);
+  });
+
+  testWidgets('the notes sheet finds marks by their comment', (tester) async {
+    final log = Log();
+    const other = Annotation(
+      id: 'm2',
+      page: 3,
+      start: 0,
+      end: 5,
+      text: 'brown',
+      quote: 'brown',
+      kind: MarkKind.highlight,
+      color: HighlightColor.green,
+      comment: 'Ask about the contract',
+      created: '2026-10-23T09:00:00.000Z',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NotesSheet(
+            notes: '',
+            marks: const [mark, other],
+            found: const {'m1', 'm2'},
+            actions: log.actions,
+          ),
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('mark-m1')), findsOneWidget);
+    expect(find.byKey(const Key('mark-m2')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('comment-search')), 'contract');
+    await tester.pump();
+    expect(find.byKey(const Key('mark-m1')), findsNothing);
+    expect(find.byKey(const Key('mark-m2')), findsOneWidget);
+    expect(find.text('1 of 2 marks'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('comment-search')), 'quick');
+    await tester.pump();
+    expect(find.byKey(const Key('mark-m2')), findsNothing);
+    expect(
+      find.text('No comment has these words.'),
+      findsOneWidget,
+      reason: 'the marked text is not searched',
+    );
   });
 }

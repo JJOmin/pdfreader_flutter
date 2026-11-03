@@ -53,7 +53,7 @@ void main() {
     };
     for (final MapEntry(key: lang, value: text) in sentences.entries) {
       if (!langs.contains(lang)) continue;
-      final path = await voice.synthesize(text, lang);
+      final path = (await voice.synthesize(text, lang)).path;
       final samples = wavAt16k(path);
       File(path).deleteSync();
       final watch = Stopwatch()..start();
@@ -92,7 +92,7 @@ void main() {
       return;
     }
     const text = 'Hier ist mein Kommentar zu diesem Absatz, er enthält eine wichtige Idee.';
-    final path = await voice.synthesize(text, Lang.de);
+    final path = (await voice.synthesize(text, Lang.de)).path;
     final player = AudioPlayer();
     await player.setFilePath(path);
     await player.setVolume(1);

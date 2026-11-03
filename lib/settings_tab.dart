@@ -7,8 +7,12 @@ import 'desktops_section.dart';
 import 'places.dart';
 import 'shared/app_settings.dart';
 import 'shared/fonts.dart';
+import 'shared/mark_styles.dart';
+import 'shared/notes.dart';
 import 'shared/settings.dart' show maxSpeed, minSpeed;
+import 'views/mark_menu.dart' show markKindIcons, markKindNames, markStyleIcon;
 import 'views/reading_view.dart' show ReadingSettingsSheet;
+import 'views/text_view.dart' show markLine;
 import 'sync_controller.dart';
 
 /// The Settings tab (PLAN 9.12): a list, each entry opening a page of its own: how the app looks,
@@ -62,6 +66,13 @@ class SettingsTab extends StatelessWidget {
           title: const Text('Reading aloud'),
           subtitle: const Text('Speed, the reference list'),
           onTap: () => _open(context, 'Reading aloud', _Reading(places)),
+        ),
+        ListTile(
+          key: const Key('settings-marks'),
+          leading: const Icon(Icons.border_color_outlined),
+          title: const Text('Marks and comments'),
+          subtitle: const Text('The comment colour and two favourite marks'),
+          onTap: () => _open(context, 'Marks and comments', _MarkLooks(appSettings)),
         ),
         if (sync != null) ...[
           const Divider(),
@@ -343,4 +354,119 @@ class _ReadingState extends State<_Reading> {
       ],
     );
   }
+}
+
+/// The primary comment colour and the two favourite looks of the selection menu (PLAN 18.7), kept with
+/// the app's settings on this phone.
+class _MarkLooks extends StatelessWidget {
+  const _MarkLooks(this.settings);
+
+  final AppSettingsStore settings;
+
+  void _set(Appearance look, MarkStyles marks) => settings.change(look.copyWith(marks: marks));
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: settings,
+    builder: (context, look, _) {
+      final marks = look.marks;
+      final title = Theme.of(context).textTheme.titleMedium;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'The menu over selected text offers these first; every other kind and colour is one tap further.',
+          ),
+          const SizedBox(height: 16),
+          Text('Comment colour', style: title),
+          const Text(
+            'A comment marks its text as a highlight in this colour, unless you choose a favourite.',
+          ),
+          _Colours(
+            id: 'comment',
+            label: 'Comment colour',
+            selected: marks.comment,
+            onChanged: (c) => _set(look, marks.copyWith(comment: c)),
+          ),
+          for (final (i, favourite) in marks.favourites.indexed) ...[
+            const Divider(height: 32),
+            Row(
+              children: [
+                Text('Favourite ${i + 1}', style: title),
+                const SizedBox(width: 12),
+                markStyleIcon(favourite),
+              ],
+            ),
+            Wrap(
+              children: [
+                for (final kind in MarkKind.values)
+                  IconButton(
+                    key: Key('favourite-$i-${kind.name}'),
+                    isSelected: favourite.kind == kind,
+                    icon: Icon(markKindIcons[kind]),
+                    tooltip: 'Favourite ${i + 1}: ${markKindNames[kind]}',
+                    style: IconButton.styleFrom(
+                      backgroundColor: favourite.kind == kind
+                          ? Theme.of(context).colorScheme.secondaryContainer
+                          : null,
+                    ),
+                    onPressed: () => _set(look, marks.withFavourite(i, (kind: kind, color: favourite.color))),
+                  ),
+              ],
+            ),
+            _Colours(
+              id: 'favourite-$i',
+              label: 'Favourite ${i + 1}',
+              selected: favourite.color,
+              onChanged: (c) => _set(look, marks.withFavourite(i, (kind: favourite.kind, color: c))),
+            ),
+          ],
+        ],
+      );
+    },
+  );
+}
+
+/// The four mark colours as swatches of 48 dp, the chosen one ringed.
+class _Colours extends StatelessWidget {
+  const _Colours({required this.id, required this.label, required this.selected, required this.onChanged});
+
+  final String id;
+  final String label;
+  final HighlightColor selected;
+  final ValueChanged<HighlightColor> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    children: [
+      for (final colour in HighlightColor.values)
+        InkResponse(
+          key: Key('$id-${colour.name}'),
+          onTap: () => onChanged(colour),
+          child: Semantics(
+            label: '$label ${colour.name}',
+            button: true,
+            selected: colour == selected,
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              color: Colors.transparent,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: markLine[colour],
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    width: colour == selected ? 3 : 0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+    ],
+  );
 }

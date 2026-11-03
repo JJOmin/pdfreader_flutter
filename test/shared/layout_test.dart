@@ -135,5 +135,17 @@ void main() {
       expect(blockSpans(blocks, start, end), [(block: 0, from: 15, to: 39)]);
       expect(blockSpans(blocks, 9999, 10000), isEmpty);
     });
+
+    // Phone only (PLAN 18.2): blocks that cannot hold the range are passed over, with the same answer.
+    test('finds the same stretches past inserted characters and at the edges of blocks', () {
+      final blocks = [
+        Block('ab-c', [0, 1, -1, 2], heading: false),
+        Block('de', [10, 11], heading: false),
+      ];
+      expect(blockSpans(blocks, 2, 3), [(block: 0, from: 3, to: 4)]);
+      expect(blockSpans(blocks, 11, 12), [(block: 1, from: 1, to: 2)]);
+      expect(blockSpans(blocks, 3, 10), isEmpty);
+      expect(blockSpans(blocks, 0, 11), [(block: 0, from: 0, to: 4), (block: 1, from: 0, to: 1)]);
+    });
   });
 }

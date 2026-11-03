@@ -47,9 +47,9 @@ void main() {
     await waitFor(() => play.evaluate().isNotEmpty && tester.widget<IconButton>(play).onPressed != null);
     final page = tester.state<ReaderPageState>(find.byType(ReaderPage));
 
-    await tester.tap(find.byKey(const Key('toggle-reading')));
+    await tester.tap(find.byKey(const Key('mode-reading')));
     await waitFor(() => find.byType(ReadingView).evaluate().isNotEmpty);
-    await waitFor(() => find.textContaining('Zweispaltiger', findRichText: true).evaluate().isNotEmpty);
+    await waitFor(() => find.textContaining('Dieser Text prüft', findRichText: true).evaluate().isNotEmpty);
 
     // Reads aloud in the reading view, the word mark moving forward.
     await tester.tap(play);
@@ -57,13 +57,19 @@ void main() {
     final key = page.sentence!.key;
     await shot('reading-view-speaking');
 
-    // Switching to the pages keeps the voice going and the place.
-    await tester.tap(find.byKey(const Key('toggle-reading')));
+    // Switching to the pages keeps the voice going and the place; both views stay built (PLAN 18.4).
+    await tester.tap(find.byKey(const Key('mode-pages')));
     await tester.pump(const Duration(seconds: 1));
     expect(page.reading, isFalse);
     expect(page.state, ReaderState.playing);
     expect(page.currentPage, page.sentence!.page);
-    await tester.tap(find.byKey(const Key('toggle-reading')));
+    await tester.tap(find.byKey(const Key('mode-reading')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      find.textContaining('Dieser Text prüft', findRichText: true),
+      findsWidgets,
+      reason: 'shown at once',
+    );
     await tester.pump(const Duration(seconds: 1));
     expect(page.state, ReaderState.playing);
     await tester.tap(find.byKey(const Key('play')));
@@ -76,35 +82,44 @@ void main() {
     await tester.tap(find.byKey(const Key('reader-menu')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Search'));
-    await tester.pump();
+    // The field has the keyboard once the menu is gone, without a second tap (PLAN 18.9).
+    await tester.pump(const Duration(milliseconds: 1200));
+    final field = tester.widget<EditableText>(
+      find.descendant(of: find.byKey(const Key('search')), matching: find.byType(EditableText)),
+    );
+    expect(field.focusNode.hasFocus, isTrue, reason: 'the search field has the focus');
+    expect(tester.view.viewInsets.bottom, greaterThan(0), reason: 'the keyboard is up');
+    await shot('search-keyboard');
     await tester.enterText(find.byKey(const Key('search')), 'Silbentrennung');
-    await waitFor(() => count() == '1 / 1', seconds: 10, reason: 'one match across the line break');
+    await waitFor(() => count() == '1 of 1', seconds: 10, reason: 'one match across the line break');
     await waitFor(() => page.currentPage == 2, seconds: 5, reason: 'the match on page 2 is shown');
     await shot('reading-view-search');
     await tester.enterText(find.byKey(const Key('search')), 'Spalte');
-    await waitFor(() => count().endsWith(' / 4'), seconds: 10, reason: 'four matches of Spalte: ${count()}');
+    await waitFor(() => count().endsWith(' of 4'), seconds: 10, reason: 'four matches of Spalte: ${count()}');
     await tester.tap(find.byTooltip('Next match'));
     await tester.pump();
-    expect(count(), startsWith('2 / '));
+    expect(count(), startsWith('2 of '));
     await tester.tap(find.byTooltip('Close search'));
     await tester.pump();
 
-    // Text settings: OpenDyslexic on dark, kept for the next document.
+    // Text settings: OpenDyslexic, two steps larger with + (PLAN 18.6), kept for the next document.
     await tester.tap(find.byKey(const Key('reader-menu')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Text settings'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('OpenDyslexic').last);
-    await tester.tap(find.text('Dark'));
+    await tester.tap(find.byKey(const Key('size-up')));
+    await tester.tap(find.byKey(const Key('size-up')));
     await tester.pumpAndSettle();
+    await shot('reading-view-settings');
     await tester.tapAt(const Offset(200, 150));
     await tester.pumpAndSettle();
-    await shot('reading-view-opendyslexic-dark');
+    await shot('reading-view-opendyslexic');
     await closeDocument(tester);
 
     final settings = File('$support/settings.json').readAsStringSync();
     expect(settings, contains('"font":"OpenDyslexic"'));
-    expect(settings, contains('"theme":"dark"'));
+    expect(settings, contains('"size":22'));
     // The reading view is remembered with the place.
     await tester.tap(sampleTile);
     await waitFor(

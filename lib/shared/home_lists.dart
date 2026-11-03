@@ -13,5 +13,11 @@ List<String> newOnPhone(Map<String, num> downloaded, Set<String> opened, {int li
     if (!opened.contains(e.key)) e.key: e.value,
 }, limit: limit);
 
-/// A document from the library is remembered as `library:<docId>`; one opened from the picker by its URI.
+/// A document from the library is remembered as `library:<docId>`.
 String? docIdOfPlace(String key) => key.startsWith('library:') ? key.substring('library:'.length) : null;
+
+/// A PDF opened from Files or another app is kept and remembered as `doc:<sha256>` (PLAN 18.10), so its
+/// place is found again however it is opened.
+String placeOfKept(String id) => 'doc:$id';
+
+String? keptIdOfPlace(String key) => key.startsWith('doc:') ? key.substring('doc:'.length) : null;
